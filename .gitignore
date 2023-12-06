@@ -5,6 +5,8 @@ _ext
 *.so
 build/
 dist/
+eggs/
+.eggs/
 *.egg-info/
 wheelhouse/
 

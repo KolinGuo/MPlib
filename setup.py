@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
-from setuptools import setup, find_packages, Extension
+from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
 
@@ -71,7 +71,6 @@ class CMakeBuild(build_ext):
 
 setup(
     name="mplib",
-    version="0.0.9",
     author_email="minghua@ucsd.edu",
     keywords="robotics motion planning",
     description="A lightweight motion planning library",
@@ -101,4 +100,12 @@ setup(
     ext_modules=[CMakeExtension("mplib.pymp")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
+    setuptools_git_versioning={
+        "enabled": True,
+        "version_file": Path(__file__).parent / "VERSION",
+        "count_commits_from_version_file": True,
+        "dev_template": "{tag}.dev{timestamp:%Y%m%d}+git.{sha}",
+        "dirty_template": "{tag}.dev{timestamp:%Y%m%d}+git.{sha}.dirty",
+    },
+    setup_requires=["setuptools-git-versioning<2"],
 )
