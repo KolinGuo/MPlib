@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 PY_VERSION=
 PACKAGE_VERSION=
