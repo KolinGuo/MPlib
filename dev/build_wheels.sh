@@ -71,13 +71,13 @@ function build_wheel() {
         echo "Using include path ${INCLUDE_PATH}"
 
         export CPLUS_INCLUDE_PATH=$INCLUDE_PATH
-        COMMAND="${BIN} setup.py bdist_wheel"
+        COMMAND="${BIN} -m build"
         echo "Running command ${COMMAND}"
         eval "$COMMAND"
     fi
 
     if [ -n "$PACKAGE_VERSION" ]; then
-        echo "mplib verion ${PACKAGE_VERSION}"
+        echo "mplib version ${PACKAGE_VERSION}"
         WHEEL_FILE="./dist/mplib-${PACKAGE_VERSION}-cp${PY_VERSION}-cp${PY_VERSION}${EXT}-linux_x86_64.whl"
         if [ -f "$WHEEL_FILE" ]; then
             echo "$WHEEL_FILE exist, begin audit and repair"

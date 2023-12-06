@@ -1,0 +1,5 @@
+graft python
+graft tests
+graft src
+graft third_party/pybind11/include
+global-include CMakeLists.txt *.cmake
