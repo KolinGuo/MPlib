@@ -92,5 +92,5 @@ RUN git clone --single-branch -b v1.5.1 --depth 1 https://github.com/orocos/oroc
 RUN useradd -rm -d /home/user -s /bin/bash -g root -u 1000 user
 
 # Set working directory to be repository directory
-ARG WORKDIR="/rl_benchmark"
+ARG WORKDIR="/workspace"
 WORKDIR ${WORKDIR}
