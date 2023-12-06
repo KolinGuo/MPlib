@@ -61,7 +61,7 @@ function build_wheel() {
   if [ -f "$WHEEL_FILE" ]; then
     echo "$WHEEL_FILE exist, begin audit and repair"
   fi
-  auditwheel repair "$WHEEL_FILE"
+  auditwheel repair "$WHEEL_FILE" --no-update-tags
 }
 
 if [ -z "$PY_VERSION" ]; then
