@@ -1,4 +1,6 @@
 # MPlib
+[![Build python wheels](https://github.com/KolinGuo/MPlib/actions/workflows/build.yml/badge.svg)](https://github.com/KolinGuo/MPlib/actions/workflows/build.yml)
+
 MPlib is a lightweight python package for motion planning, which is decoupled from ROS and is easy to set up. With a few lines of python code, one can achieve most of the motion planning functionalities in robot manipulation.
 
 <p align="center">
