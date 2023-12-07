@@ -24,19 +24,25 @@ class PlanningDemo(DemoSetup):
         # boxes
         builder = self.scene.create_actor_builder()
         builder.add_box_collision(half_size=[0.02, 0.02, 0.06])
-        builder.add_box_visual(half_size=[0.02, 0.02, 0.06], color=[1, 0, 0])
+        render_material = self.renderer.create_material()
+        render_material.base_color = (1, 0, 0, 1.0)
+        builder.add_box_visual(half_size=[0.02, 0.02, 0.06], material=render_material)
         self.red_cube = builder.build(name='red_cube')
         self.red_cube.set_pose(sapien.Pose([0.7, 0, 0.06]))
 
         builder = self.scene.create_actor_builder()
         builder.add_box_collision(half_size=[0.04, 0.04, 0.005])
-        builder.add_box_visual(half_size=[0.04, 0.04, 0.005], color=[0, 1, 0])
+        render_material = self.renderer.create_material()
+        render_material.base_color = (0, 1, 0, 1.0)
+        builder.add_box_visual(half_size=[0.04, 0.04, 0.005], material=render_material)
         self.green_cube = builder.build(name='green_cube')
         self.green_cube.set_pose(sapien.Pose([0.4, 0.3, 0.005]))
 
         builder = self.scene.create_actor_builder()
         builder.add_box_collision(half_size=[0.05, 0.2, 0.1])
-        builder.add_box_visual(half_size=[0.05, 0.2, 0.1], color=[0, 0, 1])
+        render_material = self.renderer.create_material()
+        render_material.base_color = (0, 0, 1, 1.0)
+        builder.add_box_visual(half_size=[0.05, 0.2, 0.1], material=render_material)
         self.blue_cube = builder.build(name='blue_cube')
         self.blue_cube.set_pose(sapien.Pose([0.55, 0, 0.1]))
 
