@@ -1,13 +1,13 @@
+import os
 from typing import Sequence, Tuple, Union
 
-import os
 import numpy as np
-from transforms3d.quaternions import quat2mat
 import toppra as ta
-import toppra.constraint as constraint
 import toppra.algorithm as algo
+import toppra.constraint as constraint
+from transforms3d.quaternions import quat2mat
 
-from .pymp import *
+from .pymp import articulation, ompl, planning_world
 
 
 class Planner:
@@ -47,7 +47,7 @@ class Planner:
         if srdf == "" and os.path.exists(urdf.replace(".urdf", ".srdf")):
             srdf = urdf.replace(".urdf", ".srdf")
             print("No SRDF file provided. Try to load %s." % srdf)
-            
+
         self.srdf = srdf
         self.user_link_names = user_link_names
         self.user_joint_names = user_joint_names
@@ -81,7 +81,7 @@ class Planner:
             self.generate_collision_pair()
             self.robot.update_SRDF(self.srdf)
 
-        assert(move_group in self.user_link_names)
+        assert move_group in self.user_link_names
         self.move_group = move_group
         self.robot.set_move_group(self.move_group)
         self.move_group_joint_indices = (
@@ -113,8 +113,12 @@ class Planner:
                         out_f.write(content)
         return rtn_urdf
 
-    def generate_collision_pair(self, sample_time = 1000000, echo_freq = 100000):
-        print("Since no SRDF file is provided. We will first detect link pairs that will always collide. This may take several minutes.")
+    def generate_collision_pair(self, sample_time=1000000, echo_freq=100000):
+        print(
+            "Since no SRDF file is provided, we will first detect link pairs "
+            "that will always collide. This may take several minutes."
+        )
+
         n_link = len(self.user_link_names)
         cnt = np.zeros((n_link, n_link), dtype=np.int32)
         for i in range(sample_time):
@@ -127,7 +131,7 @@ class Planner:
                 cnt[u][v] += 1
             if i % echo_freq == 0:
                 print("Finish %.1f%%!" % (i * 100 / sample_time))
-        
+
         import xml.etree.ElementTree as ET
         from xml.dom import minidom
 
@@ -141,13 +145,18 @@ class Planner:
                 if cnt[i][j] == sample_time:
                     link1 = self.user_link_names[i]
                     link2 = self.user_link_names[j]
-                    print("Ignore collision pair: (%s, %s), reason:  always collide" % (link1, link2))
-                    collision = ET.SubElement(root, 'disable_collisions')
-                    collision.set('link1', link1)
-                    collision.set('link2', link2)
-                    collision.set('reason', 'Default')
+                    print(
+                        "Ignore collision pair: (%s, %s), reason:  always collide"
+                        % (link1, link2)
+                    )
+                    collision = ET.SubElement(root, "disable_collisions")
+                    collision.set("link1", link1)
+                    collision.set("link2", link2)
+                    collision.set("reason", "Default")
         srdffile = open(self.srdf, "w")
-        srdffile.write(minidom.parseString(ET.tostring(root)).toprettyxml(indent="    "))
+        srdffile.write(
+            minidom.parseString(ET.tostring(root)).toprettyxml(indent="    ")
+        )
         srdffile.close()
         print("Saving the SRDF file to %s" % self.srdf)
 
@@ -178,7 +187,12 @@ class Planner:
                     flag = False
         return flag
 
-    def check_for_collision(self, collision_function, articulation: articulation.ArticulatedModel=None, qpos: np.ndarray=None) -> list:
+    def check_for_collision(
+        self,
+        collision_function,
+        articulation: articulation.ArticulatedModel = None,
+        qpos: np.ndarray = None,
+    ) -> list:
         # handle no user input
         if articulation is None:
             articulation = self.robot
@@ -202,7 +216,11 @@ class Planner:
         articulation.set_qpos(old_qpos, True)
         return collisions
 
-    def check_for_self_collision(self, articulation: articulation.ArticulatedModel=None, qpos: np.ndarray=None) -> list:
+    def check_for_self_collision(
+        self,
+        articulation: articulation.ArticulatedModel = None,
+        qpos: np.ndarray = None,
+    ) -> list:
         """Check if the robot is in self-collision.
 
         Args:
@@ -212,9 +230,15 @@ class Planner:
         Returns:
             A list of collisions.
         """
-        return self.check_for_collision(self.planning_world.self_collide, articulation, qpos)
+        return self.check_for_collision(
+            self.planning_world.self_collide, articulation, qpos
+        )
 
-    def check_for_env_collision(self, articulation: articulation.ArticulatedModel=None, qpos: np.ndarray=None):
+    def check_for_env_collision(
+        self,
+        articulation: articulation.ArticulatedModel = None,
+        qpos: np.ndarray = None,
+    ):
         """Check if the robot is in collision with the environment
 
         Args:
@@ -224,10 +248,11 @@ class Planner:
         Returns:
             A list of collisions.
         """
-        return self.check_for_collision(self.planning_world.collide_with_others, articulation, qpos)
+        return self.check_for_collision(
+            self.planning_world.collide_with_others, articulation, qpos
+        )
 
-
-    def IK(self, goal_pose, start_qpos, mask = [], n_init_qpos=20, threshold=1e-3):
+    def IK(self, goal_pose, start_qpos, mask=[], n_init_qpos=20, threshold=1e-3):
         index = self.link_name_2_idx[self.move_group]
         min_dis = 1e9
         idx = self.move_group_joint_indices
@@ -238,7 +263,7 @@ class Planner:
             ik_results = self.pinocchio_model.compute_IK_CLIK(
                 index, goal_pose, start_qpos, mask
             )
-            flag = self.check_joint_limit(ik_results[0]) # will clip qpos
+            flag = self.check_joint_limit(ik_results[0])  # will clip qpos
 
             # check collision
             self.planning_world.set_qpos_all(ik_results[0][idx])
@@ -254,7 +279,7 @@ class Planner:
                 if tmp_dis < min_dis:
                     min_dis = tmp_dis
                 if tmp_dis < threshold:
-                    result = ik_results[0] 
+                    result = ik_results[0]
                     unique = True
                     for j in range(len(results)):
                         if np.linalg.norm(results[j][idx] - result[idx]) < 0.1:
@@ -316,7 +341,7 @@ class Planner:
         if link_id == -1:
             link_id = self.move_group_link_id
         self.planning_world.update_attached_box(size, link_id, pose)
-    
+
     def update_attached_mesh(self, mesh_path, pose, link_id=-1):
         if link_id == -1:
             link_id = self.move_group_link_id
@@ -326,7 +351,7 @@ class Planner:
         self,
         goal_pose,
         current_qpos,
-        mask = [],
+        mask=[],
         time_step=0.1,
         rrt_range=0.1,
         planning_time=1,
@@ -345,13 +370,15 @@ class Planner:
                 if current_qpos[i] > self.joint_limits[i][1]:
                     current_qpos[i] = self.joint_limits[i][1] - 1e-3
 
-
         self.robot.set_qpos(current_qpos, True)
         collisions = self.planning_world.collide_full()
         if len(collisions) != 0:
             print("Invalid start state!")
             for collision in collisions:
-                print("%s and %s collide!" % (collision.link_name1, collision.link_name2))
+                print(
+                    "%s and %s collide!"
+                    % (collision.link_name1, collision.link_name2)
+                )
 
         idx = self.move_group_joint_indices
         ik_status, goal_qpos = self.IK(goal_pose, current_qpos, mask)
@@ -361,16 +388,16 @@ class Planner:
         if verbose:
             print("IK results:")
             for i in range(len(goal_qpos)):
-               print(goal_qpos[i])
+                print(goal_qpos[i])
 
         goal_qpos_ = []
         for i in range(len(goal_qpos)):
             goal_qpos_.append(goal_qpos[i][idx])
         self.robot.set_qpos(current_qpos, True)
-        
+
         status, path = self.planner.plan(
             current_qpos[idx],
-            goal_qpos_, 
+            goal_qpos_,
             range=rrt_range,
             verbose=verbose,
             time=planning_time,
@@ -507,7 +534,7 @@ class Planner:
             if (
                 np.linalg.norm(delta_twist) < 1e-4
                 or collide
-                or within_joint_limit == False
+                or not within_joint_limit
             ):
                 return {"status": "screw plan failed"}
 
