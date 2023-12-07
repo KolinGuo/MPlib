@@ -1,0 +1,31 @@
+name: Build python wheels
+
+on:
+  push:
+    branches: [main, dev_kolin]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    container:
+      image: kolinguo/mplib-build:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: "true"
+      - name: Build wheels
+        run: "git config --global --add safe.directory '*' && ./dev/build_wheels.sh --py all"
+      - name: Update Nightly Release
+        uses: andelf/nightly-release@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: nightly
+          name: 'Nightly Release'
+          prerelease: true
+          body: 'MPlib development nightly release.'
+          files: |
+            ./wheelhouse/*.whl
