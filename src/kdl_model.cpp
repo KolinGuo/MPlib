@@ -11,26 +11,26 @@ KDLModelTpl<DATATYPE>::KDLModelTpl(std::string const &urdf_filename,
                                    std::vector<std::string> const &joint_names,
                                    std::vector<std::string> const &link_names,
                                    bool const &verbose)
-    : user_joint_names(joint_names),
-      user_link_names(link_names),
-      verbose(verbose) {
+    : user_joint_names_(joint_names),
+      user_link_names_(link_names),
+      verbose_(verbose) {
   // std::cout << "Verbose" << verbose << std::endl;
   for (int i = 0; i < joint_names.size(); i++)
-    user_joint_idx_mapping[joint_names[i]] = i;
+    user_joint_idx_mapping_[joint_names[i]] = i;
   urdf::ModelInterfaceSharedPtr urdf = urdf::parseURDFFile(urdf_filename);
-  treeFromUrdfModel(urdf, tree, tree_root_name, verbose);
+  treeFromUrdfModel(urdf, tree_, tree_root_name_, verbose);
 
-  KDL::SegmentMap segments = tree.getSegments();
-  joint_mapping_kdl_2_user.resize(tree.getNrOfJoints());
+  KDL::SegmentMap segments = tree_.getSegments();
+  joint_mapping_kdl_2_user_.resize(tree_.getNrOfJoints());
 
   for (KDL::SegmentMap::const_iterator it = segments.begin();
        it != segments.end(); ++it) {
     std::string joint_name = it->second.segment.getJoint().getName();
     std::map<std::string, int>::iterator it1 =
-        user_joint_idx_mapping.find(joint_name);
-    if (it1 != user_joint_idx_mapping.end())
-      joint_mapping_kdl_2_user[it->second.q_nr] =
-          user_joint_idx_mapping[joint_name];
+        user_joint_idx_mapping_.find(joint_name);
+    if (it1 != user_joint_idx_mapping_.end())
+      joint_mapping_kdl_2_user_[it->second.q_nr] =
+          user_joint_idx_mapping_[joint_name];
   }
 }
 
@@ -46,8 +46,8 @@ KDLModelTpl<DATATYPE>::chainIKLMA(size_t const &index, VectorX const &q0,
   L(3) = 0.01;
   L(4) = 0.01;
   L(5) = 0.01;
-  ASSERT(index < user_link_names.size(), "link index out of bound");
-  tree.getChain(tree_root_name, user_link_names[index], chain);
+  ASSERT(index < user_link_names_.size(), "link index out of bound");
+  tree_.getChain(tree_root_name_, user_link_names_[index], chain);
 
   KDL::Frame frame_goal =
       KDL::Frame(KDL::Rotation::Quaternion(pose[4], pose[5], pose[6], pose[3]),
@@ -60,7 +60,7 @@ KDLModelTpl<DATATYPE>::chainIKLMA(size_t const &index, VectorX const &q0,
   for (auto seg : chain.segments) {
     auto joint = seg.getJoint();
     if (joint.getType() != KDL::Joint::Fixed)
-      idx.push_back(user_joint_idx_mapping[joint.getName()]);
+      idx.push_back(user_joint_idx_mapping_[joint.getName()]);
   }
   for (int i = 0; i < n; i++) q_init(i) = q0[idx[i]];
   auto retval = solver.CartToJnt(q_init, frame_goal, q_sol);
@@ -74,8 +74,8 @@ std::tuple<Eigen::Matrix<DATATYPE, Eigen::Dynamic, 1>, int>
 KDLModelTpl<DATATYPE>::chainIKNR(size_t const &index, VectorX const &q0,
                                  Vector7 const &pose) {
   KDL::Chain chain;
-  ASSERT(index < user_link_names.size(), "link index out of bound");
-  tree.getChain(tree_root_name, user_link_names[index], chain);
+  ASSERT(index < user_link_names_.size(), "link index out of bound");
+  tree_.getChain(tree_root_name_, user_link_names_[index], chain);
 
   KDL::Frame frame_goal =
       KDL::Frame(KDL::Rotation::Quaternion(pose[4], pose[5], pose[6], pose[3]),
@@ -93,7 +93,7 @@ KDLModelTpl<DATATYPE>::chainIKNR(size_t const &index, VectorX const &q0,
   for (auto seg : chain.segments) {
     auto joint = seg.getJoint();
     if (joint.getType() != KDL::Joint::Fixed)
-      idx.push_back(user_joint_idx_mapping[joint.getName()]);
+      idx.push_back(user_joint_idx_mapping_[joint.getName()]);
   }
   for (int i = 0; i < n; i++) q_init(i) = q0[idx[i]];
   auto retval = solver.CartToJnt(q_init, frame_goal, q_sol);
@@ -108,8 +108,8 @@ KDLModelTpl<DATATYPE>::chainIKNRJL(size_t const &index, VectorX const &q0,
                                    Vector7 const &pose, VectorX const &qmin,
                                    VectorX const &qmax) {
   KDL::Chain chain;
-  ASSERT(index < user_link_names.size(), "link index out of bound");
-  tree.getChain(tree_root_name, user_link_names[index], chain);
+  ASSERT(index < user_link_names_.size(), "link index out of bound");
+  tree_.getChain(tree_root_name_, user_link_names_[index], chain);
 
   KDL::Frame frame_goal =
       KDL::Frame(KDL::Rotation::Quaternion(pose[4], pose[5], pose[6], pose[3]),
@@ -125,7 +125,7 @@ KDLModelTpl<DATATYPE>::chainIKNRJL(size_t const &index, VectorX const &q0,
   for (auto seg : chain.segments) {
     auto joint = seg.getJoint();
     if (joint.getType() != KDL::Joint::Fixed)
-      idx.push_back(user_joint_idx_mapping[joint.getName()]);
+      idx.push_back(user_joint_idx_mapping_[joint.getName()]);
   }
 
   for (int i = 0; i < n; i++) {
@@ -150,16 +150,16 @@ KDLModelTpl<DATATYPE>::TreeIKNRJL(const std::vector<std::string> endpoints,
                                   VectorX const &q0,
                                   std::vector<Vector7> const &poses,
                                   VectorX const &qmin, VectorX const &qmax) {
-  KDL::TreeFkSolverPos_recursive fkpossolver(tree);
-  KDL::TreeIkSolverVel_wdls ikvelsolver(tree, endpoints);
+  KDL::TreeFkSolverPos_recursive fkpossolver(tree_);
+  KDL::TreeIkSolverVel_wdls ikvelsolver(tree_, endpoints);
   ikvelsolver.setLambda(1e-6);
 
-  int n = tree.getNrOfJoints();
+  int n = tree_.getNrOfJoints();
   KDL::JntArray q_min(n), q_max(n), q_init(n), q_sol(n);
 
   for (int i = 0; i < n; i++) {
-    q_min(i) = qmin[joint_mapping_kdl_2_user[i]];
-    q_max(i) = qmax[joint_mapping_kdl_2_user[i]];
+    q_min(i) = qmin[joint_mapping_kdl_2_user_[i]];
+    q_max(i) = qmax[joint_mapping_kdl_2_user_[i]];
   }
 
   KDL::Frames frames;
@@ -170,15 +170,15 @@ KDLModelTpl<DATATYPE>::TreeIKNRJL(const std::vector<std::string> endpoints,
                    KDL::Vector(poses[i][0], poses[i][1], poses[i][2]));
   }
 
-  for (int i = 0; i < n; i++) q_init(i) = q0[joint_mapping_kdl_2_user[i]];
+  for (int i = 0; i < n; i++) q_init(i) = q0[joint_mapping_kdl_2_user_[i]];
 
-  KDL::TreeIkSolverPos_NR_JL solver(tree, endpoints, q_min, q_max, fkpossolver,
+  KDL::TreeIkSolverPos_NR_JL solver(tree_, endpoints, q_min, q_max, fkpossolver,
                                     ikvelsolver, 1000, 1e-6);
 
   auto retval = solver.CartToJnt(q_init, frames, q_sol);
 
   VectorX q1 = q0;
-  for (int i = 0; i < n; i++) q1[joint_mapping_kdl_2_user[i]] = q_sol(i);
+  for (int i = 0; i < n; i++) q1[joint_mapping_kdl_2_user_[i]] = q_sol(i);
 
   return {q1, retval};
 }

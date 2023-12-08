@@ -87,24 +87,24 @@ Eigen::Matrix<DATATYPE, Eigen::Dynamic, 1> state2eigen(
 template <typename DATATYPE>
 class ValidityCheckerTpl : public ob::StateValidityChecker {
   typedef Eigen::Matrix<DATATYPE, Eigen::Dynamic, 1> VectorX;
-  PlanningWorldTpl_ptr<DATATYPE> world;
+  PlanningWorldTpl_ptr<DATATYPE> world_;
 
  public:
   ValidityCheckerTpl(PlanningWorldTpl_ptr<DATATYPE> world,
                      const ob::SpaceInformationPtr &si)
-      : ob::StateValidityChecker(si), world(world) {}
+      : ob::StateValidityChecker(si), world_(world) {}
 
   bool isValid(const ob::State *state_raw) const {
     // std::cout << "Begin to check state" << std::endl;
     // std::cout << "check " << state2eigen<DATATYPE>(state_raw, si_) <<
     // std::endl;
-    world->setQposAll(state2eigen<DATATYPE>(state_raw, si_));
-    return !world->collide();
+    world_->setQposAll(state2eigen<DATATYPE>(state_raw, si_));
+    return !world_->collide();
   }
 
   bool _isValid(VectorX state) const {
-    world->setQposAll(state);
-    return !world->collide();
+    world_->setQposAll(state);
+    return !world_->collide();
   }
 };
 
@@ -130,14 +130,14 @@ class OMPLPlannerTpl {
 
   DEFINE_TEMPLATE_EIGEN(DATATYPE)
 
-  CompoundStateSpace_ptr cs;
-  SpaceInformation_ptr si;
-  ProblemDefinition_ptr pdef;
-  PlanningWorldTpl_ptr<DATATYPE> world;
-  ValidityCheckerTpl_ptr<DATATYPE> valid_checker;
-  size_t dim;
-  std::vector<DATATYPE> lower_joint_limits, upper_joint_limits;
-  std::vector<bool> is_revolute;
+  CompoundStateSpace_ptr cs_;
+  SpaceInformation_ptr si_;
+  ProblemDefinition_ptr pdef_;
+  PlanningWorldTpl_ptr<DATATYPE> world_;
+  ValidityCheckerTpl_ptr<DATATYPE> valid_checker_;
+  size_t dim_;
+  std::vector<DATATYPE> lower_joint_limits_, upper_joint_limits_;
+  std::vector<bool> is_revolute_;
 
  public:
   VectorX random_sample_nearby(VectorX const &start_state);
@@ -146,9 +146,9 @@ class OMPLPlannerTpl {
 
   void build_state_space();
 
-  PlanningWorldTpl_ptr<DATATYPE> get_world() { return world; }
+  PlanningWorldTpl_ptr<DATATYPE> get_world() { return world_; }
 
-  size_t get_dim() { return dim; }
+  size_t get_dim() { return dim_; }
 
   std::pair<std::string,
             Eigen::Matrix<DATATYPE, Eigen::Dynamic, Eigen::Dynamic>>

@@ -20,18 +20,18 @@ class FCLModelTpl {
   DEFINE_TEMPLATE_FCL(DATATYPE)
   DEFINE_TEMPLATE_EIGEN(DATATYPE);
 
-  urdf::ModelInterfaceSharedPtr urdf_model;
+  urdf::ModelInterfaceSharedPtr urdf_model_;
 
-  std::vector<CollisionObject_ptr> collision_objects;
-  std::vector<Transform3> collision_origin2link_poses;
-  std::vector<std::string> collision_link_names;
-  std::vector<std::string> parent_link_names;
-  std::vector<std::pair<size_t, size_t>> collision_pairs;
+  std::vector<CollisionObject_ptr> collision_objects_;
+  std::vector<Transform3> collision_origin2link_poses_;
+  std::vector<std::string> collision_link_names_;
+  std::vector<std::string> parent_link_names_;
+  std::vector<std::pair<size_t, size_t>> collision_pairs_;
 
-  std::vector<std::string> user_link_names;
-  std::vector<size_t> collision_link_user_indices;
-  std::string package_dir;
-  bool have_link_order, use_convex, verbose;
+  std::vector<std::string> user_link_names_;
+  std::vector<size_t> collision_link_user_indices_;
+  std::string package_dir_;
+  bool have_link_order_, use_convex_, verbose_;
 
   void init(urdf::ModelInterfaceSharedPtr const &urdfTree,
             std::string const &package_dir_);
@@ -46,21 +46,21 @@ class FCLModelTpl {
               bool const &convex = false);
 
   inline std::vector<std::pair<size_t, size_t>> &getCollisionPairs() {
-    return collision_pairs;
+    return collision_pairs_;
   }
 
   inline std::vector<CollisionObject_ptr> &getCollisionObjects() {
-    return collision_objects;
+    return collision_objects_;
   }
 
   inline std::vector<std::string> getCollisionLinkNames() {
-    return collision_link_names;
+    return collision_link_names_;
   }
 
-  inline std::vector<std::string> getUserLinkNames() { return user_link_names; }
+  inline std::vector<std::string> getUserLinkNames() { return user_link_names_; }
 
   inline std::vector<size_t> getCollisionLinkUserIndices() {
-    return collision_link_user_indices;
+    return collision_link_user_indices_;
   }
 
   void setLinkOrder(const std::vector<std::string> &names);

@@ -46,15 +46,16 @@ class PlanningWorldTpl {
   using WorldCollisionResult = WorldCollisionResultTpl<DATATYPE>;
   using WorldCollisionResult_ptr = WorldCollisionResultTpl_ptr<DATATYPE>;
 
-  std::vector<ArticulatedModel_ptr> articulations;
+  std::vector<ArticulatedModel_ptr> articulations_;
   // std::vector<bool> articulation_flags;
-  std::vector<CollisionObject_ptr> normal_objects;  // without articulation
-  std::vector<std::string> articulation_names;
-  std::vector<std::string> normal_object_names;
-  int move_articulation_id, attach_link_id;
-  CollisionObject_ptr point_cloud, attached_tool;
-  bool has_point_cloud, use_point_cloud, has_attach, use_attach;
-  Transform3 attach_to_link_pose;
+  std::vector<CollisionObject_ptr> normal_objects_;  // without articulation
+
+  std::vector<std::string> articulation_names_;
+  std::vector<std::string> normal_object_names_;
+  int move_articulation_id_, attach_link_id_;
+  CollisionObject_ptr point_cloud_, attached_tool_;
+  bool has_point_cloud_, use_point_cloud_, has_attach_, use_attach_;
+  Transform3 attach_to_link_pose_;
   // BroadPhaseCollisionManager_ptr normal_manager;
 
  public:
@@ -66,31 +67,31 @@ class PlanningWorldTpl {
   // std::vector<bool> const &articulation_flags);
 
   std::vector<ArticulatedModel_ptr> &getArticulations(void) {
-    return articulations;
+    return articulations_;
   }
 
   std::vector<CollisionObject_ptr> &getNormalObjects(void) {
-    return normal_objects;
+    return normal_objects_;
   }
 
   std::vector<std::string> &getArticulationNames() {
-    return articulation_names;
+    return articulation_names_;
   }
 
   std::vector<std::string> &getNormalObjectNames() {
-    return normal_object_names;
+    return normal_object_names_;
   }
 
-  void setMoveArticulationId(int id) { move_articulation_id = id; }
+  void setMoveArticulationId(int id) { move_articulation_id_ = id; }
 
-  int getMoveArticulationId() { return move_articulation_id; }
+  int getMoveArticulationId() { return move_articulation_id_; }
 
-  void setUsePointCloud(bool const &use) { use_point_cloud = use; }
+  void setUsePointCloud(bool const &use) { use_point_cloud_ = use; }
 
   void updatePointCloud(Matrixx3 const &vertices, double const &resolution);
 
   void setUseAttach(bool const &use) {
-    use_attach = use;
+    use_attach_ = use;
     if (!use) removeAttach();
   }
 
@@ -98,7 +99,7 @@ class PlanningWorldTpl {
    * @brief remove attach object so nothing won't be anything on the end
    * effector when use_attach is set to true again
    */
-  void removeAttach() { has_attach = false; }
+  void removeAttach() { has_attach_ = false; }
 
   /**
    * @brief attach or update the attached object
@@ -118,8 +119,8 @@ class PlanningWorldTpl {
                           Vector7 const &pose);
 
   void printAttachedToolPose() {
-    auto tmp1 = attached_tool.get()->getTranslation();
-    auto tmp2 = attached_tool.get()->getRotation();
+    auto tmp1 = attached_tool_.get()->getTranslation();
+    auto tmp2 = attached_tool_.get()->getRotation();
     std::cout << tmp1 << ' ' << tmp2 << std::endl;
   }
 
@@ -129,16 +130,16 @@ class PlanningWorldTpl {
   void addArticulation(
       ArticulatedModel_ptr const &model,
       std::string const &name) {  // bool const &planning = true) {
-    articulations.push_back(model);
-    articulation_names.push_back(name);
+    articulations_.push_back(model);
+    articulation_names_.push_back(name);
     // articulation_flags.push_back(planning);
   }
 
   void addArticulations(std::vector<ArticulatedModel_ptr> const &models,
                         std::vector<std::string> const
                             &names) {  // std::vector<bool> const &planning) {
-    articulations.insert(articulations.end(), models.begin(), models.end());
-    articulation_names.insert(articulation_names.end(), names.begin(),
+    articulations_.insert(articulations_.end(), models.begin(), models.end());
+    articulation_names_.insert(articulation_names_.end(), names.begin(),
                               names.end());
     // articulation_flags.insert(articulation_flags.end(), planning.begin(),
     // planning.end());
@@ -146,16 +147,16 @@ class PlanningWorldTpl {
 
   void addNormalObject(CollisionObject_ptr const &collision_object,
                        std::string const &name) {
-    normal_objects.push_back(collision_object);
-    normal_object_names.push_back(name);
+    normal_objects_.push_back(collision_object);
+    normal_object_names_.push_back(name);
   }
 
   void addNormalObjects(
       std::vector<CollisionObject_ptr> const &collision_objects,
       std::vector<std::string> const &names) {
-    normal_objects.insert(normal_objects.end(), collision_objects.begin(),
-                          collision_objects.end());
-    normal_object_names.insert(normal_object_names.end(), names.begin(),
+    normal_objects_.insert(normal_objects_.end(), collision_objects.begin(),
+                           collision_objects.end());
+    normal_object_names_.insert(normal_object_names_.end(), names.begin(),
                                names.end());
   }
 
