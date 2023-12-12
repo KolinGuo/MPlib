@@ -86,7 +86,7 @@ Eigen::Matrix<DATATYPE, Eigen::Dynamic, 1> state2eigen(
 
 template <typename DATATYPE>
 class ValidityCheckerTpl : public ob::StateValidityChecker {
-  typedef Eigen::Matrix<DATATYPE, Eigen::Dynamic, 1> VectorX;
+  using VectorX = Eigen::Matrix<DATATYPE, Eigen::Dynamic, 1>;
   PlanningWorldTplPtr<DATATYPE> world_;
 
  public:
@@ -118,13 +118,13 @@ using ValidityCheckerf = ValidityCheckerTpl<float>;
 
 template <typename DATATYPE>
 class OMPLPlannerTpl {
-  typedef std::shared_ptr<ob::CompoundStateSpace> CompoundStateSpacePtr;
-  typedef std::shared_ptr<ob::SpaceInformation> SpaceInformationPtr;
-  typedef std::shared_ptr<ob::ProblemDefinition> ProblemDefinitionPtr;
+  using CompoundStateSpacePtr = std::shared_ptr<ob::CompoundStateSpace>;
+  using SpaceInformationPtr = std::shared_ptr<ob::SpaceInformation>;
+  using ProblemDefinitionPtr = std::shared_ptr<ob::ProblemDefinition>;
 
-  typedef ob::CompoundStateSpace CompoundStateSpace;
-  typedef ob::SpaceInformation SpaceInformation;
-  typedef ob::ProblemDefinition ProblemDefinition;
+  using CompoundStateSpace = ob::CompoundStateSpace;
+  using SpaceInformation = ob::SpaceInformation;
+  using ProblemDefinition = ob::ProblemDefinition;
   using ValidityChecker = ValidityCheckerTpl<DATATYPE>;
   using ValidityCheckerPtr = ValidityCheckerTplPtr<DATATYPE>;
 
