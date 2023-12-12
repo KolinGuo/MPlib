@@ -15,9 +15,9 @@ DEFINE_TEMPLATE_PW(float)
 
 template <typename DATATYPE>
 PlanningWorldTpl<DATATYPE>::PlanningWorldTpl(
-    std::vector<ArticulatedModel_ptr> const &articulations,
+    std::vector<ArticulatedModelPtr> const &articulations,
     std::vector<std::string> const &articulation_names,
-    std::vector<CollisionObject_ptr> const &normal_objects,
+    std::vector<CollisionObjectPtr> const &normal_objects,
     std::vector<std::string> const &normal_object_names,
     int move_articulation_id)
     : articulations_(articulations),
@@ -55,7 +55,7 @@ void PlanningWorldTpl<DATATYPE>::updatePointCloud(Matrixx3 const &vertices,
 
 template <typename DATATYPE>
 void PlanningWorldTpl<DATATYPE>::updateAttachedTool(
-    CollisionGeometry_ptr p_geom, int link_id, Vector7 const &pose) {
+    CollisionGeometryPtr p_geom, int link_id, Vector7 const &pose) {
   attach_link_id_ = link_id;
   // linear here means the upper left 3x3 matrix, which is not necessarily a
   // rotation matrix if scaling is involved
@@ -71,7 +71,7 @@ template <typename DATATYPE>
 void PlanningWorldTpl<DATATYPE>::updateAttachedSphere(DATATYPE radius,
                                                       int link_id,
                                                       const Vector7 &pose) {
-  CollisionGeometry_ptr collision_geometry =
+  CollisionGeometryPtr collision_geometry =
       std::make_shared<fcl::Sphere<DATATYPE>>(radius);
   updateAttachedTool(collision_geometry, link_id, pose);
 }
@@ -80,7 +80,7 @@ template <typename DATATYPE>
 void PlanningWorldTpl<DATATYPE>::updateAttachedBox(Vector3 const &size,
                                                    int link_id,
                                                    Vector7 const &pose) {
-  CollisionGeometry_ptr collision_geometry =
+  CollisionGeometryPtr collision_geometry =
       std::make_shared<fcl::Box<DATATYPE>>(size[0], size[1], size[2]);
   updateAttachedTool(collision_geometry, link_id, pose);
 }
@@ -88,7 +88,7 @@ void PlanningWorldTpl<DATATYPE>::updateAttachedBox(Vector3 const &size,
 template <typename DATATYPE>
 void PlanningWorldTpl<DATATYPE>::updateAttachedMesh(
     std::string const &mesh_path, int link_id, Vector7 const &pose) {
-  CollisionGeometry_ptr collision_geometry =
+  CollisionGeometryPtr collision_geometry =
       load_mesh_as_BVH(mesh_path, Vector3(1, 1, 1));
   updateAttachedTool(collision_geometry, link_id, pose);
 }

@@ -22,7 +22,7 @@ class FCLModelTpl {
 
   urdf::ModelInterfaceSharedPtr urdf_model_;
 
-  std::vector<CollisionObject_ptr> collision_objects_;
+  std::vector<CollisionObjectPtr> collision_objects_;
   std::vector<Transform3> collision_origin2link_poses_;
   std::vector<std::string> collision_link_names_;
   std::vector<std::string> parent_link_names_;
@@ -49,7 +49,7 @@ class FCLModelTpl {
     return collision_pairs_;
   }
 
-  inline std::vector<CollisionObject_ptr> &getCollisionObjects() {
+  inline std::vector<CollisionObjectPtr> &getCollisionObjects() {
     return collision_objects_;
   }
 
@@ -81,9 +81,9 @@ class FCLModelTpl {
 };
 
 template <typename DATATYPE>
-using FCLModelTpl_ptr = std::shared_ptr<FCLModelTpl<DATATYPE>>;
+using FCLModelTplPtr = std::shared_ptr<FCLModelTpl<DATATYPE>>;
 
 using FCLModeld = FCLModelTpl<double>;
 using FCLModelf = FCLModelTpl<float>;
-using FCLModeld_ptr = FCLModelTpl_ptr<double>;
-using FCLModelf_ptr = FCLModelTpl_ptr<float>;
+using FCLModeldPtr = FCLModelTplPtr<double>;
+using FCLModelfPtr = FCLModelTplPtr<float>;

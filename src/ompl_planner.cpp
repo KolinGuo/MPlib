@@ -71,7 +71,7 @@ void OMPLPlannerTpl<DATATYPE>::build_state_space(void) {
 
 template <typename DATATYPE>
 OMPLPlannerTpl<DATATYPE>::OMPLPlannerTpl(
-    PlanningWorldTpl_ptr<DATATYPE> const &world)
+    PlanningWorldTplPtr<DATATYPE> const &world)
     : world_(world) {
   build_state_space();
   si_ = std::make_shared<SpaceInformation>(cs_);
