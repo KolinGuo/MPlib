@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "articulated_model.h"
@@ -9,7 +11,6 @@
 template <typename DATATYPE>
 struct WorldCollisionResultTpl {
   fcl::CollisionResult<DATATYPE> res;
-  // size_t object_id1, object_id2;
   std::string collision_type, object_name1, object_name2, link_name1,
       link_name2;
 };
@@ -47,11 +48,9 @@ class PlanningWorldTpl {
   using WorldCollisionResultPtr = WorldCollisionResultTplPtr<DATATYPE>;
 
   std::vector<ArticulatedModelPtr> articulations_;
-  // std::vector<bool> articulation_flags;
-  std::vector<CollisionObjectPtr> normal_objects_;  // without articulation
-
   std::vector<std::string> articulation_names_;
-  std::vector<std::string> normal_object_names_;
+  std::unordered_map<std::string, CollisionObjectPtr> normal_objects_;
+
   int move_articulation_id_, attach_link_id_;
   CollisionObjectPtr point_cloud_, attached_tool_;
   bool has_point_cloud_, use_point_cloud_, has_attach_, use_attach_;
@@ -61,30 +60,24 @@ class PlanningWorldTpl {
  public:
   PlanningWorldTpl(std::vector<ArticulatedModelPtr> const &articulations,
                    std::vector<std::string> const &articulation_names,
-                   std::vector<CollisionObjectPtr> const &normal_objects,
-                   std::vector<std::string> const &normal_object_names,
-                   int plan_articulation_id = 0);
+                   std::vector<CollisionObjectPtr> const &normal_objects = {},
+                   std::vector<std::string> const &normal_object_names = {},
+                   int const &plan_articulation_id = 0);
   // std::vector<bool> const &articulation_flags);
 
-  std::vector<ArticulatedModelPtr> &getArticulations(void) {
+  const std::vector<ArticulatedModelPtr> &getArticulations() const {
     return articulations_;
   }
 
-  std::vector<CollisionObjectPtr> &getNormalObjects(void) {
-    return normal_objects_;
-  }
-
-  std::vector<std::string> &getArticulationNames() {
+  const std::vector<std::string> &getArticulationNames() const {
     return articulation_names_;
   }
 
-  std::vector<std::string> &getNormalObjectNames() {
-    return normal_object_names_;
+  bool hasArticulation(std::string const &name) const {
+    for (const auto &n : articulation_names_)
+      if (n == name) return true;
+    return false;
   }
-
-  void setMoveArticulationId(int id) { move_articulation_id_ = id; }
-
-  int getMoveArticulationId() { return move_articulation_id_; }
 
   const ArticulatedModelPtr getArticulation(std::string const &name) const {
     for (size_t i = 0; i < articulations_.size(); i++)
@@ -121,6 +114,10 @@ class PlanningWorldTpl {
     return normal_objects_.find(name) != normal_objects_.end();
   }
 
+  void setMoveArticulationId(int const &id) { move_articulation_id_ = id; }
+
+  const int &getMoveArticulationId() const { return move_articulation_id_; }
+
   void setUsePointCloud(bool const &use) { use_point_cloud_ = use; }
 
   void updatePointCloud(Matrixx3 const &vertices, double const &resolution);
@@ -143,73 +140,77 @@ class PlanningWorldTpl {
    * @param pose the pose of the attached object w.r.t. the link it's attached
    * to
    */
-  void updateAttachedTool(CollisionGeometryPtr p_geom, int link_id,
+  void updateAttachedTool(CollisionGeometryPtr const &p_geom,
+                          int const &link_id, Vector7 const &pose);
+
+  void updateAttachedSphere(DATATYPE const &radius, int const &link_id,
+                            const Vector7 &pose);
+
+  void updateAttachedBox(Vector3 const &size, int const &link_id,
+                         Vector7 const &pose);
+
+  void updateAttachedMesh(std::string const &mesh_path, int const &link_id,
                           Vector7 const &pose);
 
-  void updateAttachedSphere(DATATYPE radius, int link_id, const Vector7 &pose);
-
-  void updateAttachedBox(Vector3 const &size, int link_id, Vector7 const &pose);
-
-  void updateAttachedMesh(std::string const &mesh_path, int link_id,
-                          Vector7 const &pose);
-
-  void printAttachedToolPose() {
+  void printAttachedToolPose() const {
     auto tmp1 = attached_tool_.get()->getTranslation();
     auto tmp2 = attached_tool_.get()->getRotation();
     std::cout << tmp1 << ' ' << tmp2 << std::endl;
   }
 
-  // std::vector<bool> &getArticulationFlags(void) { return articulation_flags;
-  // }
-
-  void addArticulation(
-      ArticulatedModelPtr const &model,
-      std::string const &name) {  // bool const &planning = true) {
+  void addArticulation(std::string const &name,
+                       ArticulatedModelPtr const &model) {
     articulations_.push_back(model);
     articulation_names_.push_back(name);
-    // articulation_flags.push_back(planning);
   }
 
-  void addArticulations(std::vector<ArticulatedModelPtr> const &models,
-                        std::vector<std::string> const
-                            &names) {  // std::vector<bool> const &planning) {
-    articulations_.insert(articulations_.end(), models.begin(), models.end());
-    articulation_names_.insert(articulation_names_.end(), names.begin(),
-                              names.end());
-    // articulation_flags.insert(articulation_flags.end(), planning.begin(),
-    // planning.end());
+  bool removeArticulation(std::string const &name) {
+    for (size_t i = 0; i < articulations_.size(); i++)
+      if (articulation_names_[i] == name) {
+        articulations_.erase(articulations_.begin() + i);
+        return true;
+      }
+    return false;
   }
 
-  void addNormalObject(CollisionObjectPtr const &collision_object,
-                       std::string const &name) {
-    normal_objects_.push_back(collision_object);
-    normal_object_names_.push_back(name);
+  /**
+   * @brief Adds a normal object with given name to world
+   *
+   * @param object name
+   * @param FCL collision object pointer
+   */
+  void addNormalObject(std::string const &name,
+                       CollisionObjectPtr const &collision_object) {
+    normal_objects_[name] = collision_object;
   }
 
-  void addNormalObjects(
-      std::vector<CollisionObjectPtr> const &collision_objects,
-      std::vector<std::string> const &names) {
-    normal_objects_.insert(normal_objects_.end(), collision_objects.begin(),
-                           collision_objects.end());
-    normal_object_names_.insert(normal_object_names_.end(), names.begin(),
-                               names.end());
+  bool removeNormalObject(std::string const &name) {
+    const auto it = normal_objects_.find(name);
+
+    if (it != normal_objects_.end()) {
+      normal_objects_.erase(it);
+      return true;
+    }
+    return false;
   }
 
-  void setQpos(int const &index, VectorX const &qpos);
+  void setQpos(int const &index, VectorX const &qpos) const;
 
-  void setQposAll(VectorX const &qpos);
+  void setQposAll(VectorX const &qpos) const;
 
   //   bool collide_among_normal_objects()=0;
 
-  bool collide();
+  bool collide() const;
 
-  // std::vector<WorldCollisionResult> collideFull(void);
   std::vector<WorldCollisionResult> selfCollide(
-      int index, CollisionRequest const &request = CollisionRequest());
+      int const &index,
+      CollisionRequest const &request = CollisionRequest()) const;
   std::vector<WorldCollisionResult> collideWithOthers(
-      int index, CollisionRequest const &request = CollisionRequest());
+      int const &index,
+      CollisionRequest const &request = CollisionRequest()) const;
   std::vector<WorldCollisionResult> collideFull(
-      int index, CollisionRequest const &request = CollisionRequest());
+      int const &index,
+      CollisionRequest const &request = CollisionRequest()) const;
 };
 
 template <typename T>

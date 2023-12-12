@@ -39,22 +39,34 @@ void build_planning_world(py::module &m_all) {
                     std::vector<CollisionObjectPtr> const &,
                     std::vector<std::string> const &, int const &>(),
            py::arg("articulations"), py::arg("articulation_names"),
-           py::arg("normal_objects"), py::arg("normal_object_names"),
-           py::arg("plan_articulation_id") = 0)
-      .def("get_articulations", &PlanningWorld::getArticulations)
-      //.def("get_articulation_flags", &PlanningWorld::getArticulationFlags)
-      .def("get_normal_objects", &PlanningWorld::getNormalObjects)
-      .def("add_articulation", &PlanningWorld::addArticulation,
-           py::arg("model"), py::arg("name"))
-      .def("add_articulations", &PlanningWorld::addArticulations,
-           py::arg("models"), py::arg("names"))
+           py::arg("normal_objects") = std::vector<CollisionObjectPtr>(),
+           py::arg("normal_object_names") = std::vector<std::string>(),
+           py::arg("move_articulation_id") = 0)
+
+      .def("get_normal_object_names", &PlanningWorld::getNormalObjectNames)
+      .def("get_normal_object", &PlanningWorld::getNormalObject,
+           py::arg("name"))
+      .def("has_normal_object", &PlanningWorld::hasNormalObject,
+           py::arg("name"))
       .def("add_normal_object", &PlanningWorld::addNormalObject,
-           py::arg("collision_object"), py::arg("name"))
-      .def("add_normal_objects", &PlanningWorld::addNormalObjects,
-           py::arg("collision_objects"), py::arg("names"))
+           py::arg("name"), py::arg("collision_object"))
+      .def("remove_normal_object", &PlanningWorld::removeNormalObject,
+           py::arg("name"))
+
+      .def("get_articulation_names", &PlanningWorld::getArticulationNames)
+      .def("get_articulation", &PlanningWorld::getArticulation,
+           py::arg("name"))
+      .def("has_articulation", &PlanningWorld::hasArticulation,
+           py::arg("name"))
+      .def("add_articulation", &PlanningWorld::addArticulation,
+           py::arg("name"), py::arg("model"))
+      .def("remove_articulation", &PlanningWorld::removeArticulation,
+           py::arg("name"))
+
       .def("set_qpos", &PlanningWorld::setQpos, py::arg("index"),
            py::arg("qpos"))
       .def("set_qpos_all", &PlanningWorld::setQposAll, py::arg("qpos"))
+
       .def("collide", &PlanningWorld::collide)
       .def("self_collide", &PlanningWorld::selfCollide, py::arg("index") = 0,
            py::arg("request") = CollisionRequest())
@@ -62,6 +74,7 @@ void build_planning_world(py::module &m_all) {
            py::arg("index") = 0, py::arg("request") = CollisionRequest())
       .def("collide_full", &PlanningWorld::collideFull, py::arg("index") = 0,
            py::arg("request") = CollisionRequest())
+
       .def("set_use_point_cloud", &PlanningWorld::setUsePointCloud,
            py::arg("use") = false)
       .def("update_point_cloud", &PlanningWorld::updatePointCloud,
@@ -69,6 +82,7 @@ void build_planning_world(py::module &m_all) {
       .def("set_use_attach", &PlanningWorld::setUseAttach,
            py::arg("use") = false)
       .def("remove_attach", &PlanningWorld::removeAttach)
+
       .def("update_attached_tool", &PlanningWorld::updateAttachedTool,
            py::arg("p_geom"), py::arg("link_id"), py::arg("pose"))
       .def("update_attached_sphere", &PlanningWorld::updateAttachedSphere,
