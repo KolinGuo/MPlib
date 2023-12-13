@@ -16,7 +16,7 @@
 #include <kdl/treeiksolvervel_wdls.hpp>
 #include <kdl/utilities/svd_eigen_HH.hpp>
 
-#include "macros_utils.hpp"
+#include "macros_utils.h"
 #include "urdf_utils.h"
 
 template <typename DATATYPE>

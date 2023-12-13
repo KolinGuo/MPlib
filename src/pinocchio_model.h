@@ -9,7 +9,7 @@
 #include <pinocchio/parsers/urdf.hpp>
 #include <vector>
 
-#include "macros_utils.hpp"
+#include "macros_utils.h"
 
 template <typename DATATYPE>
 class PinocchioModelTpl {

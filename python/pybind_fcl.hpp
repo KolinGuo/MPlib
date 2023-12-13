@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "../src/fcl_model.h"
-#include "../src/macros_utils.hpp"
+#include "../src/macros_utils.h"
 #include "../src/urdf_utils.h"
 #include "fcl/broadphase/broadphase_dynamic_AABB_tree.h"
 #include "fcl/common/types.h"

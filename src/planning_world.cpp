@@ -2,7 +2,7 @@
 
 #include "fcl/geometry/octree/octree.h"
 #include "fcl_model.h"
-#include "macros_utils.hpp"
+#include "macros_utils.h"
 #include "urdf_utils.h"
 
 #define DEFINE_TEMPLATE_PW(DATATYPE)         \

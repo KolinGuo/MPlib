@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#include "../src/macros_utils.hpp"
+#include "../src/macros_utils.h"
 #include "../src/pinocchio_model.h"
 
 namespace py = pybind11;

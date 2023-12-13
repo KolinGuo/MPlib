@@ -10,7 +10,7 @@
 
 #include "../src/planning_world.h"
 #include "fcl/narrowphase/collision_request.h"
-#include "macros_utils.hpp"
+#include "macros_utils.h"
 
 namespace py = pybind11;
 

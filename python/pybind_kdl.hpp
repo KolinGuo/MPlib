@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "../src/kdl_model.h"
-#include "../src/macros_utils.hpp"
+#include "../src/macros_utils.h"
 
 namespace py = pybind11;
 

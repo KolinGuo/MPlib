@@ -6,7 +6,7 @@
 
 #include "articulated_model.h"
 #include "fcl_model.h"
-#include "macros_utils.hpp"
+#include "macros_utils.h"
 
 template <typename DATATYPE>
 struct WorldCollisionResultTpl {

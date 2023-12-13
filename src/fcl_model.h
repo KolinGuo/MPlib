@@ -12,7 +12,7 @@
 #include "fcl/narrowphase/collision_request.h"
 #include "fcl/narrowphase/collision_result.h"
 #include "fcl/narrowphase/gjk_solver_type.h"
-#include "macros_utils.hpp"
+#include "macros_utils.h"
 
 template <typename DATATYPE>
 class FCLModelTpl {

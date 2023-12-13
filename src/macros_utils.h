@@ -1,6 +1,5 @@
 #pragma once
-#ifndef USE_TEMPLATE_EIGEN
-#define USE_TEMPLATE_EIGEN
+
 #define DEFINE_TEMPLATE_EIGEN(DATATYPE)                        \
   using VectorX = Eigen::Matrix<DATATYPE, Eigen::Dynamic, 1>;  \
   using Vector3 = Eigen::Matrix<DATATYPE, 3, 1>;               \
@@ -16,10 +15,7 @@
   using Matrixx3I = Eigen::Matrix<int, Eigen::Dynamic, 3>;     \
   using VectorXI = Eigen::VectorXi;                            \
   using Transform3 = Eigen::Transform<DATATYPE, 3, Eigen::Isometry>;
-#endif
 
-#ifndef USE_TEMPLATE_PINOCCHIO
-#define USE_TEMPLATE_PINOCCHIO
 #define DEFINE_TEMPLATE_PINOCCHIO(DATATYPE)                      \
   using Model = pinocchio::ModelTpl<DATATYPE>;                   \
   using Data = pinocchio::DataTpl<DATATYPE>;                     \
@@ -28,10 +24,7 @@
   using SE3 = pinocchio::SE3Tpl<DATATYPE>;                       \
   using Inertia = pinocchio::InertiaTpl<DATATYPE>;               \
   using FrameIndex = pinocchio::FrameIndex;
-#endif
 
-#ifndef USE_TEMPLATE_FCL
-#define USE_TEMPLATE_FCL
 #define DEFINE_TEMPLATE_FCL(DATATYPE)                              \
   using OBBRSS = fcl::OBBRSS<DATATYPE>;                            \
   using CollisionGeometry = fcl::CollisionGeometry<DATATYPE>;      \
@@ -60,12 +53,8 @@
   using CollisionGeometryPtr = std::shared_ptr<CollisionGeometry>; \
   using CollisionObjectPtr = std::shared_ptr<CollisionObject>;     \
   using OcTree = fcl::OcTree<DATATYPE>;
-#endif
 
-#ifndef USE_ASSERT
-#define USE_ASSERT
 #define ASSERT(exp, info)             \
   if (!(exp)) {                       \
     throw std::runtime_error((info)); \
   }
-#endif
