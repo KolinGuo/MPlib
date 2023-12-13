@@ -7,19 +7,19 @@
 
 #include "urdf_utils.h"
 
-#define DEFINE_TEMPLATE_FM(DATATYPE) template class FCLModelTpl<DATATYPE>;
+#define DEFINE_TEMPLATE_FM(S) template class FCLModelTpl<S>;
 
 DEFINE_TEMPLATE_FM(double)
 
 DEFINE_TEMPLATE_FM(float)
 
-template <typename DATATYPE>
-void FCLModelTpl<DATATYPE>::dfs_parse_tree(urdf::LinkConstSharedPtr const &link,
-                                           std::string parent_link_name) {
+template <typename S>
+void FCLModelTpl<S>::dfs_parse_tree(urdf::LinkConstSharedPtr const &link,
+                                    std::string parent_link_name) {
   // const urdf::JointConstSharedPtr joint =
   // urdf::const_pointer_cast<urdf::Joint>(link->parent_joint); const Transform3
   // joint_placement =
-  // pose_to_transform<DATATYPE>(joint->parent_to_joint_origin_transform);
+  // pose_to_transform<S>(joint->parent_to_joint_origin_transform);
 
   if (link->collision) {
     for (auto geom : link->collision_array) {
@@ -41,9 +41,8 @@ void FCLModelTpl<DATATYPE>::dfs_parse_tree(urdf::LinkConstSharedPtr const &link,
           throw std::invalid_argument(ss.str());
         }
         if (verbose_) std::cout << "File name " << file_name << std::endl;
-        Vector3 scale = {(DATATYPE)urdf_mesh->scale.x,
-                         (DATATYPE)urdf_mesh->scale.y,
-                         (DATATYPE)urdf_mesh->scale.z};
+        Vector3 scale = {(S)urdf_mesh->scale.x, (S)urdf_mesh->scale.y,
+                         (S)urdf_mesh->scale.z};
         if (use_convex_)
           collision_geometry = load_mesh_as_Convex(mesh_path, scale);
         else
@@ -53,17 +52,17 @@ void FCLModelTpl<DATATYPE>::dfs_parse_tree(urdf::LinkConstSharedPtr const &link,
       } else if (geom_model->type == urdf::Geometry::CYLINDER) {
         const urdf::CylinderSharedPtr cylinder =
             urdf::dynamic_pointer_cast<urdf::Cylinder>(geom_model);
-        collision_geometry = std::make_shared<Cylinder>(
-            (DATATYPE)cylinder->radius, (DATATYPE)cylinder->length);
+        collision_geometry = std::make_shared<Cylinder>((S)cylinder->radius,
+                                                        (S)cylinder->length);
       } else if (geom_model->type == urdf::Geometry::BOX) {
         const urdf::BoxSharedPtr box =
             urdf::dynamic_pointer_cast<urdf::Box>(geom_model);
-        collision_geometry = std::make_shared<Box>(
-            (DATATYPE)box->dim.x, (DATATYPE)box->dim.y, (DATATYPE)box->dim.z);
+        collision_geometry =
+            std::make_shared<Box>((S)box->dim.x, (S)box->dim.y, (S)box->dim.z);
       } else if (geom_model->type == ::urdf::Geometry::SPHERE) {
         const urdf::SphereSharedPtr sphere =
             urdf::dynamic_pointer_cast<urdf::Sphere>(geom_model);
-        collision_geometry = std::make_shared<Sphere>((DATATYPE)sphere->radius);
+        collision_geometry = std::make_shared<Sphere>((S)sphere->radius);
       } else
         throw std::invalid_argument("Unknown geometry type :");
 
@@ -78,18 +77,18 @@ void FCLModelTpl<DATATYPE>::dfs_parse_tree(urdf::LinkConstSharedPtr const &link,
       // collision_joint_index.push_back(model.frames[frame_id].parent);
       /// body_placement * convert_data((*i)->origin);
       collision_origin2link_poses_.push_back(
-          pose_to_transform<DATATYPE>(geom->origin));
+          pose_to_transform<S>(geom->origin));
       // collision_origin2joint_pose.push_back(
       //         model.frames[frame_id].placement *
-      //         convertFromUrdf<DATATYPE>(geom->origin));
+      //         convertFromUrdf<S>(geom->origin));
     }
   }
   for (auto child : link->child_links) dfs_parse_tree(child, link->name);
 }
 
-template <typename DATATYPE>
-void FCLModelTpl<DATATYPE>::init(urdf::ModelInterfaceSharedPtr const &urdfTree,
-                                 std::string const &package_dir) {
+template <typename S>
+void FCLModelTpl<S>::init(urdf::ModelInterfaceSharedPtr const &urdfTree,
+                          std::string const &package_dir) {
   package_dir_ = package_dir;
   urdf_model_ = urdfTree;
   if (not urdf_model_)
@@ -117,17 +116,17 @@ void FCLModelTpl<DATATYPE>::init(urdf::ModelInterfaceSharedPtr const &urdfTree,
       }
 }
 
-template <typename DATATYPE>
-FCLModelTpl<DATATYPE>::FCLModelTpl(
-    urdf::ModelInterfaceSharedPtr const &urdfTree,
-    std::string const &package_dir, bool const &verbose, bool const &convex)
+template <typename S>
+FCLModelTpl<S>::FCLModelTpl(urdf::ModelInterfaceSharedPtr const &urdfTree,
+                            std::string const &package_dir, bool const &verbose,
+                            bool const &convex)
     : verbose_(verbose), use_convex_(convex) {
   init(urdfTree, package_dir);
 }
 
-template <typename DATATYPE>
-FCLModelTpl<DATATYPE>::FCLModelTpl(std::string const &urdf_filename,
-                                   bool const &verbose, bool const &convex)
+template <typename S>
+FCLModelTpl<S>::FCLModelTpl(std::string const &urdf_filename,
+                            bool const &verbose, bool const &convex)
     : verbose_(verbose), use_convex_(convex) {
   auto found = urdf_filename.find_last_of("/\\");
   auto urdf_dir = urdf_filename.substr(0, found);
@@ -135,9 +134,8 @@ FCLModelTpl<DATATYPE>::FCLModelTpl(std::string const &urdf_filename,
   init(urdfTree, urdf_dir);
 }
 
-template <typename DATATYPE>
-void FCLModelTpl<DATATYPE>::setLinkOrder(
-    const std::vector<std::string> &names) {
+template <typename S>
+void FCLModelTpl<S>::setLinkOrder(const std::vector<std::string> &names) {
   user_link_names_ = names;
   collision_link_user_indices_ = {};
   for (size_t i = 0; i < collision_link_names_.size(); i++) {
@@ -152,8 +150,8 @@ void FCLModelTpl<DATATYPE>::setLinkOrder(
   }
 }
 
-template <typename DATATYPE>
-void FCLModelTpl<DATATYPE>::removeCollisionPairsFromSrdf(
+template <typename S>
+void FCLModelTpl<S>::removeCollisionPairsFromSrdf(
     std::string const &srdf_filename) {
   const std::string extension =
       srdf_filename.substr(srdf_filename.find_last_of('.') + 1);
@@ -217,8 +215,8 @@ void FCLModelTpl<DATATYPE>::removeCollisionPairsFromSrdf(
   }
 }
 
-template <typename DATATYPE>
-bool FCLModelTpl<DATATYPE>::collide(CollisionRequest const &request) {
+template <typename S>
+bool FCLModelTpl<S>::collide(CollisionRequest const &request) {
   // result will be returned via the collision result structure
   CollisionResult result;
   for (auto col_pair : collision_pairs_) {
@@ -229,8 +227,8 @@ bool FCLModelTpl<DATATYPE>::collide(CollisionRequest const &request) {
   return false;
 }
 
-template <typename DATATYPE>
-std::vector<fcl::CollisionResult<DATATYPE>> FCLModelTpl<DATATYPE>::collideFull(
+template <typename S>
+std::vector<fcl::CollisionResult<S>> FCLModelTpl<S>::collideFull(
     CollisionRequest const &request) {
   // CollisionRequest request(1, false, 1, false, true,
   // fcl::GJKSolverType::GST_INDEP, 1e-6);
@@ -268,8 +266,8 @@ std::vector<fcl::CollisionResult<DATATYPE>> FCLModelTpl<DATATYPE>::collideFull(
   return ret;
 }
 
-template <typename DATATYPE>
-void FCLModelTpl<DATATYPE>::updateCollisionObjects(
+template <typename S>
+void FCLModelTpl<S>::updateCollisionObjects(
     std::vector<Transform3> const &link_pose) {
   for (size_t i = 0; i < collision_objects_.size(); i++) {
     auto link_i = collision_link_user_indices_[i];
@@ -280,8 +278,8 @@ void FCLModelTpl<DATATYPE>::updateCollisionObjects(
   }
 }
 
-template <typename DATATYPE>
-void FCLModelTpl<DATATYPE>::updateCollisionObjects(
+template <typename S>
+void FCLModelTpl<S>::updateCollisionObjects(
     std::vector<Vector7> const &link_pose) {
   for (size_t i = 0; i < collision_objects_.size(); i++) {
     auto link_i = collision_link_user_indices_[i];
@@ -299,8 +297,8 @@ void FCLModelTpl<DATATYPE>::updateCollisionObjects(
   }
 }
 
-template <typename DATATYPE>
-void FCLModelTpl<DATATYPE>::printCollisionPairs(void) {
+template <typename S>
+void FCLModelTpl<S>::printCollisionPairs(void) {
   for (auto cp : collision_pairs_) {
     auto i = cp.first, j = cp.second;
     std::cout << collision_link_names_[i] << " " << collision_link_names_[j]

@@ -1,16 +1,16 @@
 #include "kdl_model.h"
 
-#define DEFINE_TEMPLATE_FM(DATATYPE) template class KDLModelTpl<DATATYPE>;
+#define DEFINE_TEMPLATE_FM(S) template class KDLModelTpl<S>;
 
 DEFINE_TEMPLATE_FM(double)
 
 DEFINE_TEMPLATE_FM(float)
 
-template <typename DATATYPE>
-KDLModelTpl<DATATYPE>::KDLModelTpl(std::string const &urdf_filename,
-                                   std::vector<std::string> const &joint_names,
-                                   std::vector<std::string> const &link_names,
-                                   bool const &verbose)
+template <typename S>
+KDLModelTpl<S>::KDLModelTpl(std::string const &urdf_filename,
+                            std::vector<std::string> const &joint_names,
+                            std::vector<std::string> const &link_names,
+                            bool const &verbose)
     : user_joint_names_(joint_names),
       user_link_names_(link_names),
       verbose_(verbose) {
@@ -34,10 +34,9 @@ KDLModelTpl<DATATYPE>::KDLModelTpl(std::string const &urdf_filename,
   }
 }
 
-template <typename DATATYPE>
-std::tuple<Eigen::Matrix<DATATYPE, Eigen::Dynamic, 1>, int>
-KDLModelTpl<DATATYPE>::chainIKLMA(size_t const &index, VectorX const &q0,
-                                  Vector7 const &pose) {
+template <typename S>
+std::tuple<Eigen::Matrix<S, Eigen::Dynamic, 1>, int> KDLModelTpl<S>::chainIKLMA(
+    size_t const &index, VectorX const &q0, Vector7 const &pose) {
   KDL::Chain chain;
   Eigen::Matrix<double, 6, 1> L;
   L(0) = 1;
@@ -69,10 +68,9 @@ KDLModelTpl<DATATYPE>::chainIKLMA(size_t const &index, VectorX const &q0,
   return {q1, retval};
 }
 
-template <typename DATATYPE>
-std::tuple<Eigen::Matrix<DATATYPE, Eigen::Dynamic, 1>, int>
-KDLModelTpl<DATATYPE>::chainIKNR(size_t const &index, VectorX const &q0,
-                                 Vector7 const &pose) {
+template <typename S>
+std::tuple<Eigen::Matrix<S, Eigen::Dynamic, 1>, int> KDLModelTpl<S>::chainIKNR(
+    size_t const &index, VectorX const &q0, Vector7 const &pose) {
   KDL::Chain chain;
   ASSERT(index < user_link_names_.size(), "link index out of bound");
   tree_.getChain(tree_root_name_, user_link_names_[index], chain);
@@ -102,11 +100,11 @@ KDLModelTpl<DATATYPE>::chainIKNR(size_t const &index, VectorX const &q0,
   return {q1, retval};
 }
 
-template <typename DATATYPE>
-std::tuple<Eigen::Matrix<DATATYPE, Eigen::Dynamic, 1>, int>
-KDLModelTpl<DATATYPE>::chainIKNRJL(size_t const &index, VectorX const &q0,
-                                   Vector7 const &pose, VectorX const &qmin,
-                                   VectorX const &qmax) {
+template <typename S>
+std::tuple<Eigen::Matrix<S, Eigen::Dynamic, 1>, int>
+KDLModelTpl<S>::chainIKNRJL(size_t const &index, VectorX const &q0,
+                            Vector7 const &pose, VectorX const &qmin,
+                            VectorX const &qmax) {
   KDL::Chain chain;
   ASSERT(index < user_link_names_.size(), "link index out of bound");
   tree_.getChain(tree_root_name_, user_link_names_[index], chain);
@@ -144,12 +142,11 @@ KDLModelTpl<DATATYPE>::chainIKNRJL(size_t const &index, VectorX const &q0,
   return {q1, retval};
 }
 
-template <typename DATATYPE>
-std::tuple<Eigen::Matrix<DATATYPE, Eigen::Dynamic, 1>, int>
-KDLModelTpl<DATATYPE>::TreeIKNRJL(const std::vector<std::string> endpoints,
-                                  VectorX const &q0,
-                                  std::vector<Vector7> const &poses,
-                                  VectorX const &qmin, VectorX const &qmax) {
+template <typename S>
+std::tuple<Eigen::Matrix<S, Eigen::Dynamic, 1>, int> KDLModelTpl<S>::TreeIKNRJL(
+    const std::vector<std::string> endpoints, VectorX const &q0,
+    std::vector<Vector7> const &poses, VectorX const &qmin,
+    VectorX const &qmax) {
   KDL::TreeFkSolverPos_recursive fkpossolver(tree_);
   KDL::TreeIkSolverVel_wdls ikvelsolver(tree_, endpoints);
   ikvelsolver.setLambda(1e-6);

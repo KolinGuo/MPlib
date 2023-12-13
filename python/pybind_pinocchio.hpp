@@ -14,13 +14,13 @@
 namespace py = pybind11;
 
 #ifdef USE_SINGLE
-using DATATYPE = float;
+using S = float;
 #else
-using DATATYPE = double;
+using S = double;
 #endif
 
-using PinocchioModel = PinocchioModelTpl<DATATYPE>;
-DEFINE_TEMPLATE_EIGEN(DATATYPE)
+using PinocchioModel = PinocchioModelTpl<S>;
+DEFINE_TEMPLATE_EIGEN(S)
 
 void build_pypinocchio(py::module &m_all) {
   auto m = m_all.def_submodule("pinocchio");

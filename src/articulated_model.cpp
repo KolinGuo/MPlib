@@ -20,15 +20,14 @@
 #include "pinocchio/parsers/utils.hpp"
 #include "urdf_utils.h"
 
-#define DEFINE_TEMPLATE_AM(DATATYPE) \
-  template class ArticulatedModelTpl<DATATYPE>;
+#define DEFINE_TEMPLATE_AM(S) template class ArticulatedModelTpl<S>;
 
 DEFINE_TEMPLATE_AM(float)
 
 DEFINE_TEMPLATE_AM(double)
 
-template <typename DATATYPE>
-ArticulatedModelTpl<DATATYPE>::ArticulatedModelTpl(
+template <typename S>
+ArticulatedModelTpl<S>::ArticulatedModelTpl(
     std::string const &urdf_filename, std::string const &srdf_filename,
     Vector3 const &gravity, std::vector<std::string> const &joint_names,
     std::vector<std::string> const &link_names, bool const &verbose,
@@ -36,11 +35,12 @@ ArticulatedModelTpl<DATATYPE>::ArticulatedModelTpl(
     : verbose_(verbose),
       pinocchio_model_(urdf_filename, gravity, verbose),
       fcl_model_(urdf_filename, verbose, convex) {
-  user_link_names_ =
-      link_names.size() == 0 ? pinocchio_model_.getLinkNames(false) : link_names;
+  user_link_names_ = link_names.size() == 0
+                         ? pinocchio_model_.getLinkNames(false)
+                         : link_names;
   user_joint_names_ = joint_names.size() == 0
-                         ? pinocchio_model_.getJointNames(false)
-                         : joint_names;
+                          ? pinocchio_model_.getJointNames(false)
+                          : joint_names;
   pinocchio_model_.setLinkOrder(user_link_names_);
   pinocchio_model_.setJointOrder(user_joint_names_);
   fcl_model_.setLinkOrder(user_link_names_);
@@ -49,43 +49,40 @@ ArticulatedModelTpl<DATATYPE>::ArticulatedModelTpl(
   setMoveGroup(user_link_names_);
 }
 
-template <typename DATATYPE>
-void ArticulatedModelTpl<DATATYPE>::setMoveGroup(
-    std::string const &end_effector) {
+template <typename S>
+void ArticulatedModelTpl<S>::setMoveGroup(std::string const &end_effector) {
   std::vector<std::string> end_effectors = {end_effector};
   setMoveGroup(end_effectors);
 }
 
-template <typename DATATYPE>
-void ArticulatedModelTpl<DATATYPE>::setMoveGroup(
+template <typename S>
+void ArticulatedModelTpl<S>::setMoveGroup(
     std::vector<std::string> const &end_effectors) {
   move_group_end_effectors_ = end_effectors;
   move_group_user_joints_ = {};
   for (auto end_effector : end_effectors) {
     auto joint_i = pinocchio_model_.getChainJointIndex(end_effector);
     move_group_user_joints_.insert(move_group_user_joints_.begin(),
-                                  joint_i.begin(), joint_i.end());
+                                   joint_i.begin(), joint_i.end());
   }
   std::sort(move_group_user_joints_.begin(), move_group_user_joints_.end());
-  auto end_unique =
-      std::unique(move_group_user_joints_.begin(), move_group_user_joints_.end());
+  auto end_unique = std::unique(move_group_user_joints_.begin(),
+                                move_group_user_joints_.end());
   move_group_user_joints_.erase(end_unique, move_group_user_joints_.end());
   qpos_dim_ = 0;
   for (auto i : move_group_user_joints_)
     qpos_dim_ += pinocchio_model_.getJointDim(i);
 }
 
-template <typename DATATYPE>
-std::vector<std::string> ArticulatedModelTpl<DATATYPE>::getMoveGroupJointName(
-    void) {
+template <typename S>
+std::vector<std::string> ArticulatedModelTpl<S>::getMoveGroupJointName(void) {
   std::vector<std::string> ret;
   for (auto i : move_group_user_joints_) ret.push_back(user_joint_names_[i]);
   return ret;
 }
 
-template <typename DATATYPE>
-void ArticulatedModelTpl<DATATYPE>::setQpos(VectorX const &qpos,
-                                            bool const &full) {
+template <typename S>
+void ArticulatedModelTpl<S>::setQpos(VectorX const &qpos, bool const &full) {
   if (full)
     current_qpos_ = qpos;
   else {

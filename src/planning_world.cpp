@@ -5,16 +5,16 @@
 #include "macros_utils.h"
 #include "urdf_utils.h"
 
-#define DEFINE_TEMPLATE_PW(DATATYPE)         \
-  template class PlanningWorldTpl<DATATYPE>; \
-  template class WorldCollisionResultTpl<DATATYPE>;
+#define DEFINE_TEMPLATE_PW(S)         \
+  template class PlanningWorldTpl<S>; \
+  template class WorldCollisionResultTpl<S>;
 
 DEFINE_TEMPLATE_PW(double)
 
 DEFINE_TEMPLATE_PW(float)
 
-template <typename DATATYPE>
-PlanningWorldTpl<DATATYPE>::PlanningWorldTpl(
+template <typename S>
+PlanningWorldTpl<S>::PlanningWorldTpl(
     std::vector<ArticulatedModelPtr> const &articulations,
     std::vector<std::string> const &articulation_names,
     std::vector<CollisionObjectPtr> const &normal_objects,
@@ -37,9 +37,9 @@ PlanningWorldTpl<DATATYPE>::PlanningWorldTpl(
   }
 }
 
-template <typename DATATYPE>
-void PlanningWorldTpl<DATATYPE>::updatePointCloud(Matrixx3 const &vertices,
-                                                  double const &resolution) {
+template <typename S>
+void PlanningWorldTpl<S>::updatePointCloud(Matrixx3 const &vertices,
+                                           double const &resolution) {
   octomap::OcTree *tree = new octomap::OcTree(resolution);
   for (size_t i = 0; i < vertices.rows(); i++)
     tree->updateNode(
@@ -48,14 +48,14 @@ void PlanningWorldTpl<DATATYPE>::updatePointCloud(Matrixx3 const &vertices,
   auto tree_ptr = std::shared_ptr<const octomap::OcTree>(tree);
   auto pose = Transform3::Identity();
   point_cloud_ = std::make_shared<CollisionObject>(
-      std::make_shared<fcl::OcTree<DATATYPE>>(tree_ptr), pose);
+      std::make_shared<fcl::OcTree<S>>(tree_ptr), pose);
   has_point_cloud_ = true;
 }
 
-template <typename DATATYPE>
-void PlanningWorldTpl<DATATYPE>::updateAttachedTool(
-    CollisionGeometryPtr const &p_geom, int const &link_id,
-    Vector7 const &pose) {
+template <typename S>
+void PlanningWorldTpl<S>::updateAttachedTool(CollisionGeometryPtr const &p_geom,
+                                             int const &link_id,
+                                             Vector7 const &pose) {
   attach_link_id_ = link_id;
   // linear here means the upper left 3x3 matrix, which is not necessarily a
   // rotation matrix if scaling is involved
@@ -67,40 +67,41 @@ void PlanningWorldTpl<DATATYPE>::updateAttachedTool(
   has_attach_ = true;
 }
 
-template <typename DATATYPE>
-void PlanningWorldTpl<DATATYPE>::updateAttachedSphere(DATATYPE const &radius,
-                                                      int const &link_id,
-                                                      const Vector7 &pose) {
+template <typename S>
+void PlanningWorldTpl<S>::updateAttachedSphere(S const &radius,
+                                               int const &link_id,
+                                               const Vector7 &pose) {
   CollisionGeometryPtr collision_geometry =
-      std::make_shared<fcl::Sphere<DATATYPE>>(radius);
+      std::make_shared<fcl::Sphere<S>>(radius);
   updateAttachedTool(collision_geometry, link_id, pose);
 }
 
-template <typename DATATYPE>
-void PlanningWorldTpl<DATATYPE>::updateAttachedBox(Vector3 const &size,
-                                                   int const &link_id,
-                                                   Vector7 const &pose) {
+template <typename S>
+void PlanningWorldTpl<S>::updateAttachedBox(Vector3 const &size,
+                                            int const &link_id,
+                                            Vector7 const &pose) {
   CollisionGeometryPtr collision_geometry =
-      std::make_shared<fcl::Box<DATATYPE>>(size[0], size[1], size[2]);
+      std::make_shared<fcl::Box<S>>(size[0], size[1], size[2]);
   updateAttachedTool(collision_geometry, link_id, pose);
 }
 
-template <typename DATATYPE>
-void PlanningWorldTpl<DATATYPE>::updateAttachedMesh(
-    std::string const &mesh_path, int const &link_id, Vector7 const &pose) {
+template <typename S>
+void PlanningWorldTpl<S>::updateAttachedMesh(std::string const &mesh_path,
+                                             int const &link_id,
+                                             Vector7 const &pose) {
   CollisionGeometryPtr collision_geometry =
       load_mesh_as_BVH(mesh_path, Vector3(1, 1, 1));
   updateAttachedTool(collision_geometry, link_id, pose);
 }
 
-template <typename DATATYPE>
-void PlanningWorldTpl<DATATYPE>::setQpos(int const &index,
-                                         VectorX const &state) const {
+template <typename S>
+void PlanningWorldTpl<S>::setQpos(int const &index,
+                                  VectorX const &state) const {
   articulations_[index]->setQpos(state);
 }
 
-template <typename DATATYPE>
-void PlanningWorldTpl<DATATYPE>::setQposAll(VectorX const &state) const {
+template <typename S>
+void PlanningWorldTpl<S>::setQposAll(VectorX const &state) const {
   size_t total_dim = 0;
   for (size_t i = 0; i < articulations_.size(); i++) {
     auto n = articulations_[i]->getQposDim();
@@ -115,10 +116,9 @@ void PlanningWorldTpl<DATATYPE>::setQposAll(VectorX const &state) const {
   ASSERT(total_dim == state.size(), "State dimension is not correct");
 }
 
-template <typename DATATYPE>
-std::vector<WorldCollisionResultTpl<DATATYPE>>
-PlanningWorldTpl<DATATYPE>::selfCollide(int const &index,
-                                        CollisionRequest const &request) const {
+template <typename S>
+std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::selfCollide(
+    int const &index, CollisionRequest const &request) const {
   std::vector<WorldCollisionResult> ret;
   auto fcl_model = articulations_[index]->getFCLModel();
   auto results = fcl_model.collideFull(request);
@@ -139,9 +139,8 @@ PlanningWorldTpl<DATATYPE>::selfCollide(int const &index,
   return ret;
 }
 
-template <typename DATATYPE>
-std::vector<WorldCollisionResultTpl<DATATYPE>>
-PlanningWorldTpl<DATATYPE>::collideWithOthers(
+template <typename S>
+std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideWithOthers(
     int const &index, CollisionRequest const &request) const {
   std::vector<WorldCollisionResult> ret;
   auto pinocchio_model = articulations_[index]->getPinocchioModel();
@@ -250,18 +249,17 @@ PlanningWorldTpl<DATATYPE>::collideWithOthers(
   return ret;
 }
 
-template <typename DATATYPE>
-std::vector<WorldCollisionResultTpl<DATATYPE>>
-PlanningWorldTpl<DATATYPE>::collideFull(int const &index,
-                                        CollisionRequest const &request) const {
+template <typename S>
+std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideFull(
+    int const &index, CollisionRequest const &request) const {
   std::vector<WorldCollisionResult> ret1 = selfCollide(index, request);
   std::vector<WorldCollisionResult> ret2 = collideWithOthers(index, request);
   ret1.insert(ret1.end(), ret2.begin(), ret2.end());
   return ret1;
 }
 
-template <typename DATATYPE>
-bool PlanningWorldTpl<DATATYPE>::collide() const {
+template <typename S>
+bool PlanningWorldTpl<S>::collide() const {
   std::vector<WorldCollisionResult> ret = collideFull(0, CollisionRequest());
   return ret.size() > 0;
 }

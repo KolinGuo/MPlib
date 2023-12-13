@@ -13,12 +13,12 @@
 namespace py = pybind11;
 
 #ifdef USE_SINGLE
-using DATATYPE = float;
+using S = float;
 #else
-using DATATYPE = double;
+using S = double;
 #endif
 
-using ArticulatedModel = ArticulatedModelTpl<DATATYPE>;
+using ArticulatedModel = ArticulatedModelTpl<S>;
 
 void build_pyarticulation(py::module &m_all) {
   auto m = m_all.def_submodule("articulation");
@@ -27,10 +27,10 @@ void build_pyarticulation(py::module &m_all) {
           m, "ArticulatedModel");
 
   PyArticulatedModel
-      .def(py::init<
-               std::string const &, std::string const &,
-               Eigen::Matrix<DATATYPE, 3, 1>, std::vector<std::string> const &,
-               std::vector<std::string> const &, bool const &, bool const &>(),
+      .def(py::init<std::string const &, std::string const &,
+                    Eigen::Matrix<S, 3, 1>, std::vector<std::string> const &,
+                    std::vector<std::string> const &, bool const &,
+                    bool const &>(),
            py::arg("urdf_filename"), py::arg("srdf_filename"),
            py::arg("gravity"), py::arg("joint_names"), py::arg("link_names"),
            py::arg("verbose") = true, py::arg("convex") = false)

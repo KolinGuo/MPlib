@@ -15,17 +15,17 @@
 namespace py = pybind11;
 
 #ifdef USE_SINGLE
-using DATATYPE = float;
+using S = float;
 #else
-using DATATYPE = double;
+using S = double;
 #endif
 
-using CollisionObject = fcl::CollisionObject<DATATYPE>;
+using CollisionObject = fcl::CollisionObject<S>;
 using CollisionObjectPtr = std::shared_ptr<CollisionObject>;
 
-using PlanningWorld = PlanningWorldTpl<DATATYPE>;
-using WorldCollisionResult = WorldCollisionResultTpl<DATATYPE>;
-using ArticulatedModelPtr = ArticulatedModelTplPtr<DATATYPE>;
+using PlanningWorld = PlanningWorldTpl<S>;
+using WorldCollisionResult = WorldCollisionResultTpl<S>;
+using ArticulatedModelPtr = ArticulatedModelTplPtr<S>;
 
 void build_planning_world(py::module &m_all) {
   auto m = m_all.def_submodule("planning_world");
@@ -54,12 +54,10 @@ void build_planning_world(py::module &m_all) {
            py::arg("name"))
 
       .def("get_articulation_names", &PlanningWorld::getArticulationNames)
-      .def("get_articulation", &PlanningWorld::getArticulation,
-           py::arg("name"))
-      .def("has_articulation", &PlanningWorld::hasArticulation,
-           py::arg("name"))
-      .def("add_articulation", &PlanningWorld::addArticulation,
-           py::arg("name"), py::arg("model"))
+      .def("get_articulation", &PlanningWorld::getArticulation, py::arg("name"))
+      .def("has_articulation", &PlanningWorld::hasArticulation, py::arg("name"))
+      .def("add_articulation", &PlanningWorld::addArticulation, py::arg("name"),
+           py::arg("model"))
       .def("remove_articulation", &PlanningWorld::removeArticulation,
            py::arg("name"))
 

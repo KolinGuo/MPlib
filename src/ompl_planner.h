@@ -21,11 +21,11 @@ namespace ob = ompl::base;
 // namespace oc = ompl::control;
 namespace og = ompl::geometric;
 
-template <typename DATATYPE>
-std::vector<DATATYPE> state2vector(const ob::State *state_raw,
-                                   ob::SpaceInformation *const &si_) {
+template <typename S>
+std::vector<S> state2vector(const ob::State *state_raw,
+                            ob::SpaceInformation *const &si_) {
   auto state = state_raw->as<ob::CompoundState>();
-  std::vector<DATATYPE> ret;
+  std::vector<S> ret;
   auto si = si_->getStateSpace()->as<ob::CompoundStateSpace>();
 
   for (size_t i = 0; i < si->getSubspaceCount(); i++) {
@@ -35,13 +35,13 @@ std::vector<DATATYPE> state2vector(const ob::State *state_raw,
       case ob::STATE_SPACE_REAL_VECTOR:
         n = subspace->as<ob::RealVectorStateSpace>()->getDimension();
         for (size_t j = 0; j < n; j++)
-          ret.push_back((DATATYPE)(*state)[i]
+          ret.push_back((S)(*state)[i]
                             ->as<ob::RealVectorStateSpace::StateType>()
                             ->values[j]);
         break;
       case ob::STATE_SPACE_SO2:
         ret.push_back(
-            (DATATYPE)(*state)[i]->as<ob::SO2StateSpace::StateType>()->value);
+            (S)(*state)[i]->as<ob::SO2StateSpace::StateType>()->value);
         break;
       default:
         throw std::invalid_argument("Unhandled subspace type.");
@@ -67,15 +67,15 @@ Eigen::Matrix<OUT_TYPE, Eigen::Dynamic, 1> vector2eigen(
   return ret;
 }
 
-template <typename DATATYPE>
-Eigen::Matrix<DATATYPE, Eigen::Dynamic, 1> state2eigen(
+template <typename S>
+Eigen::Matrix<S, Eigen::Dynamic, 1> state2eigen(
     const ob::State *state_raw, ob::SpaceInformation *const &si_) {
-  auto vec_ret = state2vector<DATATYPE>(state_raw, si_);
+  auto vec_ret = state2vector<S>(state_raw, si_);
   /*for (size_t i = 0; i < vec_ret.size(); i++)
       std::cout << vec_ret[i] << " ";
   std::cout << std::endl;
   */
-  auto ret = vector2eigen<DATATYPE, DATATYPE>(vec_ret);
+  auto ret = vector2eigen<S, S>(vec_ret);
   /*std::cout << ret.rows() << " " << ret.cols() << std::endl;
   for (size_t i = 0; i < ret.rows(); i++)
       std::cout << ret[i] << " ";
@@ -84,21 +84,21 @@ Eigen::Matrix<DATATYPE, Eigen::Dynamic, 1> state2eigen(
   return ret;
 }
 
-template <typename DATATYPE>
+template <typename S>
 class ValidityCheckerTpl : public ob::StateValidityChecker {
-  using VectorX = Eigen::Matrix<DATATYPE, Eigen::Dynamic, 1>;
-  PlanningWorldTplPtr<DATATYPE> world_;
+  using VectorX = Eigen::Matrix<S, Eigen::Dynamic, 1>;
+  PlanningWorldTplPtr<S> world_;
 
  public:
-  ValidityCheckerTpl(PlanningWorldTplPtr<DATATYPE> world,
+  ValidityCheckerTpl(PlanningWorldTplPtr<S> world,
                      const ob::SpaceInformationPtr &si)
       : ob::StateValidityChecker(si), world_(world) {}
 
   bool isValid(const ob::State *state_raw) const {
     // std::cout << "Begin to check state" << std::endl;
-    // std::cout << "check " << state2eigen<DATATYPE>(state_raw, si_) <<
+    // std::cout << "check " << state2eigen<S>(state_raw, si_) <<
     // std::endl;
-    world_->setQposAll(state2eigen<DATATYPE>(state_raw, si_));
+    world_->setQposAll(state2eigen<S>(state_raw, si_));
     return !world_->collide();
   }
 
@@ -108,15 +108,15 @@ class ValidityCheckerTpl : public ob::StateValidityChecker {
   }
 };
 
-template <typename DATATYPE>
-using ValidityCheckerTplPtr = std::shared_ptr<ValidityCheckerTpl<DATATYPE>>;
+template <typename S>
+using ValidityCheckerTplPtr = std::shared_ptr<ValidityCheckerTpl<S>>;
 
 using ValidityCheckerdPtr = ValidityCheckerTplPtr<double>;
 using ValidityCheckerfPtr = ValidityCheckerTplPtr<float>;
 using ValidityCheckerd = ValidityCheckerTpl<double>;
 using ValidityCheckerf = ValidityCheckerTpl<float>;
 
-template <typename DATATYPE>
+template <typename S>
 class OMPLPlannerTpl {
   using CompoundStateSpacePtr = std::shared_ptr<ob::CompoundStateSpace>;
   using SpaceInformationPtr = std::shared_ptr<ob::SpaceInformation>;
@@ -125,40 +125,39 @@ class OMPLPlannerTpl {
   using CompoundStateSpace = ob::CompoundStateSpace;
   using SpaceInformation = ob::SpaceInformation;
   using ProblemDefinition = ob::ProblemDefinition;
-  using ValidityChecker = ValidityCheckerTpl<DATATYPE>;
-  using ValidityCheckerPtr = ValidityCheckerTplPtr<DATATYPE>;
+  using ValidityChecker = ValidityCheckerTpl<S>;
+  using ValidityCheckerPtr = ValidityCheckerTplPtr<S>;
 
-  DEFINE_TEMPLATE_EIGEN(DATATYPE)
+  DEFINE_TEMPLATE_EIGEN(S)
 
   CompoundStateSpacePtr cs_;
   SpaceInformationPtr si_;
   ProblemDefinitionPtr pdef_;
-  PlanningWorldTplPtr<DATATYPE> world_;
-  ValidityCheckerTplPtr<DATATYPE> valid_checker_;
+  PlanningWorldTplPtr<S> world_;
+  ValidityCheckerTplPtr<S> valid_checker_;
   size_t dim_;
-  std::vector<DATATYPE> lower_joint_limits_, upper_joint_limits_;
+  std::vector<S> lower_joint_limits_, upper_joint_limits_;
   std::vector<bool> is_revolute_;
 
  public:
   VectorX random_sample_nearby(VectorX const &start_state);
 
-  OMPLPlannerTpl(PlanningWorldTplPtr<DATATYPE> const &world);
+  OMPLPlannerTpl(PlanningWorldTplPtr<S> const &world);
 
   void build_state_space();
 
-  PlanningWorldTplPtr<DATATYPE> get_world() { return world_; }
+  PlanningWorldTplPtr<S> get_world() { return world_; }
 
   size_t get_dim() { return dim_; }
 
-  std::pair<std::string,
-            Eigen::Matrix<DATATYPE, Eigen::Dynamic, Eigen::Dynamic>>
-  plan(VectorX const &start_state, std::vector<VectorX> const &goal_states,
-       const std::string &planner_name = "RRTConnect", const double &time = 1.0,
-       const double &range = 0.0, const bool &verbose = false);
+  std::pair<std::string, Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic>> plan(
+      VectorX const &start_state, std::vector<VectorX> const &goal_states,
+      const std::string &planner_name = "RRTConnect", const double &time = 1.0,
+      const double &range = 0.0, const bool &verbose = false);
 };
 
-template <typename DATATYPE>
-using OMPLPlannerTplPtr = std::shared_ptr<ValidityCheckerTpl<DATATYPE>>;
+template <typename S>
+using OMPLPlannerTplPtr = std::shared_ptr<ValidityCheckerTpl<S>>;
 
 using OMPLPlannerTpldPtr = OMPLPlannerTplPtr<double>;
 using OMPLPlannerTplfPtr = OMPLPlannerTplPtr<float>;

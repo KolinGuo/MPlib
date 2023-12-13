@@ -14,11 +14,11 @@
 #include "fcl/narrowphase/gjk_solver_type.h"
 #include "macros_utils.h"
 
-template <typename DATATYPE>
+template <typename S>
 class FCLModelTpl {
  private:
-  DEFINE_TEMPLATE_FCL(DATATYPE)
-  DEFINE_TEMPLATE_EIGEN(DATATYPE);
+  DEFINE_TEMPLATE_FCL(S)
+  DEFINE_TEMPLATE_EIGEN(S);
 
   urdf::ModelInterfaceSharedPtr urdf_model_;
 
@@ -57,7 +57,9 @@ class FCLModelTpl {
     return collision_link_names_;
   }
 
-  inline std::vector<std::string> getUserLinkNames() { return user_link_names_; }
+  inline std::vector<std::string> getUserLinkNames() {
+    return user_link_names_;
+  }
 
   inline std::vector<size_t> getCollisionLinkUserIndices() {
     return collision_link_user_indices_;
@@ -75,13 +77,13 @@ class FCLModelTpl {
 
   bool collide(CollisionRequest const &request = CollisionRequest());
 
-  std::vector<fcl::CollisionResult<DATATYPE>> collideFull(
+  std::vector<fcl::CollisionResult<S>> collideFull(
       CollisionRequest const &request = CollisionRequest(
           1, false, 1, false, true, fcl::GJKSolverType::GST_INDEP, 1e-6));
 };
 
-template <typename DATATYPE>
-using FCLModelTplPtr = std::shared_ptr<FCLModelTpl<DATATYPE>>;
+template <typename S>
+using FCLModelTplPtr = std::shared_ptr<FCLModelTpl<S>>;
 
 using FCLModeld = FCLModelTpl<double>;
 using FCLModelf = FCLModelTpl<float>;

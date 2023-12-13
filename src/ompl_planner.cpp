@@ -2,9 +2,9 @@
 
 #include "pinocchio_model.h"
 
-#define DEFINE_TEMPLATE_OMPL(DATATYPE)         \
-  template class ValidityCheckerTpl<DATATYPE>; \
-  template class OMPLPlannerTpl<DATATYPE>;
+#define DEFINE_TEMPLATE_OMPL(S)         \
+  template class ValidityCheckerTpl<S>; \
+  template class OMPLPlannerTpl<S>;
 
 DEFINE_TEMPLATE_OMPL(double)
 
@@ -12,8 +12,8 @@ DEFINE_TEMPLATE_OMPL(float)
 
 #define PI 3.14159265359
 
-template <typename DATATYPE>
-void OMPLPlannerTpl<DATATYPE>::build_state_space(void) {
+template <typename S>
+void OMPLPlannerTpl<S>::build_state_space(void) {
   cs_ = std::make_shared<CompoundStateSpace>();
   dim_ = 0;
   std::string const joint_prefix = "JointModel";
@@ -69,9 +69,8 @@ void OMPLPlannerTpl<DATATYPE>::build_state_space(void) {
   }
 }
 
-template <typename DATATYPE>
-OMPLPlannerTpl<DATATYPE>::OMPLPlannerTpl(
-    PlanningWorldTplPtr<DATATYPE> const &world)
+template <typename S>
+OMPLPlannerTpl<S>::OMPLPlannerTpl(PlanningWorldTplPtr<S> const &world)
     : world_(world) {
   build_state_space();
   si_ = std::make_shared<SpaceInformation>(cs_);
@@ -81,15 +80,15 @@ OMPLPlannerTpl<DATATYPE>::OMPLPlannerTpl(
   pdef_ = std::make_shared<ob::ProblemDefinition>(si_);
 }
 
-template <typename DATATYPE>
-Eigen::Matrix<DATATYPE, Eigen::Dynamic, 1>
-OMPLPlannerTpl<DATATYPE>::random_sample_nearby(VectorX const &start_state) {
+template <typename S>
+Eigen::Matrix<S, Eigen::Dynamic, 1> OMPLPlannerTpl<S>::random_sample_nearby(
+    VectorX const &start_state) {
   int cnt = 0;
   while (true) {
-    DATATYPE ratio = (DATATYPE)(cnt + 1) / 1000;
+    S ratio = (S)(cnt + 1) / 1000;
     VectorX new_state = start_state;
     for (int i = 0; i < dim_; i++) {
-      DATATYPE r = (DATATYPE)rand() / RAND_MAX * 2 - 1;
+      S r = (S)rand() / RAND_MAX * 2 - 1;
       new_state[i] +=
           (upper_joint_limits_[i] - lower_joint_limits_[i]) * ratio * r;
       if (new_state[i] < lower_joint_limits_[i])
@@ -107,13 +106,12 @@ OMPLPlannerTpl<DATATYPE>::random_sample_nearby(VectorX const &start_state) {
   }
 }
 
-template <typename DATATYPE>
-std::pair<std::string, Eigen::Matrix<DATATYPE, Eigen::Dynamic, Eigen::Dynamic>>
-OMPLPlannerTpl<DATATYPE>::plan(VectorX const &start_state,
-                               std::vector<VectorX> const &goal_states,
-                               const std::string &planner_name,
-                               const double &time, const double &range,
-                               const bool &verbose) {
+template <typename S>
+std::pair<std::string, Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic>>
+OMPLPlannerTpl<S>::plan(VectorX const &start_state,
+                        std::vector<VectorX> const &goal_states,
+                        const std::string &planner_name, const double &time,
+                        const double &range, const bool &verbose) {
   ASSERT(start_state.rows() == goal_states[0].rows(),
          "Length of start state and goal state should be equal");
   ASSERT(start_state.rows() == dim_,
@@ -121,13 +119,13 @@ OMPLPlannerTpl<DATATYPE>::plan(VectorX const &start_state,
   if (verbose == false) ompl::msg::noOutputHandler();
 
   ob::ScopedState<> start(cs_);
-  start = eigen2vector<DATATYPE, double>(start_state);
+  start = eigen2vector<S, double>(start_state);
 
   bool invalid_start = !valid_checker_->_isValid(start_state);
   if (invalid_start) {
     std::cout << "invalid start state!! (collision)" << std::endl;
     VectorX new_start_state = random_sample_nearby(start_state);
-    start = eigen2vector<DATATYPE, double>(new_start_state);
+    start = eigen2vector<S, double>(new_start_state);
   }
 
   auto goals = std::make_shared<ob::GoalStates>(si_);
@@ -198,21 +196,21 @@ OMPLPlannerTpl<DATATYPE>::plan(VectorX const &start_state,
     ob::PathPtr path = pdef_->getSolutionPath();
     auto geo_path = std::dynamic_pointer_cast<og::PathGeometric>(path);
     size_t len = geo_path->getStateCount();
-    Eigen::Matrix<DATATYPE, Eigen::Dynamic, Eigen::Dynamic> ret(
-        len + invalid_start, dim_);
+    Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic> ret(len + invalid_start,
+                                                         dim_);
     if (verbose) std::cout << "Result size " << len << " " << dim_ << std::endl;
     if (invalid_start) {
       for (int j = 0; j < dim_; j++) ret(0, j) = start_state(j);
     }
     for (size_t i = 0; i < len; i++) {
-      auto res_i = state2eigen<DATATYPE>(geo_path->getState(i), si_.get());
+      auto res_i = state2eigen<S>(geo_path->getState(i), si_.get());
       // std::cout << "Size_i " << res_i.rows() << std::endl;
       ASSERT(res_i.rows() == dim_, "Result dimension is not correct!");
       for (size_t j = 0; j < dim_; j++) ret(invalid_start + i, j) = res_i[j];
     }
     return std::make_pair(solved.asString(), ret);
   } else {
-    Eigen::Matrix<DATATYPE, Eigen::Dynamic, Eigen::Dynamic> ret(0, dim_);
+    Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic> ret(0, dim_);
     return std::make_pair(solved.asString(), ret);
   }
 }

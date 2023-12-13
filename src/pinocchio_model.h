@@ -11,11 +11,11 @@
 
 #include "macros_utils.h"
 
-template <typename DATATYPE>
+template <typename S>
 class PinocchioModelTpl {
  private:
-  DEFINE_TEMPLATE_EIGEN(DATATYPE)
-  DEFINE_TEMPLATE_PINOCCHIO(DATATYPE)
+  DEFINE_TEMPLATE_EIGEN(S)
+  DEFINE_TEMPLATE_PINOCCHIO(S)
 
   // pinocchio::ModelTpl<float>;
 
@@ -26,7 +26,8 @@ class PinocchioModelTpl {
   VectorXI joint_index_user2pinocchio_, joint_index_pinocchio2user_;
   VectorXI v_index_user2pinocchio_;  // the joint index in model
   // map between user and pinocchio
-  Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> v_map_user2pinocchio_;
+  Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic>
+      v_map_user2pinocchio_;
   VectorXI link_index_user2pinocchio_;
 
   std::vector<std::string> user_link_names_;
@@ -74,21 +75,21 @@ class PinocchioModelTpl {
     return ret;
   }
 
-  inline std::vector<Eigen::Matrix<DATATYPE, Eigen::Dynamic, Eigen::Dynamic>>
+  inline std::vector<Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic>>
   getJointLimits(bool const &user = true) {
-    std::vector<Eigen::Matrix<DATATYPE, Eigen::Dynamic, Eigen::Dynamic>> ret;
+    std::vector<Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic>> ret;
     auto njoints = user ? user_joint_names_.size() : model_.joints.size();
     for (size_t i = 0; i < njoints; i++) ret.push_back(getJointLimit(i, user));
     return ret;
   }
 
-  inline Eigen::Matrix<DATATYPE, Eigen::Dynamic, Eigen::Dynamic> getJointLimit(
+  inline Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic> getJointLimit(
       size_t const &index, bool const &user = true) {
     auto joint_type = getJointType(index, user);
     size_t pinocchio_idx = user ? joint_index_user2pinocchio_[index] : index;
     size_t start_idx = model_.idx_qs[pinocchio_idx],
            nq = model_.nqs[pinocchio_idx], dim_joint = getJointDim(index, user);
-    Eigen::Matrix<DATATYPE, Eigen::Dynamic, Eigen::Dynamic> ret;
+    Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic> ret;
     ASSERT(dim_joint == 1,
            "Only support simple joint the dim of joint is not 1!");
     // std::cout << joint_type << " " << joint_type[joint_prefix.size()] << " "
@@ -97,14 +98,14 @@ class PinocchioModelTpl {
     if (joint_type[joint_prefix_.size()] == 'P' ||
         (joint_type[joint_prefix_.size()] == 'R' &&
          joint_type[joint_prefix_.size() + 1] != 'U')) {
-      ret = Eigen::Matrix<DATATYPE, Eigen::Dynamic, Eigen::Dynamic>(nq, 2);
+      ret = Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic>(nq, 2);
       for (size_t j = 0; j < nq; j++) {
         ret(j, 0) = model_.lowerPositionLimit[start_idx + j];
         ret(j, 1) = model_.upperPositionLimit[start_idx + j];
       }
     } else if (joint_type[joint_prefix_.size()] == 'R' &&
                joint_type[joint_prefix_.size() + 1] == 'U') {
-      ret = Eigen::Matrix<DATATYPE, Eigen::Dynamic, Eigen::Dynamic>(1, 2);
+      ret = Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic>(1, 2);
       ret(0, 0) = -3.14159265359, ret(0, 1) = 3.14159265359;
     }
     return ret;
@@ -119,7 +120,8 @@ class PinocchioModelTpl {
       return vidx_;
     else {
       auto ret = VectorXI(model_.idx_vs.size());
-      for (size_t i = 0; i < model_.idx_vs.size(); i++) ret[i] = model_.idx_vs[i];
+      for (size_t i = 0; i < model_.idx_vs.size(); i++)
+        ret[i] = model_.idx_vs[i];
       return ret;
     }
   }

@@ -8,9 +8,9 @@
 #include "fcl_model.h"
 #include "macros_utils.h"
 
-template <typename DATATYPE>
+template <typename S>
 struct WorldCollisionResultTpl {
-  fcl::CollisionResult<DATATYPE> res;
+  fcl::CollisionResult<S> res;
   std::string collision_type, object_name1, object_name2, link_name1,
       link_name2;
 };
@@ -23,29 +23,29 @@ using WorldCollisionResultf = WorldCollisionResultTpl<float>;
 using WorldCollisionResultdPtr = WorldCollisionResultTplPtr<double>;
 using WorldCollisionResultfPtr = WorldCollisionResultTplPtr<float>;
 
-template <typename DATATYPE>
+template <typename S>
 class PlanningWorldTpl {
  private:
-  DEFINE_TEMPLATE_EIGEN(DATATYPE);
-  using CollisionRequest = fcl::CollisionRequest<DATATYPE>;
-  using CollisionResult = fcl::CollisionResult<DATATYPE>;
+  DEFINE_TEMPLATE_EIGEN(S);
+  using CollisionRequest = fcl::CollisionRequest<S>;
+  using CollisionResult = fcl::CollisionResult<S>;
 
-  using CollisionGeometry = fcl::CollisionGeometry<DATATYPE>;
+  using CollisionGeometry = fcl::CollisionGeometry<S>;
   using CollisionGeometryPtr = std::shared_ptr<CollisionGeometry>;
 
-  using CollisionObject = fcl::CollisionObject<DATATYPE>;
+  using CollisionObject = fcl::CollisionObject<S>;
   using CollisionObjectPtr = std::shared_ptr<CollisionObject>;
 
   using DynamicAABBTreeCollisionManager =
-      fcl::DynamicAABBTreeCollisionManager<DATATYPE>;
+      fcl::DynamicAABBTreeCollisionManager<S>;
   using BroadPhaseCollisionManagerPtr =
-      std::shared_ptr<fcl::BroadPhaseCollisionManager<DATATYPE>>;
+      std::shared_ptr<fcl::BroadPhaseCollisionManager<S>>;
 
-  using ArticulatedModel = ArticulatedModelTpl<DATATYPE>;
-  using ArticulatedModelPtr = ArticulatedModelTplPtr<DATATYPE>;
+  using ArticulatedModel = ArticulatedModelTpl<S>;
+  using ArticulatedModelPtr = ArticulatedModelTplPtr<S>;
 
-  using WorldCollisionResult = WorldCollisionResultTpl<DATATYPE>;
-  using WorldCollisionResultPtr = WorldCollisionResultTplPtr<DATATYPE>;
+  using WorldCollisionResult = WorldCollisionResultTpl<S>;
+  using WorldCollisionResultPtr = WorldCollisionResultTplPtr<S>;
 
   std::vector<ArticulatedModelPtr> articulations_;
   std::vector<std::string> articulation_names_;
@@ -143,7 +143,7 @@ class PlanningWorldTpl {
   void updateAttachedTool(CollisionGeometryPtr const &p_geom,
                           int const &link_id, Vector7 const &pose);
 
-  void updateAttachedSphere(DATATYPE const &radius, int const &link_id,
+  void updateAttachedSphere(S const &radius, int const &link_id,
                             const Vector7 &pose);
 
   void updateAttachedBox(Vector3 const &size, int const &link_id,

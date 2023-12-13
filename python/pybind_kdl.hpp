@@ -14,13 +14,13 @@
 namespace py = pybind11;
 
 #ifdef USE_SINGLE
-using DATATYPE = float;
+using S = float;
 #else
-using DATATYPE = double;
+using S = double;
 #endif
 
-using KDLModel = KDLModelTpl<DATATYPE>;
-DEFINE_TEMPLATE_EIGEN(DATATYPE)
+using KDLModel = KDLModelTpl<S>;
+DEFINE_TEMPLATE_EIGEN(S)
 
 void build_pykdl(py::module &m_all) {
   auto m = m_all.def_submodule("kdl");
