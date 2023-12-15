@@ -6,9 +6,10 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <memory>
 #include <vector>
 
-#include "../src/articulated_model.h"
+#include "articulated_model.h"
 
 namespace py = pybind11;
 
@@ -18,14 +19,16 @@ using S = float;
 using S = double;
 #endif
 
+namespace mplib {
+
 using ArticulatedModel = ArticulatedModelTpl<S>;
 
-void build_pyarticulation(py::module &m_all) {
+inline void build_pyarticulation(py::module &m_all) {
   auto m = m_all.def_submodule("articulation");
+
   auto PyArticulatedModel =
       py::class_<ArticulatedModel, std::shared_ptr<ArticulatedModel>>(
           m, "ArticulatedModel");
-
   PyArticulatedModel
       .def(py::init<std::string const &, std::string const &,
                     Eigen::Matrix<S, 3, 1>, std::vector<std::string> const &,
@@ -58,3 +61,5 @@ void build_pyarticulation(py::module &m_all) {
            py::arg("full") = false)
       .def("update_SRDF", &ArticulatedModel::updateSRDF, py::arg("SRDF"));
 }
+
+}  // namespace mplib

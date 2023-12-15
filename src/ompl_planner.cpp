@@ -1,6 +1,11 @@
 #include "ompl_planner.h"
 
-#include "pinocchio_model.h"
+#include <ompl/base/Planner.h>
+#include <ompl/base/goals/GoalStates.h>
+
+#include "macros_utils.h"
+
+namespace mplib::ompl {
 
 #define DEFINE_TEMPLATE_OMPL(S)         \
   template class ValidityCheckerTpl<S>; \
@@ -18,7 +23,7 @@ void OMPLPlannerTpl<S>::build_state_space(void) {
   dim_ = 0;
   std::string const joint_prefix = "JointModel";
   for (auto robot : world_->getArticulations()) {
-    auto dim_i = 0;
+    size_t dim_i = 0;
     auto model = robot->getPinocchioModel();
     auto joint_types = model.getJointTypes();
     auto d =
@@ -38,7 +43,7 @@ void OMPLPlannerTpl<S>::build_state_space(void) {
             std::make_shared<ob::RealVectorStateSpace>(bound.rows());
         auto ob_bounds = ob::RealVectorBounds(bound.rows());
         dim_i += bound.rows();
-        for (size_t j = 0; j < bound.rows(); j++) {
+        for (size_t j = 0; j < static_cast<size_t>(bound.rows()); j++) {
           lower_joint_limits_.push_back(bound(j, 0));
           upper_joint_limits_.push_back(bound(j, 1));
           ob_bounds.setLow(j, bound(j, 0)), ob_bounds.setHigh(j, bound(j, 1));
@@ -81,13 +86,13 @@ OMPLPlannerTpl<S>::OMPLPlannerTpl(PlanningWorldTplPtr<S> const &world)
 }
 
 template <typename S>
-Eigen::Matrix<S, Eigen::Dynamic, 1> OMPLPlannerTpl<S>::random_sample_nearby(
-    VectorX const &start_state) {
+VectorX<S> OMPLPlannerTpl<S>::random_sample_nearby(
+    VectorX<S> const &start_state) {
   int cnt = 0;
   while (true) {
     S ratio = (S)(cnt + 1) / 1000;
-    VectorX new_state = start_state;
-    for (int i = 0; i < dim_; i++) {
+    VectorX<S> new_state = start_state;
+    for (size_t i = 0; i < dim_; i++) {
       S r = (S)rand() / RAND_MAX * 2 - 1;
       new_state[i] +=
           (upper_joint_limits_[i] - lower_joint_limits_[i]) * ratio * r;
@@ -107,16 +112,15 @@ Eigen::Matrix<S, Eigen::Dynamic, 1> OMPLPlannerTpl<S>::random_sample_nearby(
 }
 
 template <typename S>
-std::pair<std::string, Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic>>
-OMPLPlannerTpl<S>::plan(VectorX const &start_state,
-                        std::vector<VectorX> const &goal_states,
-                        const std::string &planner_name, const double &time,
-                        const double &range, const bool &verbose) {
+std::pair<std::string, MatrixX<S>> OMPLPlannerTpl<S>::plan(
+    VectorX<S> const &start_state, std::vector<VectorX<S>> const &goal_states,
+    const std::string &planner_name, const double &time, const double &range,
+    const bool &verbose) {
   ASSERT(start_state.rows() == goal_states[0].rows(),
          "Length of start state and goal state should be equal");
-  ASSERT(start_state.rows() == dim_,
+  ASSERT(static_cast<size_t>(start_state.rows()) == dim_,
          "Length of start state and problem dimension should be equal");
-  if (verbose == false) ompl::msg::noOutputHandler();
+  if (verbose == false) ::ompl::msg::noOutputHandler();
 
   ob::ScopedState<> start(cs_);
   start = eigen2vector<S, double>(start_state);
@@ -124,21 +128,21 @@ OMPLPlannerTpl<S>::plan(VectorX const &start_state,
   bool invalid_start = !valid_checker_->_isValid(start_state);
   if (invalid_start) {
     std::cout << "invalid start state!! (collision)" << std::endl;
-    VectorX new_start_state = random_sample_nearby(start_state);
+    VectorX<S> new_start_state = random_sample_nearby(start_state);
     start = eigen2vector<S, double>(new_start_state);
   }
 
   auto goals = std::make_shared<ob::GoalStates>(si_);
 
   int tot_enum_states = 1, tot_goal_state = 0;
-  for (int i = 0; i < dim_; i++) tot_enum_states *= 3;
+  for (size_t i = 0; i < dim_; i++) tot_enum_states *= 3;
 
-  for (int ii = 0; ii < goal_states.size(); ii++)
+  for (size_t ii = 0; ii < goal_states.size(); ii++)
     for (int i = 0; i < tot_enum_states; i++) {
       std::vector<double> tmp_state;
       int tmp = i;
       bool flag = true;
-      for (int j = 0; j < dim_; j++) {
+      for (size_t j = 0; j < dim_; j++) {
         tmp_state.push_back(goal_states[ii](j));
         int dir = tmp % 3;
         tmp /= 3;
@@ -196,21 +200,23 @@ OMPLPlannerTpl<S>::plan(VectorX const &start_state,
     ob::PathPtr path = pdef_->getSolutionPath();
     auto geo_path = std::dynamic_pointer_cast<og::PathGeometric>(path);
     size_t len = geo_path->getStateCount();
-    Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic> ret(len + invalid_start,
-                                                         dim_);
+    MatrixX<S> ret(len + invalid_start, dim_);
     if (verbose) std::cout << "Result size " << len << " " << dim_ << std::endl;
     if (invalid_start) {
-      for (int j = 0; j < dim_; j++) ret(0, j) = start_state(j);
+      for (size_t j = 0; j < dim_; j++) ret(0, j) = start_state(j);
     }
     for (size_t i = 0; i < len; i++) {
       auto res_i = state2eigen<S>(geo_path->getState(i), si_.get());
       // std::cout << "Size_i " << res_i.rows() << std::endl;
-      ASSERT(res_i.rows() == dim_, "Result dimension is not correct!");
+      ASSERT(static_cast<size_t>(res_i.rows()) == dim_,
+             "Result dimension is not correct!");
       for (size_t j = 0; j < dim_; j++) ret(invalid_start + i, j) = res_i[j];
     }
     return std::make_pair(solved.asString(), ret);
   } else {
-    Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic> ret(0, dim_);
+    MatrixX<S> ret(0, dim_);
     return std::make_pair(solved.asString(), ret);
   }
 }
+
+}  // namespace mplib::ompl

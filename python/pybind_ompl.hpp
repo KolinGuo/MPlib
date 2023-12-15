@@ -6,9 +6,9 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include <vector>
+#include <memory>
 
-#include "../src/ompl_planner.h"
+#include "ompl_planner.h"
 
 namespace py = pybind11;
 
@@ -18,17 +18,11 @@ using S = float;
 using S = double;
 #endif
 
-using OMPLPlanner = OMPLPlannerTpl<S>;
-using PlannerStatus = ob::PlannerStatus;
-using Path = ob::Path;
-using PathGeometric = og::PathGeometric;
+namespace mplib {
 
-template <typename T>
-py::array_t<T> make_array(std::vector<T> const &values) {
-  return py::array_t<T>(values.size(), values.data());
-}
+using OMPLPlanner = ompl::OMPLPlannerTpl<S>;
 
-void build_pyompl(py::module &m_all) {
+inline void build_pyompl(py::module &m_all) {
   auto m = m_all.def_submodule("ompl");
 
   auto PyOMPLPlanner =
@@ -40,3 +34,5 @@ void build_pyompl(py::module &m_all) {
            py::arg("time") = 1.0, py::arg("range") = 0.0,
            py::arg("verbose") = false);
 }
+
+}  // namespace mplib

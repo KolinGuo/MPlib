@@ -1,25 +1,32 @@
+#include <ompl/base/ProblemDefinition.h>
 #include <ompl/base/SpaceInformation.h>
+#include <ompl/base/State.h>
 #include <ompl/base/StateSpace.h>
-#include <ompl/base/goals/GoalStates.h>
-#include <ompl/base/objectives/MaximizeMinClearanceObjective.h>
-#include <ompl/base/objectives/PathLengthOptimizationObjective.h>
-#include <ompl/base/objectives/StateCostIntegralObjective.h>
-#include <ompl/base/samplers/ObstacleBasedValidStateSampler.h>
+#include <ompl/base/StateValidityChecker.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <ompl/base/spaces/SO2StateSpace.h>
-#include <ompl/geometric/PathSimplifier.h>
-#include <ompl/geometric/SimpleSetup.h>
 #include <ompl/geometric/planners/rrt/RRTConnect.h>
-#include <ompl/geometric/planners/rrt/RRTstar.h>
-#include <ompl/util/RandomNumbers.h>
 
-#include <pinocchio/fwd.hpp>
+#include <vector>
+
+/* #include <ompl/base/goals/GoalStates.h> */
+/* #include <ompl/base/objectives/MaximizeMinClearanceObjective.h> */
+/* #include <ompl/base/objectives/PathLengthOptimizationObjective.h> */
+/* #include <ompl/base/objectives/StateCostIntegralObjective.h> */
+/* #include <ompl/base/samplers/ObstacleBasedValidStateSampler.h> */
+/* #include <ompl/geometric/PathSimplifier.h> */
+/* #include <ompl/geometric/SimpleSetup.h> */
+/* #include <ompl/geometric/planners/rrt/RRTstar.h> */
+/* #include <ompl/util/RandomNumbers.h> */
 
 #include "planning_world.h"
+#include "types.h"
 
-namespace ob = ompl::base;
-// namespace oc = ompl::control;
-namespace og = ompl::geometric;
+namespace mplib::ompl {
+
+namespace ob = ::ompl::base;
+// namespace oc = ::ompl::control;
+namespace og = ::ompl::geometric;
 
 template <typename S>
 std::vector<S> state2vector(const ob::State *state_raw,
@@ -52,24 +59,23 @@ std::vector<S> state2vector(const ob::State *state_raw,
 }
 
 template <typename IN_TYPE, typename OUT_TYPE>
-std::vector<OUT_TYPE> eigen2vector(
-    Eigen::Matrix<IN_TYPE, Eigen::Dynamic, 1> const &x) {
+std::vector<OUT_TYPE> eigen2vector(VectorX<IN_TYPE> const &x) {
   std::vector<OUT_TYPE> ret;
-  for (size_t i = 0; i < x.rows(); i++) ret.push_back((OUT_TYPE)x[i]);
+  for (size_t i = 0; i < static_cast<size_t>(x.rows()); i++)
+    ret.push_back(static_cast<OUT_TYPE>(x[i]));
   return ret;
 }
 
 template <typename IN_TYPE, typename OUT_TYPE>
-Eigen::Matrix<OUT_TYPE, Eigen::Dynamic, 1> vector2eigen(
-    std::vector<IN_TYPE> const &x) {
-  Eigen::Matrix<OUT_TYPE, Eigen::Dynamic, 1> ret(x.size());
-  for (size_t i = 0; i < x.size(); i++) ret[i] = (OUT_TYPE)x[i];
+VectorX<OUT_TYPE> vector2eigen(std::vector<IN_TYPE> const &x) {
+  VectorX<OUT_TYPE> ret(x.size());
+  for (size_t i = 0; i < x.size(); i++) ret[i] = static_cast<OUT_TYPE>(x[i]);
   return ret;
 }
 
 template <typename S>
-Eigen::Matrix<S, Eigen::Dynamic, 1> state2eigen(
-    const ob::State *state_raw, ob::SpaceInformation *const &si_) {
+VectorX<S> state2eigen(const ob::State *state_raw,
+                       ob::SpaceInformation *const &si_) {
   auto vec_ret = state2vector<S>(state_raw, si_);
   /*for (size_t i = 0; i < vec_ret.size(); i++)
       std::cout << vec_ret[i] << " ";
@@ -86,7 +92,6 @@ Eigen::Matrix<S, Eigen::Dynamic, 1> state2eigen(
 
 template <typename S>
 class ValidityCheckerTpl : public ob::StateValidityChecker {
-  using VectorX = Eigen::Matrix<S, Eigen::Dynamic, 1>;
   PlanningWorldTplPtr<S> world_;
 
  public:
@@ -102,7 +107,7 @@ class ValidityCheckerTpl : public ob::StateValidityChecker {
     return !world_->collide();
   }
 
-  bool _isValid(VectorX state) const {
+  bool _isValid(VectorX<S> state) const {
     world_->setQposAll(state);
     return !world_->collide();
   }
@@ -128,8 +133,6 @@ class OMPLPlannerTpl {
   using ValidityChecker = ValidityCheckerTpl<S>;
   using ValidityCheckerPtr = ValidityCheckerTplPtr<S>;
 
-  DEFINE_TEMPLATE_EIGEN(S)
-
   CompoundStateSpacePtr cs_;
   SpaceInformationPtr si_;
   ProblemDefinitionPtr pdef_;
@@ -140,7 +143,7 @@ class OMPLPlannerTpl {
   std::vector<bool> is_revolute_;
 
  public:
-  VectorX random_sample_nearby(VectorX const &start_state);
+  VectorX<S> random_sample_nearby(VectorX<S> const &start_state);
 
   OMPLPlannerTpl(PlanningWorldTplPtr<S> const &world);
 
@@ -150,8 +153,8 @@ class OMPLPlannerTpl {
 
   size_t get_dim() { return dim_; }
 
-  std::pair<std::string, Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic>> plan(
-      VectorX const &start_state, std::vector<VectorX> const &goal_states,
+  std::pair<std::string, MatrixX<S>> plan(
+      VectorX<S> const &start_state, std::vector<VectorX<S>> const &goal_states,
       const std::string &planner_name = "RRTConnect", const double &time = 1.0,
       const double &range = 0.0, const bool &verbose = false);
 };
@@ -163,3 +166,5 @@ using OMPLPlannerTpldPtr = OMPLPlannerTplPtr<double>;
 using OMPLPlannerTplfPtr = OMPLPlannerTplPtr<float>;
 using OMPLPlannerTpld = OMPLPlannerTpl<double>;
 using OMPLPlannerTplf = OMPLPlannerTpl<float>;
+
+}  // namespace mplib::ompl

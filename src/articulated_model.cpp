@@ -1,24 +1,10 @@
 #include "articulated_model.h"
 
 #include <algorithm>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/xml_parser.hpp>
-#include <cmath>
-#include <cstdlib>
-#include <kdl/treefksolverpos_recursive.hpp>
-#include <kdl/treeiksolverpos_nr_jl.hpp>
-#include <kdl/treeiksolvervel_wdls.hpp>
-#include <pinocchio/algorithm/aba.hpp>
-#include <pinocchio/algorithm/crba.hpp>
-#include <pinocchio/algorithm/joint-configuration.hpp>
-#include <pinocchio/algorithm/rnea.hpp>
 
-#include "pinocchio/multibody/joint/fwd.hpp"
-#include "pinocchio/parsers/urdf.hpp"
-#include "pinocchio/parsers/urdf/geometry.hxx"
-#include "pinocchio/parsers/urdf/model.hxx"
-#include "pinocchio/parsers/utils.hpp"
-#include "urdf_utils.h"
+#include "macros_utils.h"
+
+namespace mplib {
 
 #define DEFINE_TEMPLATE_AM(S) template class ArticulatedModelTpl<S>;
 
@@ -29,12 +15,12 @@ DEFINE_TEMPLATE_AM(double)
 template <typename S>
 ArticulatedModelTpl<S>::ArticulatedModelTpl(
     std::string const &urdf_filename, std::string const &srdf_filename,
-    Vector3 const &gravity, std::vector<std::string> const &joint_names,
+    Vector3<S> const &gravity, std::vector<std::string> const &joint_names,
     std::vector<std::string> const &link_names, bool const &verbose,
     bool const &convex)
-    : verbose_(verbose),
-      pinocchio_model_(urdf_filename, gravity, verbose),
-      fcl_model_(urdf_filename, verbose, convex) {
+    : pinocchio_model_(urdf_filename, gravity, verbose),
+      fcl_model_(urdf_filename, verbose, convex),
+      verbose_(verbose) {
   user_link_names_ = link_names.size() == 0
                          ? pinocchio_model_.getLinkNames(false)
                          : link_names;
@@ -45,7 +31,7 @@ ArticulatedModelTpl<S>::ArticulatedModelTpl(
   pinocchio_model_.setJointOrder(user_joint_names_);
   fcl_model_.setLinkOrder(user_link_names_);
   fcl_model_.removeCollisionPairsFromSrdf(srdf_filename);
-  current_qpos_ = VectorX::Constant(pinocchio_model_.getModel().nv, 0);
+  current_qpos_ = VectorX<S>::Constant(pinocchio_model_.getModel().nv, 0);
   setMoveGroup(user_link_names_);
 }
 
@@ -82,11 +68,11 @@ std::vector<std::string> ArticulatedModelTpl<S>::getMoveGroupJointName(void) {
 }
 
 template <typename S>
-void ArticulatedModelTpl<S>::setQpos(VectorX const &qpos, bool const &full) {
+void ArticulatedModelTpl<S>::setQpos(VectorX<S> const &qpos, bool const &full) {
   if (full)
     current_qpos_ = qpos;
   else {
-    ASSERT(qpos.size() == qpos_dim_,
+    ASSERT(static_cast<size_t>(qpos.size()) == qpos_dim_,
            "Length is not correct, Dim of Q: " + std::to_string(qpos_dim_) +
                " ,Len of qpos: " + std::to_string(qpos.size()));
     size_t len = 0;
@@ -99,15 +85,17 @@ void ArticulatedModelTpl<S>::setQpos(VectorX const &qpos, bool const &full) {
   }
   pinocchio_model_.computeForwardKinematics(current_qpos_);
   // std::cout << "current_qpos " << current_qpos << std::endl;
-  std::vector<Transform3> link_pose;
+  std::vector<Transform3<S>> link_pose;
   for (size_t i = 0; i < user_link_names_.size(); i++) {
-    Vector7 pose_i = pinocchio_model_.getLinkPose(i);
-    Transform3 tmp_i;
+    Vector7<S> pose_i = pinocchio_model_.getLinkPose(i);
+    Transform3<S> tmp_i;
     tmp_i.linear() =
-        Quaternion(pose_i[3], pose_i[4], pose_i[5], pose_i[6]).matrix();
+        Quaternion<S>(pose_i[3], pose_i[4], pose_i[5], pose_i[6]).matrix();
     tmp_i.translation() = pose_i.head(3);
     // std::cout << pose_i << std::endl;
     link_pose.push_back(tmp_i);
   }
   fcl_model_.updateCollisionObjects(link_pose);
 }
+
+}  // namespace mplib

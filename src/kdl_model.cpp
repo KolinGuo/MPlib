@@ -1,5 +1,27 @@
 #include "kdl_model.h"
 
+#include <urdf_parser/urdf_parser.h>
+#include <urdf_world/types.h>
+
+#include <kdl/chain.hpp>
+#include <kdl/chainfksolverpos_recursive.hpp>
+#include <kdl/chainiksolverpos_lma.hpp>
+#include <kdl/chainiksolverpos_nr.hpp>
+#include <kdl/chainiksolverpos_nr_jl.hpp>
+#include <kdl/chainiksolvervel_pinv.hpp>
+#include <kdl/frames.hpp>
+#include <kdl/jacobian.hpp>
+#include <kdl/joint.hpp>
+#include <kdl/treefksolverpos_recursive.hpp>
+#include <kdl/treeiksolverpos_nr_jl.hpp>
+#include <kdl/treeiksolvervel_wdls.hpp>
+#include <kdl/utilities/svd_eigen_HH.hpp>
+
+#include "macros_utils.h"
+#include "urdf_utils.h"
+
+namespace mplib {
+
 #define DEFINE_TEMPLATE_FM(S) template class KDLModelTpl<S>;
 
 DEFINE_TEMPLATE_FM(double)
@@ -11,11 +33,11 @@ KDLModelTpl<S>::KDLModelTpl(std::string const &urdf_filename,
                             std::vector<std::string> const &joint_names,
                             std::vector<std::string> const &link_names,
                             bool const &verbose)
-    : user_joint_names_(joint_names),
-      user_link_names_(link_names),
+    : user_link_names_(link_names),
+      user_joint_names_(joint_names),
       verbose_(verbose) {
   // std::cout << "Verbose" << verbose << std::endl;
-  for (int i = 0; i < joint_names.size(); i++)
+  for (size_t i = 0; i < joint_names.size(); i++)
     user_joint_idx_mapping_[joint_names[i]] = i;
   urdf::ModelInterfaceSharedPtr urdf = urdf::parseURDFFile(urdf_filename);
   treeFromUrdfModel(urdf, tree_, tree_root_name_, verbose);
@@ -35,10 +57,11 @@ KDLModelTpl<S>::KDLModelTpl(std::string const &urdf_filename,
 }
 
 template <typename S>
-std::tuple<Eigen::Matrix<S, Eigen::Dynamic, 1>, int> KDLModelTpl<S>::chainIKLMA(
-    size_t const &index, VectorX const &q0, Vector7 const &pose) {
+std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKLMA(size_t const &index,
+                                                       VectorX<S> const &q0,
+                                                       Vector7<S> const &pose) {
   KDL::Chain chain;
-  Eigen::Matrix<double, 6, 1> L;
+  Vector6<double> L;
   L(0) = 1;
   L(1) = 1;
   L(2) = 1;
@@ -63,14 +86,15 @@ std::tuple<Eigen::Matrix<S, Eigen::Dynamic, 1>, int> KDLModelTpl<S>::chainIKLMA(
   }
   for (int i = 0; i < n; i++) q_init(i) = q0[idx[i]];
   auto retval = solver.CartToJnt(q_init, frame_goal, q_sol);
-  VectorX q1 = q0;
+  VectorX<S> q1 = q0;
   for (int i = 0; i < n; i++) q1[idx[i]] = q_sol(i);
   return {q1, retval};
 }
 
 template <typename S>
-std::tuple<Eigen::Matrix<S, Eigen::Dynamic, 1>, int> KDLModelTpl<S>::chainIKNR(
-    size_t const &index, VectorX const &q0, Vector7 const &pose) {
+std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKNR(size_t const &index,
+                                                      VectorX<S> const &q0,
+                                                      Vector7<S> const &pose) {
   KDL::Chain chain;
   ASSERT(index < user_link_names_.size(), "link index out of bound");
   tree_.getChain(tree_root_name_, user_link_names_[index], chain);
@@ -95,16 +119,15 @@ std::tuple<Eigen::Matrix<S, Eigen::Dynamic, 1>, int> KDLModelTpl<S>::chainIKNR(
   }
   for (int i = 0; i < n; i++) q_init(i) = q0[idx[i]];
   auto retval = solver.CartToJnt(q_init, frame_goal, q_sol);
-  VectorX q1 = q0;
+  VectorX<S> q1 = q0;
   for (int i = 0; i < n; i++) q1[idx[i]] = q_sol(i);
   return {q1, retval};
 }
 
 template <typename S>
-std::tuple<Eigen::Matrix<S, Eigen::Dynamic, 1>, int>
-KDLModelTpl<S>::chainIKNRJL(size_t const &index, VectorX const &q0,
-                            Vector7 const &pose, VectorX const &qmin,
-                            VectorX const &qmax) {
+std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKNRJL(
+    size_t const &index, VectorX<S> const &q0, Vector7<S> const &pose,
+    VectorX<S> const &qmin, VectorX<S> const &qmax) {
   KDL::Chain chain;
   ASSERT(index < user_link_names_.size(), "link index out of bound");
   tree_.getChain(tree_root_name_, user_link_names_[index], chain);
@@ -137,16 +160,16 @@ KDLModelTpl<S>::chainIKNRJL(size_t const &index, VectorX const &q0,
 
   for (int i = 0; i < n; i++) q_init(i) = q0[idx[i]];
   auto retval = solver.CartToJnt(q_init, frame_goal, q_sol);
-  VectorX q1 = q0;
+  VectorX<S> q1 = q0;
   for (int i = 0; i < n; i++) q1[idx[i]] = q_sol(i);
   return {q1, retval};
 }
 
 template <typename S>
-std::tuple<Eigen::Matrix<S, Eigen::Dynamic, 1>, int> KDLModelTpl<S>::TreeIKNRJL(
-    const std::vector<std::string> endpoints, VectorX const &q0,
-    std::vector<Vector7> const &poses, VectorX const &qmin,
-    VectorX const &qmax) {
+std::tuple<VectorX<S>, int> KDLModelTpl<S>::TreeIKNRJL(
+    const std::vector<std::string> endpoints, VectorX<S> const &q0,
+    std::vector<Vector7<S>> const &poses, VectorX<S> const &qmin,
+    VectorX<S> const &qmax) {
   KDL::TreeFkSolverPos_recursive fkpossolver(tree_);
   KDL::TreeIkSolverVel_wdls ikvelsolver(tree_, endpoints);
   ikvelsolver.setLambda(1e-6);
@@ -160,7 +183,7 @@ std::tuple<Eigen::Matrix<S, Eigen::Dynamic, 1>, int> KDLModelTpl<S>::TreeIKNRJL(
   }
 
   KDL::Frames frames;
-  for (int i = 0; i < endpoints.size(); i++) {
+  for (size_t i = 0; i < endpoints.size(); i++) {
     frames[endpoints[i]] =
         KDL::Frame(KDL::Rotation::Quaternion(poses[i][4], poses[i][5],
                                              poses[i][6], poses[i][3]),
@@ -174,8 +197,10 @@ std::tuple<Eigen::Matrix<S, Eigen::Dynamic, 1>, int> KDLModelTpl<S>::TreeIKNRJL(
 
   auto retval = solver.CartToJnt(q_init, frames, q_sol);
 
-  VectorX q1 = q0;
+  VectorX<S> q1 = q0;
   for (int i = 0; i < n; i++) q1[joint_mapping_kdl_2_user_[i]] = q_sol(i);
 
   return {q1, retval};
 }
+
+}  // namespace mplib

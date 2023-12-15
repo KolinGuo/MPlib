@@ -1,12 +1,14 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 #include "articulated_model.h"
-#include "fcl_model.h"
-#include "macros_utils.h"
+#include "types.h"
+
+namespace mplib {
 
 template <typename S>
 struct WorldCollisionResultTpl {
@@ -26,20 +28,18 @@ using WorldCollisionResultfPtr = WorldCollisionResultTplPtr<float>;
 template <typename S>
 class PlanningWorldTpl {
  private:
-  DEFINE_TEMPLATE_EIGEN(S);
   using CollisionRequest = fcl::CollisionRequest<S>;
   using CollisionResult = fcl::CollisionResult<S>;
 
   using CollisionGeometry = fcl::CollisionGeometry<S>;
-  using CollisionGeometryPtr = std::shared_ptr<CollisionGeometry>;
+  using CollisionGeometryPtr = fcl::CollisionGeometryPtr<S>;
 
   using CollisionObject = fcl::CollisionObject<S>;
-  using CollisionObjectPtr = std::shared_ptr<CollisionObject>;
+  using CollisionObjectPtr = fcl::CollisionObjectPtr<S>;
 
   using DynamicAABBTreeCollisionManager =
       fcl::DynamicAABBTreeCollisionManager<S>;
-  using BroadPhaseCollisionManagerPtr =
-      std::shared_ptr<fcl::BroadPhaseCollisionManager<S>>;
+  using BroadPhaseCollisionManagerPtr = fcl::BroadPhaseCollisionManagerPtr<S>;
 
   using ArticulatedModel = ArticulatedModelTpl<S>;
   using ArticulatedModelPtr = ArticulatedModelTplPtr<S>;
@@ -54,7 +54,7 @@ class PlanningWorldTpl {
   int move_articulation_id_, attach_link_id_;
   CollisionObjectPtr point_cloud_, attached_tool_;
   bool has_point_cloud_, use_point_cloud_, has_attach_, use_attach_;
-  Transform3 attach_to_link_pose_;
+  Transform3<S> attach_to_link_pose_;
   // BroadPhaseCollisionManagerPtr normal_manager;
 
  public:
@@ -120,7 +120,7 @@ class PlanningWorldTpl {
 
   void setUsePointCloud(bool const &use) { use_point_cloud_ = use; }
 
-  void updatePointCloud(Matrixx3 const &vertices, double const &resolution);
+  void updatePointCloud(MatrixX3<S> const &vertices, double const &resolution);
 
   void setUseAttach(bool const &use) {
     use_attach_ = use;
@@ -141,16 +141,16 @@ class PlanningWorldTpl {
    * to
    */
   void updateAttachedTool(CollisionGeometryPtr const &p_geom,
-                          int const &link_id, Vector7 const &pose);
+                          int const &link_id, Vector7<S> const &pose);
 
   void updateAttachedSphere(S const &radius, int const &link_id,
-                            const Vector7 &pose);
+                            const Vector7<S> &pose);
 
-  void updateAttachedBox(Vector3 const &size, int const &link_id,
-                         Vector7 const &pose);
+  void updateAttachedBox(Vector3<S> const &size, int const &link_id,
+                         Vector7<S> const &pose);
 
   void updateAttachedMesh(std::string const &mesh_path, int const &link_id,
-                          Vector7 const &pose);
+                          Vector7<S> const &pose);
 
   void printAttachedToolPose() const {
     auto tmp1 = attached_tool_.get()->getTranslation();
@@ -194,22 +194,22 @@ class PlanningWorldTpl {
     return false;
   }
 
-  void setQpos(int const &index, VectorX const &qpos) const;
+  void setQpos(int const &index, VectorX<S> const &qpos) const;
 
-  void setQposAll(VectorX const &qpos) const;
+  void setQposAll(VectorX<S> const &qpos) const;
 
   //   bool collide_among_normal_objects()=0;
 
   bool collide() const;
 
   std::vector<WorldCollisionResult> selfCollide(
-      int const &index,
+      size_t const &index,
       CollisionRequest const &request = CollisionRequest()) const;
   std::vector<WorldCollisionResult> collideWithOthers(
-      int const &index,
+      size_t const &index,
       CollisionRequest const &request = CollisionRequest()) const;
   std::vector<WorldCollisionResult> collideFull(
-      int const &index,
+      size_t const &index,
       CollisionRequest const &request = CollisionRequest()) const;
 };
 
@@ -220,3 +220,5 @@ using PlanningWorldd = PlanningWorldTpl<double>;
 using PlanningWorldf = PlanningWorldTpl<float>;
 using PlanningWorlddPtr = PlanningWorldTplPtr<double>;
 using PlanningWorldfPtr = PlanningWorldTplPtr<float>;
+
+}  // namespace mplib

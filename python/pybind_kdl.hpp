@@ -6,10 +6,10 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <memory>
 #include <vector>
 
-#include "../src/kdl_model.h"
-#include "../src/macros_utils.h"
+#include "kdl_model.h"
 
 namespace py = pybind11;
 
@@ -19,14 +19,15 @@ using S = float;
 using S = double;
 #endif
 
-using KDLModel = KDLModelTpl<S>;
-DEFINE_TEMPLATE_EIGEN(S)
+namespace mplib {
 
-void build_pykdl(py::module &m_all) {
+using KDLModel = KDLModelTpl<S>;
+
+inline void build_pykdl(py::module &m_all) {
   auto m = m_all.def_submodule("kdl");
+
   auto PyKDLModel =
       py::class_<KDLModel, std::shared_ptr<KDLModel>>(m, "KDLModel");
-
   PyKDLModel
       .def(py::init<std::string const &, std::vector<std::string> const &,
                     std::vector<std::string> const &, bool const &>(),
@@ -44,3 +45,5 @@ void build_pykdl(py::module &m_all) {
            py::arg("q_init"), py::arg("goal_poses"), py::arg("q_min"),
            py::arg("q_max"));
 }
+
+}  // namespace mplib

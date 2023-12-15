@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 # Pinocchio uses its own FindCppAD, but does not provide it.
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 3.4.0 REQUIRED)
 find_package(Boost COMPONENTS system filesystem REQUIRED)
 find_package(ompl REQUIRED)
 find_package(fcl REQUIRED)

@@ -1,9 +1,11 @@
 #include "planning_world.h"
 
-#include "fcl/geometry/octree/octree.h"
-#include "fcl_model.h"
+#include <octomap/OcTree.h>
+
 #include "macros_utils.h"
 #include "urdf_utils.h"
+
+namespace mplib {
 
 #define DEFINE_TEMPLATE_PW(S)         \
   template class PlanningWorldTpl<S>; \
@@ -38,15 +40,14 @@ PlanningWorldTpl<S>::PlanningWorldTpl(
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::updatePointCloud(Matrixx3 const &vertices,
+void PlanningWorldTpl<S>::updatePointCloud(MatrixX3<S> const &vertices,
                                            double const &resolution) {
   octomap::OcTree *tree = new octomap::OcTree(resolution);
-  for (size_t i = 0; i < vertices.rows(); i++)
-    tree->updateNode(
-        octomap::point3d(vertices(i, 0), vertices(i, 1), vertices(i, 2)), true);
+  for (const auto &row : vertices.rowwise())
+    tree->updateNode(octomap::point3d(row(0), row(1), row(2)), true);
 
   auto tree_ptr = std::shared_ptr<const octomap::OcTree>(tree);
-  auto pose = Transform3::Identity();
+  auto pose = Transform3<S>::Identity();
   point_cloud_ = std::make_shared<CollisionObject>(
       std::make_shared<fcl::OcTree<S>>(tree_ptr), pose);
   has_point_cloud_ = true;
@@ -55,12 +56,12 @@ void PlanningWorldTpl<S>::updatePointCloud(Matrixx3 const &vertices,
 template <typename S>
 void PlanningWorldTpl<S>::updateAttachedTool(CollisionGeometryPtr const &p_geom,
                                              int const &link_id,
-                                             Vector7 const &pose) {
+                                             Vector7<S> const &pose) {
   attach_link_id_ = link_id;
   // linear here means the upper left 3x3 matrix, which is not necessarily a
   // rotation matrix if scaling is involved
   attach_to_link_pose_.linear() =
-      Quaternion(pose[3], pose[4], pose[5], pose[6]).matrix();
+      Quaternion<S>(pose[3], pose[4], pose[5], pose[6]).matrix();
   attach_to_link_pose_.translation() = pose.head(3);
   attached_tool_ =
       std::make_shared<CollisionObject>(p_geom, attach_to_link_pose_);
@@ -70,16 +71,16 @@ void PlanningWorldTpl<S>::updateAttachedTool(CollisionGeometryPtr const &p_geom,
 template <typename S>
 void PlanningWorldTpl<S>::updateAttachedSphere(S const &radius,
                                                int const &link_id,
-                                               const Vector7 &pose) {
+                                               const Vector7<S> &pose) {
   CollisionGeometryPtr collision_geometry =
       std::make_shared<fcl::Sphere<S>>(radius);
   updateAttachedTool(collision_geometry, link_id, pose);
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::updateAttachedBox(Vector3 const &size,
+void PlanningWorldTpl<S>::updateAttachedBox(Vector3<S> const &size,
                                             int const &link_id,
-                                            Vector7 const &pose) {
+                                            Vector7<S> const &pose) {
   CollisionGeometryPtr collision_geometry =
       std::make_shared<fcl::Box<S>>(size[0], size[1], size[2]);
   updateAttachedTool(collision_geometry, link_id, pose);
@@ -88,37 +89,38 @@ void PlanningWorldTpl<S>::updateAttachedBox(Vector3 const &size,
 template <typename S>
 void PlanningWorldTpl<S>::updateAttachedMesh(std::string const &mesh_path,
                                              int const &link_id,
-                                             Vector7 const &pose) {
+                                             Vector7<S> const &pose) {
   CollisionGeometryPtr collision_geometry =
-      load_mesh_as_BVH(mesh_path, Vector3(1, 1, 1));
+      load_mesh_as_BVH(mesh_path, Vector3<S>(1, 1, 1));
   updateAttachedTool(collision_geometry, link_id, pose);
 }
 
 template <typename S>
 void PlanningWorldTpl<S>::setQpos(int const &index,
-                                  VectorX const &state) const {
+                                  VectorX<S> const &state) const {
   articulations_[index]->setQpos(state);
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::setQposAll(VectorX const &state) const {
+void PlanningWorldTpl<S>::setQposAll(VectorX<S> const &state) const {
   size_t total_dim = 0;
   for (size_t i = 0; i < articulations_.size(); i++) {
     auto n = articulations_[i]->getQposDim();
     auto segment =
         state.segment(total_dim, total_dim + n);  // [total_dim, total_dim + n)
-    ASSERT(segment.size() == n, "Bug with size " +
-                                    std::to_string(segment.size()) + " " +
-                                    std::to_string(n));
+    ASSERT(static_cast<size_t>(segment.size()) == n,
+           "Bug with size " + std::to_string(segment.size()) + " " +
+               std::to_string(n));
     setQpos(i, segment);
     total_dim += n;
   }
-  ASSERT(total_dim == state.size(), "State dimension is not correct");
+  ASSERT(total_dim == static_cast<size_t>(state.size()),
+         "State dimension is not correct");
 }
 
 template <typename S>
 std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::selfCollide(
-    int const &index, CollisionRequest const &request) const {
+    size_t const &index, CollisionRequest const &request) const {
   std::vector<WorldCollisionResult> ret;
   auto fcl_model = articulations_[index]->getFCLModel();
   auto results = fcl_model.collideFull(request);
@@ -141,7 +143,7 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::selfCollide(
 
 template <typename S>
 std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideWithOthers(
-    int const &index, CollisionRequest const &request) const {
+    size_t const &index, CollisionRequest const &request) const {
   std::vector<WorldCollisionResult> ret;
   auto pinocchio_model = articulations_[index]->getPinocchioModel();
   auto fcl_model = articulations_[index]->getFCLModel();
@@ -158,8 +160,8 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideWithOthers(
       for (size_t k = 0; k < CollisionObjects1.size(); k++) {
         CollisionResult result;
         result.clear();
-        fcl::collide(CollisionObjects[j].get(), CollisionObjects1[k].get(),
-                     request, result);
+        ::fcl::collide(CollisionObjects[j].get(), CollisionObjects1[k].get(),
+                       request, result);
         if (result.isCollision()) {
           WorldCollisionResult tmp;
           tmp.res = result;
@@ -178,7 +180,7 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideWithOthers(
     for (const auto &[name, obj] : normal_objects_) {
       CollisionResult result;
       result.clear();
-      fcl::collide(CollisionObjects[i].get(), obj.get(), request, result);
+      ::fcl::collide(CollisionObjects[i].get(), obj.get(), request, result);
       if (result.isCollision()) {
         WorldCollisionResult tmp;
         tmp.res = result;
@@ -198,8 +200,8 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideWithOthers(
       for (size_t i = 0; i < CollisionObjects.size(); i++) {
         CollisionResult result;
         result.clear();
-        fcl::collide(CollisionObjects[i].get(), point_cloud_.get(), request,
-                     result);
+        ::fcl::collide(CollisionObjects[i].get(), point_cloud_.get(), request,
+                       result);
         if (result.isCollision()) {
           WorldCollisionResult tmp;
           tmp.res = result;
@@ -221,10 +223,10 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideWithOthers(
       std::cout << "No Point Cloud Provided!" << std::endl;
     } else {  // currently, only collide with the point cloud, only support one
               // articulation
-      Vector7 link_pose = pinocchio_model.getLinkPose(attach_link_id_);
-      Transform3 pose;
+      Vector7<S> link_pose = pinocchio_model.getLinkPose(attach_link_id_);
+      Transform3<S> pose;
       pose.linear() =
-          Quaternion(link_pose[3], link_pose[4], link_pose[5], link_pose[6])
+          Quaternion<S>(link_pose[3], link_pose[4], link_pose[5], link_pose[6])
               .matrix();
       pose.translation() = link_pose.head(3);
       pose = pose * attach_to_link_pose_;
@@ -233,7 +235,7 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideWithOthers(
 
       CollisionResult result;
       result.clear();
-      fcl::collide(attached_tool_.get(), point_cloud_.get(), request, result);
+      ::fcl::collide(attached_tool_.get(), point_cloud_.get(), request, result);
       if (result.isCollision()) {
         WorldCollisionResult tmp;
         tmp.res = result;
@@ -251,7 +253,7 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideWithOthers(
 
 template <typename S>
 std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideFull(
-    int const &index, CollisionRequest const &request) const {
+    size_t const &index, CollisionRequest const &request) const {
   std::vector<WorldCollisionResult> ret1 = selfCollide(index, request);
   std::vector<WorldCollisionResult> ret2 = collideWithOthers(index, request);
   ret1.insert(ret1.end(), ret2.begin(), ret2.end());
@@ -263,3 +265,5 @@ bool PlanningWorldTpl<S>::collide() const {
   std::vector<WorldCollisionResult> ret = collideFull(0, CollisionRequest());
   return ret.size() > 0;
 }
+
+}  // namespace mplib

@@ -6,11 +6,11 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <memory>
 #include <vector>
 
-#include "../src/planning_world.h"
-#include "fcl/narrowphase/collision_request.h"
-#include "macros_utils.h"
+#include "planning_world.h"
+#include "types.h"
 
 namespace py = pybind11;
 
@@ -20,19 +20,21 @@ using S = float;
 using S = double;
 #endif
 
-using CollisionObject = fcl::CollisionObject<S>;
-using CollisionObjectPtr = std::shared_ptr<CollisionObject>;
+namespace mplib {
 
 using PlanningWorld = PlanningWorldTpl<S>;
 using WorldCollisionResult = WorldCollisionResultTpl<S>;
-using ArticulatedModelPtr = ArticulatedModelTplPtr<S>;
 
-void build_planning_world(py::module &m_all) {
+using ArticulatedModelPtr = ArticulatedModelTplPtr<S>;
+using CollisionObjectPtr = fcl::CollisionObjectPtr<S>;
+using CollisionRequest = fcl::CollisionRequest<S>;
+
+inline void build_planning_world(py::module &m_all) {
   auto m = m_all.def_submodule("planning_world");
+
   auto PyPlanningWorld =
       py::class_<PlanningWorld, std::shared_ptr<PlanningWorld>>(
           m, "PlanningWorld");
-
   PyPlanningWorld
       .def(py::init<std::vector<ArticulatedModelPtr> const &,
                     std::vector<std::string> const &,
@@ -98,10 +100,8 @@ void build_planning_world(py::module &m_all) {
       .def_readonly("object_name1", &WorldCollisionResult::object_name1)
       .def_readonly("object_name2", &WorldCollisionResult::object_name2)
       .def_readonly("collision_type", &WorldCollisionResult::collision_type)
-      //.def_readonly("object_id1", &WorldCollisionResult::object_id1)
-      //.def_readonly("object_id2", &WorldCollisionResult::object_id2)
-      //.def_readonly("object_type1", &WorldCollisionResult::object_type1)
-      //.def_readonly("object_type2", &WorldCollisionResult::object_type2)
       .def_readonly("link_name1", &WorldCollisionResult::link_name1)
       .def_readonly("link_name2", &WorldCollisionResult::link_name2);
 }
+
+}  // namespace mplib

@@ -4,7 +4,13 @@ RUN yum update && mkdir /workspace
 WORKDIR /workspace
 
 # basic development tools
-RUN yum install -y eigen3-devel tinyxml-devel wget && yum clean all
+RUN yum install -y tinyxml-devel wget && yum clean all
+
+# Eigen
+RUN git clone --single-branch -b 3.4.0 --depth 1 https://gitlab.com/libeigen/eigen.git && \
+    cd eigen && mkdir build && cd build && \
+    cmake -DCMAKE_BUILD_TYPE=Release .. && make -j$(nproc) && make install && \
+    rm -rf /workspace/eigen
 
 # -------------------------------------------------------------------------- #
 # OMPL

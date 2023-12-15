@@ -6,10 +6,11 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <memory>
 #include <vector>
 
-#include "../src/macros_utils.h"
-#include "../src/pinocchio_model.h"
+#include "pinocchio_model.h"
+#include "types.h"
 
 namespace py = pybind11;
 
@@ -19,18 +20,20 @@ using S = float;
 using S = double;
 #endif
 
-using PinocchioModel = PinocchioModelTpl<S>;
-DEFINE_TEMPLATE_EIGEN(S)
+namespace mplib {
 
-void build_pypinocchio(py::module &m_all) {
+using PinocchioModel = pinocchio::PinocchioModelTpl<S>;
+
+inline void build_pypinocchio(py::module &m_all) {
   auto m = m_all.def_submodule("pinocchio");
+
   auto PyPinocchioModel =
       py::class_<PinocchioModel, std::shared_ptr<PinocchioModel>>(
           m, "PinocchioModel");
-
   PyPinocchioModel
-      .def(py::init<std::string const &, Vector3, bool>(),
-           py::arg("urdf_filename"), py::arg("gravity") = Vector3(0, 0, -9.81),
+      .def(py::init<std::string const &, Vector3<S>, bool>(),
+           py::arg("urdf_filename"),
+           py::arg("gravity") = Vector3<S>(0, 0, -9.81),
            py::arg("verbose") = true)
       .def("set_joint_order", &PinocchioModel::setJointOrder, py::arg("names"))
       .def("set_link_order", &PinocchioModel::setLinkOrder, py::arg("names"))
@@ -76,3 +79,5 @@ void build_pypinocchio(py::module &m_all) {
       .def("get_chain_joint_name", &PinocchioModel::getChainJointName)
       .def("get_chain_joint_index", &PinocchioModel::getChainJointIndex);
 }
+
+}  // namespace mplib

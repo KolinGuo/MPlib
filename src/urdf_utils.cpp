@@ -1,23 +1,25 @@
 #include "urdf_utils.h"
 
+#include <assimp/postprocess.h>
+#include <urdf_model/link.h>
+#include <urdf_model/model.h>
+
 #include <kdl/frames_io.hpp>
 
+namespace mplib {
+
 #define DEFINE_TEMPLATE_URDF_UTILS(S)                                          \
-  template pinocchio::InertiaTpl<S, 0> convert_inertial<S>(                    \
-      const urdf::Inertial &Y);                                                \
-  template pinocchio::InertiaTpl<S, 0> convert_inertial<S>(                    \
+  template pinocchio::Inertia<S> convert_inertial<S>(const urdf::Inertial &Y); \
+  template pinocchio::Inertia<S> convert_inertial<S>(                          \
       const urdf::InertialSharedPtr &Y);                                       \
-  template pinocchio::SE3Tpl<S, 0> pose_to_se3<S>(const urdf::Pose &M);        \
-  template Eigen::Transform<S, 3, Eigen::Isometry> se3_to_transform<S>(        \
-      const pinocchio::SE3Tpl<S, 0> &T);                                       \
-  template Eigen::Transform<S, 3, Eigen::Isometry> pose_to_transform<S>(       \
-      const urdf::Pose &M);                                                    \
-  template pinocchio::SE3Tpl<S, 0> transform_to_se3<S>(                        \
-      const Eigen::Transform<S, 3, Eigen::Isometry> &T);                       \
+  template pinocchio::SE3<S> pose_to_se3<S>(const urdf::Pose &M);              \
+  template Transform3<S> se3_to_transform<S>(const pinocchio::SE3<S> &T);      \
+  template Transform3<S> pose_to_transform<S>(const urdf::Pose &M);            \
+  template pinocchio::SE3<S> transform_to_se3<S>(const Transform3<S> &T);      \
   template std::shared_ptr<fcl::BVHModel<fcl::OBBRSS<S>>> load_mesh_as_BVH<S>( \
-      const std::string &mesh_path, const Eigen::Matrix<S, 3, 1> &scale);      \
+      const std::string &mesh_path, const Vector3<S> &scale);                  \
   template std::shared_ptr<fcl::Convex<S>> load_mesh_as_Convex<S>(             \
-      const std::string &mesh_path, const Eigen::Matrix<S, 3, 1> &scale);
+      const std::string &mesh_path, const Vector3<S> &scale);
 
 DEFINE_TEMPLATE_URDF_UTILS(float)
 
@@ -27,99 +29,57 @@ DEFINE_TEMPLATE_URDF_UTILS(double)
 // support float
 
 template <typename S>
-Eigen::Transform<S, 3, Eigen::Isometry> se3_to_transform(
-    const pinocchio::SE3Tpl<S, 0> &T) {
-  Eigen::Transform<S, 3, Eigen::Isometry> ret;
+Transform3<S> se3_to_transform(const pinocchio::SE3<S> &T) {
+  Transform3<S> ret;
   ret.linear() = T.rotation_impl();
   ret.translation() = T.translation_impl();
   return ret;
 }
 
 template <typename S>
-pinocchio::SE3Tpl<S, 0> transform_to_se3(
-    const Eigen::Transform<S, 3, Eigen::Isometry> &T) {
-  return pinocchio::SE3Tpl<S>(T.linear(), T.translation());
+pinocchio::SE3<S> transform_to_se3(const Transform3<S> &T) {
+  return pinocchio::SE3<S>(T.linear(), T.translation());
 }
 
 template <typename S>
-Eigen::Transform<S, 3, Eigen::Isometry> pose_to_transform(const urdf::Pose &M) {
+Transform3<S> pose_to_transform(const urdf::Pose &M) {
   const urdf::Vector3 &p = M.position;
   const urdf::Rotation &q = M.rotation;
-  Eigen::Transform<S, 3, Eigen::Isometry> ret =
-      Eigen::Transform<S, 3, Eigen::Isometry>::Identity();
-  ret.linear() = Eigen::Quaternion<S>(q.w, q.x, q.y, q.z).matrix();
-  ret.translation() = Eigen::Matrix<S, 3, 1>(p.x, p.y, p.z);
+  Transform3<S> ret = Transform3<S>::Identity();
+  ret.linear() = Quaternion<S>(q.w, q.x, q.y, q.z).matrix();
+  ret.translation() = Vector3<S>(p.x, p.y, p.z);
   return ret;
 }
 
 template <typename S>
-pinocchio::SE3Tpl<S, 0> pose_to_se3(const urdf::Pose &M) {
+pinocchio::SE3<S> pose_to_se3(const urdf::Pose &M) {
   const urdf::Vector3 &p = M.position;
   const urdf::Rotation &q = M.rotation;
-  return pinocchio::SE3Tpl<S>(Eigen::Quaternion<S>(q.w, q.x, q.y, q.z).matrix(),
-                              Eigen::Matrix<S, 3, 1>(p.x, p.y, p.z));
+  return pinocchio::SE3<S>(Quaternion<S>(q.w, q.x, q.y, q.z).matrix(),
+                           Vector3<S>(p.x, p.y, p.z));
 }
 
 template <typename S>
-pinocchio::InertiaTpl<S, 0> convert_inertial(const urdf::Inertial &Y) {
+pinocchio::Inertia<S> convert_inertial(const urdf::Inertial &Y) {
   const urdf::Vector3 &p = Y.origin.position;
   const urdf::Rotation &q = Y.origin.rotation;
-  const Eigen::Matrix<S, 3, 1> com(p.x, p.y, p.z);
-  const Eigen::Matrix<S, 3, 3> &R =
-      Eigen::Quaternion<S>(q.w, q.x, q.y, q.z).matrix();
-  Eigen::Matrix<S, 3, 3> I;
+  const Vector3<S> com(p.x, p.y, p.z);
+  const Matrix3<S> &R = Quaternion<S>(q.w, q.x, q.y, q.z).matrix();
+  Matrix3<S> I;
   I << Y.ixx, Y.ixy, Y.ixz, Y.ixy, Y.iyy, Y.iyz, Y.ixz, Y.iyz, Y.izz;
-  return pinocchio::InertiaTpl<S, 0>(Y.mass, com, R * I * R.transpose());
+  return pinocchio::Inertia<S>(Y.mass, com, R * I * R.transpose());
 }
 
 template <typename S>
-pinocchio::InertiaTpl<S, 0> convert_inertial(const urdf::InertialSharedPtr &Y) {
+pinocchio::Inertia<S> convert_inertial(const urdf::InertialSharedPtr &Y) {
   if (Y) return convert_inertial<S>(*Y);
-  return pinocchio::InertiaTpl<S>::Zero();
-}
-
-AssimpLoader::AssimpLoader() : importer(new Assimp::Importer()) {
-  // set list of ignored parameters (parameters used for rendering)
-  importer->SetPropertyInteger(
-      AI_CONFIG_PP_RVC_FLAGS,
-      aiComponent_TANGENTS_AND_BITANGENTS | aiComponent_COLORS |
-          aiComponent_BONEWEIGHTS | aiComponent_ANIMATIONS |
-          aiComponent_LIGHTS | aiComponent_CAMERAS | aiComponent_TEXTURES |
-          aiComponent_TEXCOORDS | aiComponent_MATERIALS | aiComponent_NORMALS);
-}
-
-AssimpLoader::~AssimpLoader() {
-  if (importer) delete importer;
-}
-
-void AssimpLoader::load(const std::string &file_name) {
-  scene = importer->ReadFile(
-      file_name.c_str(),
-      aiProcess_SortByPType | aiProcess_Triangulate |
-          aiProcess_RemoveComponent | aiProcess_ImproveCacheLocality |
-          // TODO: I (Joseph Mirabel) have no idea whether degenerated triangles
-          // are properly handled. Enabling aiProcess_FindDegenerates would
-          // throw an exception when that happens. Is it too conservative ?
-          // aiProcess_FindDegenerates |
-          aiProcess_JoinIdenticalVertices);
-
-  if (!scene) {
-    const std::string exception_message(
-        std::string("Could not load resource ") + file_name +
-        std::string("\n") + importer->GetErrorString() + std::string("\n") +
-        "Hint: the mesh directory may be wrong.");
-    throw std::invalid_argument(exception_message);
-  }
-
-  if (!scene->HasMeshes())
-    throw std::invalid_argument(std::string("No meshes found in file ") +
-                                file_name);
+  return pinocchio::Inertia<S>::Zero();
 }
 
 template <typename S>
 int dfs_build_mesh(const aiScene *scene, const aiNode *node,
-                   const Eigen::Matrix<S, 3, 1> &scale, int vertices_offset,
-                   std::vector<fcl::Vector3<S>> &vertices,
+                   const Vector3<S> &scale, int vertices_offset,
+                   std::vector<Vector3<S>> &vertices,
                    std::vector<fcl::Triangle> &triangles) {
   if (!node) return 0;
 
@@ -140,8 +100,8 @@ int dfs_build_mesh(const aiScene *scene, const aiNode *node,
     for (uint32_t j = 0; j < input_mesh->mNumVertices; j++) {
       aiVector3D p = input_mesh->mVertices[j];
       p *= transform;
-      vertices.push_back(fcl::Vector3<S>((S)p.x * scale[0], (S)p.y * scale[1],
-                                         (S)p.z * scale[2]));
+      vertices.push_back(
+          Vector3<S>((S)p.x * scale[0], (S)p.y * scale[1], (S)p.z * scale[2]));
     }
 
     // add the indices
@@ -172,16 +132,16 @@ int dfs_build_mesh(const aiScene *scene, const aiNode *node,
 
 template <typename S>
 std::shared_ptr<fcl::BVHModel<fcl::OBBRSS<S>>> load_mesh_as_BVH(
-    const std::string &mesh_path, const Eigen::Matrix<S, 3, 1> &scale) {
+    const std::string &mesh_path, const Vector3<S> &scale) {
   auto loader = AssimpLoader();  // TODO[Xinsong] change to a global loader so
                                  // we do not initialize it every time
   loader.load(mesh_path);
 
-  std::vector<fcl::Vector3<S>> vertices;
+  std::vector<Vector3<S>> vertices;
   std::vector<fcl::Triangle> triangles;
 
-  int nbVertices = dfs_build_mesh<S>(loader.scene, loader.scene->mRootNode,
-                                     scale, 0, vertices, triangles);
+  dfs_build_mesh<S>(loader.scene, loader.scene->mRootNode, scale, 0, vertices,
+                    triangles);
   // std::cout << "Num of vertex " << nbVertices << " " << vertices.size() << "
   // " << triangles.size() << std::endl;
   using Model = fcl::BVHModel<fcl::OBBRSS<S>>;
@@ -194,19 +154,19 @@ std::shared_ptr<fcl::BVHModel<fcl::OBBRSS<S>>> load_mesh_as_BVH(
 
 template <typename S>
 std::shared_ptr<fcl::Convex<S>> load_mesh_as_Convex(
-    const std::string &mesh_path, const Eigen::Matrix<S, 3, 1> &scale) {
+    const std::string &mesh_path, const Vector3<S> &scale) {
   auto loader = AssimpLoader();
   loader.load(mesh_path);
 
-  std::vector<fcl::Vector3<S>> vertices;
+  std::vector<Vector3<S>> vertices;
   std::vector<fcl::Triangle> triangles;
   /*
   Convex(const std::shared_ptr<const std::vector<Vector3<S>>>& vertices,
           int num_faces, const std::shared_ptr<const std::vector<int>>& faces,
   bool throw_if_invalid = false);
   */
-  int nbVertices = dfs_build_mesh<S>(loader.scene, loader.scene->mRootNode,
-                                     scale, 0, vertices, triangles);
+  dfs_build_mesh<S>(loader.scene, loader.scene->mRootNode, scale, 0, vertices,
+                    triangles);
 
   auto faces = std::make_shared<std::vector<int>>();
   for (size_t i = 0; i < triangles.size(); i++) {
@@ -215,7 +175,7 @@ std::shared_ptr<fcl::Convex<S>> load_mesh_as_Convex(
     faces->push_back(triangles[i][1]);
     faces->push_back(triangles[i][2]);
   }
-  auto vertices_ptr = std::make_shared<std::vector<fcl::Vector3<S>>>(vertices);
+  auto vertices_ptr = std::make_shared<std::vector<Vector3<S>>>(vertices);
   using Convex = fcl::Convex<S>;
   auto convex =
       std::make_shared<Convex>(vertices_ptr, triangles.size(), faces, true);
@@ -286,6 +246,44 @@ KDL::RigidBodyInertia toKdl(urdf::InertialSharedPtr i) {
   return KDL::RigidBodyInertia(kdl_mass, kdl_com, kdl_inertia_wrt_com);
 }
 
+AssimpLoader::AssimpLoader() : importer(new Assimp::Importer()) {
+  // set list of ignored parameters (parameters used for rendering)
+  importer->SetPropertyInteger(
+      AI_CONFIG_PP_RVC_FLAGS,
+      aiComponent_TANGENTS_AND_BITANGENTS | aiComponent_COLORS |
+          aiComponent_BONEWEIGHTS | aiComponent_ANIMATIONS |
+          aiComponent_LIGHTS | aiComponent_CAMERAS | aiComponent_TEXTURES |
+          aiComponent_TEXCOORDS | aiComponent_MATERIALS | aiComponent_NORMALS);
+}
+
+AssimpLoader::~AssimpLoader() {
+  if (importer) delete importer;
+}
+
+void AssimpLoader::load(const std::string &file_name) {
+  scene = importer->ReadFile(
+      file_name.c_str(),
+      aiProcess_SortByPType | aiProcess_Triangulate |
+          aiProcess_RemoveComponent | aiProcess_ImproveCacheLocality |
+          // TODO: I (Joseph Mirabel) have no idea whether degenerated triangles
+          // are properly handled. Enabling aiProcess_FindDegenerates would
+          // throw an exception when that happens. Is it too conservative ?
+          // aiProcess_FindDegenerates |
+          aiProcess_JoinIdenticalVertices);
+
+  if (!scene) {
+    const std::string exception_message(
+        std::string("Could not load resource ") + file_name +
+        std::string("\n") + importer->GetErrorString() + std::string("\n") +
+        "Hint: the mesh directory may be wrong.");
+    throw std::invalid_argument(exception_message);
+  }
+
+  if (!scene->HasMeshes())
+    throw std::invalid_argument(std::string("No meshes found in file ") +
+                                file_name);
+}
+
 // recursive function to walk through tree
 bool addChildrenToTree(const urdf::LinkConstSharedPtr &root, KDL::Tree &tree,
                        bool const &verbose) {
@@ -324,3 +322,5 @@ bool treeFromUrdfModel(const urdf::ModelInterfaceSharedPtr &robot_model,
       return false;
   return true;
 }
+
+}  // namespace mplib
