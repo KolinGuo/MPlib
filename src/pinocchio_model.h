@@ -1,4 +1,5 @@
 #pragma once
+
 #include <urdf_model/types.h>
 #include <urdf_world/types.h>
 
@@ -8,6 +9,9 @@
 #include "types.h"
 
 namespace mplib::pinocchio {
+
+// PinocchioModelTplPtr
+MPLIB_CLASS_TEMPLATE_FORWARD(PinocchioModelTpl);
 
 template <typename S>
 class PinocchioModelTpl {
@@ -266,13 +270,11 @@ class PinocchioModelTpl {
       double const &damp = 1e-12);
 };
 
-template <typename T>
-using PinocchioModelTplPtr = std::shared_ptr<PinocchioModelTpl<T>>;
-
-using PinocchioModeld = PinocchioModelTpl<double>;
+// Common Type Alias ==========================================================
 using PinocchioModelf = PinocchioModelTpl<float>;
-using PinocchioModeldPtr = PinocchioModelTplPtr<double>;
+using PinocchioModeld = PinocchioModelTpl<double>;
 using PinocchioModelfPtr = PinocchioModelTplPtr<float>;
+using PinocchioModeldPtr = PinocchioModelTplPtr<double>;
 
 // Explicit Template Instantiation Declaration ================================
 #define DECLARE_TEMPLATE_PINOCCHIO_MODEL(S) \

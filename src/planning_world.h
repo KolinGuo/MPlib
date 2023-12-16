@@ -6,9 +6,13 @@
 #include <vector>
 
 #include "articulated_model.h"
+#include "macros_utils.h"
 #include "types.h"
 
 namespace mplib {
+
+// WorldCollisionResultTplPtr
+MPLIB_STRUCT_TEMPLATE_FORWARD(WorldCollisionResultTpl);
 
 template <typename S>
 struct WorldCollisionResultTpl {
@@ -17,13 +21,14 @@ struct WorldCollisionResultTpl {
       link_name2;
 };
 
-template <typename T>
-using WorldCollisionResultTplPtr = std::shared_ptr<WorldCollisionResultTpl<T>>;
-
-using WorldCollisionResultd = WorldCollisionResultTpl<double>;
+// Common Type Alias ==========================================================
 using WorldCollisionResultf = WorldCollisionResultTpl<float>;
-using WorldCollisionResultdPtr = WorldCollisionResultTplPtr<double>;
+using WorldCollisionResultd = WorldCollisionResultTpl<double>;
 using WorldCollisionResultfPtr = WorldCollisionResultTplPtr<float>;
+using WorldCollisionResultdPtr = WorldCollisionResultTplPtr<double>;
+
+// PlanningWorldTplPtr
+MPLIB_CLASS_TEMPLATE_FORWARD(PlanningWorldTpl);
 
 template <typename S>
 class PlanningWorldTpl {
@@ -213,13 +218,11 @@ class PlanningWorldTpl {
       CollisionRequest const &request = CollisionRequest()) const;
 };
 
-template <typename T>
-using PlanningWorldTplPtr = std::shared_ptr<PlanningWorldTpl<T>>;
-
-using PlanningWorldd = PlanningWorldTpl<double>;
+// Common Type Alias ==========================================================
 using PlanningWorldf = PlanningWorldTpl<float>;
-using PlanningWorlddPtr = PlanningWorldTplPtr<double>;
+using PlanningWorldd = PlanningWorldTpl<double>;
 using PlanningWorldfPtr = PlanningWorldTplPtr<float>;
+using PlanningWorlddPtr = PlanningWorldTplPtr<double>;
 
 // Explicit Template Instantiation Declaration ================================
 #define DECLARE_TEMPLATE_PLANNING_WORLD(S)          \

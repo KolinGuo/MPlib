@@ -19,6 +19,7 @@
 /* #include <ompl/geometric/planners/rrt/RRTstar.h> */
 /* #include <ompl/util/RandomNumbers.h> */
 
+#include "macros_utils.h"
 #include "planning_world.h"
 #include "types.h"
 
@@ -90,6 +91,9 @@ VectorX<S> state2eigen(const ob::State *state_raw,
   return ret;
 }
 
+// ValidityCheckerTplPtr
+MPLIB_CLASS_TEMPLATE_FORWARD(ValidityCheckerTpl);
+
 template <typename S>
 class ValidityCheckerTpl : public ob::StateValidityChecker {
   PlanningWorldTplPtr<S> world_;
@@ -113,13 +117,14 @@ class ValidityCheckerTpl : public ob::StateValidityChecker {
   }
 };
 
-template <typename S>
-using ValidityCheckerTplPtr = std::shared_ptr<ValidityCheckerTpl<S>>;
-
-using ValidityCheckerdPtr = ValidityCheckerTplPtr<double>;
-using ValidityCheckerfPtr = ValidityCheckerTplPtr<float>;
-using ValidityCheckerd = ValidityCheckerTpl<double>;
+// Common Type Alias ==========================================================
 using ValidityCheckerf = ValidityCheckerTpl<float>;
+using ValidityCheckerd = ValidityCheckerTpl<double>;
+using ValidityCheckerfPtr = ValidityCheckerTplPtr<float>;
+using ValidityCheckerdPtr = ValidityCheckerTplPtr<double>;
+
+// OMPLPlannerTplPtr
+MPLIB_CLASS_TEMPLATE_FORWARD(OMPLPlannerTpl);
 
 template <typename S>
 class OMPLPlannerTpl {
@@ -159,13 +164,11 @@ class OMPLPlannerTpl {
       const double &range = 0.0, const bool &verbose = false);
 };
 
-template <typename S>
-using OMPLPlannerTplPtr = std::shared_ptr<ValidityCheckerTpl<S>>;
-
-using OMPLPlannerTpldPtr = OMPLPlannerTplPtr<double>;
-using OMPLPlannerTplfPtr = OMPLPlannerTplPtr<float>;
-using OMPLPlannerTpld = OMPLPlannerTpl<double>;
+// Common Type Alias ==========================================================
 using OMPLPlannerTplf = OMPLPlannerTpl<float>;
+using OMPLPlannerTpld = OMPLPlannerTpl<double>;
+using OMPLPlannerTplfPtr = OMPLPlannerTplPtr<float>;
+using OMPLPlannerTpldPtr = OMPLPlannerTplPtr<double>;
 
 // Explicit Template Instantiation Declaration ================================
 #define DECLARE_TEMPLATE_OMPL_PLANNER(S)       \

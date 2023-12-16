@@ -1,10 +1,15 @@
 #pragma once
+
 #include <urdf_model/types.h>
 #include <urdf_world/types.h>
 
+#include "macros_utils.h"
 #include "types.h"
 
 namespace mplib::fcl {
+
+// FCLModelTplPtr
+MPLIB_CLASS_TEMPLATE_FORWARD(FCLModelTpl);
 
 template <typename S>
 class FCLModelTpl {
@@ -71,13 +76,11 @@ class FCLModelTpl {
           1, false, 1, false, true, GJKSolverType::GST_INDEP, 1e-6));
 };
 
-template <typename S>
-using FCLModelTplPtr = std::shared_ptr<FCLModelTpl<S>>;
-
-using FCLModeld = FCLModelTpl<double>;
+// Common Type Alias ==========================================================
 using FCLModelf = FCLModelTpl<float>;
-using FCLModeldPtr = FCLModelTplPtr<double>;
+using FCLModeld = FCLModelTpl<double>;
 using FCLModelfPtr = FCLModelTplPtr<float>;
+using FCLModeldPtr = FCLModelTplPtr<double>;
 
 // Explicit Template Instantiation Declaration ================================
 #define DECLARE_TEMPLATE_FCL_MODEL(S) extern template class FCLModelTpl<S>

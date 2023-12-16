@@ -2,9 +2,13 @@
 
 #include <kdl/tree.hpp>
 
+#include "macros_utils.h"
 #include "types.h"
 
 namespace mplib {
+
+// KDLModelTplPtr
+MPLIB_CLASS_TEMPLATE_FORWARD(KDLModelTpl);
 
 template <typename S>
 class KDLModelTpl {
@@ -39,13 +43,11 @@ class KDLModelTpl {
       VectorX<S> const &q_max);
 };
 
-template <typename T>
-using KDLModelTplPtr = std::shared_ptr<KDLModelTpl<T>>;
-
-using KDLModeld = KDLModelTpl<double>;
+// Common Type Alias ==========================================================
 using KDLModelf = KDLModelTpl<float>;
-using KDLModeldPtr = KDLModelTplPtr<double>;
+using KDLModeld = KDLModelTpl<double>;
 using KDLModelfPtr = KDLModelTplPtr<float>;
+using KDLModeldPtr = KDLModelTplPtr<double>;
 
 // Explicit Template Instantiation Declaration ================================
 #define DECLARE_TEMPLATE_KDL_MODEL(S) extern template class KDLModelTpl<S>
