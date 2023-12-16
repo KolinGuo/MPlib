@@ -3,8 +3,9 @@
 #include <ompl/base/Planner.h>
 #include <ompl/base/goals/GoalStates.h>
 
-#include "macros_utils.h"
+#include <memory>
 
+#include "macros_utils.h"
 namespace mplib::ompl {
 
 // Explicit Template Instantiation Definition =================================
@@ -79,10 +80,10 @@ OMPLPlannerTpl<S>::OMPLPlannerTpl(PlanningWorldTplPtr<S> const &world)
     : world_(world) {
   build_state_space();
   si_ = std::make_shared<SpaceInformation>(cs_);
-  valid_checker_ = std::make_shared<ValidityChecker>(world, si_);
+  valid_checker_ = std::make_shared<ValidityCheckerTpl<S>>(world, si_);
   si_->setStateValidityChecker(valid_checker_);
 
-  pdef_ = std::make_shared<ob::ProblemDefinition>(si_);
+  pdef_ = std::make_shared<ProblemDefinition>(si_);
 }
 
 template <typename S>

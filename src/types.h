@@ -3,6 +3,10 @@
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 #include <fcl/narrowphase/collision.h>
 #include <fcl/narrowphase/distance.h>
+#include <ompl/base/ProblemDefinition.h>
+#include <ompl/base/SpaceInformation.h>
+#include <ompl/base/StateSpace.h>
+#include <ompl/geometric/PathGeometric.h>
 
 #include <Eigen/Dense>
 #include <memory>
@@ -167,6 +171,24 @@ template <typename S>
 class FCLModelTpl;
 
 }  // namespace fcl
+
+// OMPL =======================================================================
+namespace ompl {
+
+// namespace alias
+namespace ob = ::ompl::base;
+// namespace oc = ::ompl::control;
+namespace og = ::ompl::geometric;
+
+// common type alias
+using CompoundStateSpace = ob::CompoundStateSpace;
+using CompoundStateSpacePtr = std::shared_ptr<ob::CompoundStateSpace>;
+using SpaceInformation = ob::SpaceInformation;
+using SpaceInformationPtr = std::shared_ptr<ob::SpaceInformation>;
+using ProblemDefinition = ob::ProblemDefinition;
+using ProblemDefinitionPtr = std::shared_ptr<ob::ProblemDefinition>;
+
+}  // namespace ompl
 
 // Export some classes defined in inner namespace to mplib namespace
 template <typename S>

@@ -1,7 +1,6 @@
-#include <ompl/base/ProblemDefinition.h>
-#include <ompl/base/SpaceInformation.h>
+#pragma once
+
 #include <ompl/base/State.h>
-#include <ompl/base/StateSpace.h>
 #include <ompl/base/StateValidityChecker.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <ompl/base/spaces/SO2StateSpace.h>
@@ -25,16 +24,12 @@
 
 namespace mplib::ompl {
 
-namespace ob = ::ompl::base;
-// namespace oc = ::ompl::control;
-namespace og = ::ompl::geometric;
-
 template <typename S>
 std::vector<S> state2vector(const ob::State *state_raw,
-                            ob::SpaceInformation *const &si_) {
+                            SpaceInformation *const &si_) {
   auto state = state_raw->as<ob::CompoundState>();
   std::vector<S> ret;
-  auto si = si_->getStateSpace()->as<ob::CompoundStateSpace>();
+  auto si = si_->getStateSpace()->as<CompoundStateSpace>();
 
   for (size_t i = 0; i < si->getSubspaceCount(); i++) {
     auto subspace(si->getSubspace(i));
@@ -76,7 +71,7 @@ VectorX<OUT_TYPE> vector2eigen(std::vector<IN_TYPE> const &x) {
 
 template <typename S>
 VectorX<S> state2eigen(const ob::State *state_raw,
-                       ob::SpaceInformation *const &si_) {
+                       SpaceInformation *const &si_) {
   auto vec_ret = state2vector<S>(state_raw, si_);
   /*for (size_t i = 0; i < vec_ret.size(); i++)
       std::cout << vec_ret[i] << " ";
@@ -96,11 +91,12 @@ MPLIB_CLASS_TEMPLATE_FORWARD(ValidityCheckerTpl);
 
 template <typename S>
 class ValidityCheckerTpl : public ob::StateValidityChecker {
+ private:
   PlanningWorldTplPtr<S> world_;
 
  public:
   ValidityCheckerTpl(PlanningWorldTplPtr<S> world,
-                     const ob::SpaceInformationPtr &si)
+                     const SpaceInformationPtr &si)
       : ob::StateValidityChecker(si), world_(world) {}
 
   bool isValid(const ob::State *state_raw) const {
@@ -128,16 +124,7 @@ MPLIB_CLASS_TEMPLATE_FORWARD(OMPLPlannerTpl);
 
 template <typename S>
 class OMPLPlannerTpl {
-  using CompoundStateSpacePtr = std::shared_ptr<ob::CompoundStateSpace>;
-  using SpaceInformationPtr = std::shared_ptr<ob::SpaceInformation>;
-  using ProblemDefinitionPtr = std::shared_ptr<ob::ProblemDefinition>;
-
-  using CompoundStateSpace = ob::CompoundStateSpace;
-  using SpaceInformation = ob::SpaceInformation;
-  using ProblemDefinition = ob::ProblemDefinition;
-  using ValidityChecker = ValidityCheckerTpl<S>;
-  using ValidityCheckerPtr = ValidityCheckerTplPtr<S>;
-
+ private:
   CompoundStateSpacePtr cs_;
   SpaceInformationPtr si_;
   ProblemDefinitionPtr pdef_;
