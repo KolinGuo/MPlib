@@ -73,4 +73,11 @@ using ArticulatedModelf = ArticulatedModelTpl<float>;
 using ArticulatedModeldPtr = ArticulatedModelTplPtr<double>;
 using ArticulatedModelfPtr = ArticulatedModelTplPtr<float>;
 
+// Explicit Template Instantiation Declaration ================================
+#define DECLARE_TEMPLATE_ARTICULATED_MODEL(S) \
+  extern template class ArticulatedModelTpl<S>
+
+DECLARE_TEMPLATE_ARTICULATED_MODEL(float);
+DECLARE_TEMPLATE_ARTICULATED_MODEL(double);
+
 }  // namespace mplib

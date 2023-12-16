@@ -274,4 +274,11 @@ using PinocchioModelf = PinocchioModelTpl<float>;
 using PinocchioModeldPtr = PinocchioModelTplPtr<double>;
 using PinocchioModelfPtr = PinocchioModelTplPtr<float>;
 
+// Explicit Template Instantiation Declaration ================================
+#define DECLARE_TEMPLATE_PINOCCHIO_MODEL(S) \
+  extern template class PinocchioModelTpl<S>
+
+DECLARE_TEMPLATE_PINOCCHIO_MODEL(float);
+DECLARE_TEMPLATE_PINOCCHIO_MODEL(double);
+
 }  // namespace mplib::pinocchio

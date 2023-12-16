@@ -75,4 +75,28 @@ bool treeFromUrdfModel(const urdf::ModelInterfaceSharedPtr &robot_model,
                        KDL::Tree &tree, std::string &tree_root_name,
                        bool const &verbose = false);
 
+// Explicit Template Instantiation Declaration ================================
+#define DECLARE_TEMPLATE_URDF_UTILS(S)                                        \
+  extern template Transform3<S> se3_to_transform<S>(                          \
+      const pinocchio::SE3<S> &T);                                            \
+  extern template pinocchio::SE3<S> transform_to_se3<S>(                      \
+      const Transform3<S> &T);                                                \
+  extern template Transform3<S> pose_to_transform<S>(const urdf::Pose &M);    \
+  extern template pinocchio::SE3<S> pose_to_se3<S>(const urdf::Pose &M);      \
+  extern template pinocchio::Inertia<S> convert_inertial<S>(                  \
+      const urdf::Inertial &Y);                                               \
+  extern template pinocchio::Inertia<S> convert_inertial<S>(                  \
+      const urdf::InertialSharedPtr &Y);                                      \
+  extern template int dfs_build_mesh<S>(                                      \
+      const aiScene *scene, const aiNode *node, const Vector3<S> &scale,      \
+      int vertices_offset, std::vector<Vector3<S>> &vertices,                 \
+      std::vector<fcl::Triangle> &triangles);                                 \
+  extern template std::shared_ptr<fcl::BVHModel<fcl::OBBRSS<S>>>              \
+  load_mesh_as_BVH<S>(const std::string &mesh_path, const Vector3<S> &scale); \
+  extern template std::shared_ptr<fcl::Convex<S>> load_mesh_as_Convex<S>(     \
+      const std::string &mesh_path, const Vector3<S> &scale)
+
+DECLARE_TEMPLATE_URDF_UTILS(float);
+DECLARE_TEMPLATE_URDF_UTILS(double);
+
 }  // namespace mplib

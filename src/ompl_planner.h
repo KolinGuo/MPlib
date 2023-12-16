@@ -167,4 +167,12 @@ using OMPLPlannerTplfPtr = OMPLPlannerTplPtr<float>;
 using OMPLPlannerTpld = OMPLPlannerTpl<double>;
 using OMPLPlannerTplf = OMPLPlannerTpl<float>;
 
+// Explicit Template Instantiation Declaration ================================
+#define DECLARE_TEMPLATE_OMPL_PLANNER(S)       \
+  extern template class ValidityCheckerTpl<S>; \
+  extern template class OMPLPlannerTpl<S>
+
+DECLARE_TEMPLATE_OMPL_PLANNER(float);
+DECLARE_TEMPLATE_OMPL_PLANNER(double);
+
 }  // namespace mplib::ompl

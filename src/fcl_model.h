@@ -79,4 +79,10 @@ using FCLModelf = FCLModelTpl<float>;
 using FCLModeldPtr = FCLModelTplPtr<double>;
 using FCLModelfPtr = FCLModelTplPtr<float>;
 
+// Explicit Template Instantiation Declaration ================================
+#define DECLARE_TEMPLATE_FCL_MODEL(S) extern template class FCLModelTpl<S>
+
+DECLARE_TEMPLATE_FCL_MODEL(float);
+DECLARE_TEMPLATE_FCL_MODEL(double);
+
 }  // namespace mplib::fcl

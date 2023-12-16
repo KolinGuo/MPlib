@@ -221,4 +221,12 @@ using PlanningWorldf = PlanningWorldTpl<float>;
 using PlanningWorlddPtr = PlanningWorldTplPtr<double>;
 using PlanningWorldfPtr = PlanningWorldTplPtr<float>;
 
+// Explicit Template Instantiation Declaration ================================
+#define DECLARE_TEMPLATE_PLANNING_WORLD(S)          \
+  extern template class WorldCollisionResultTpl<S>; \
+  extern template class PlanningWorldTpl<S>
+
+DECLARE_TEMPLATE_PLANNING_WORLD(float);
+DECLARE_TEMPLATE_PLANNING_WORLD(double);
+
 }  // namespace mplib

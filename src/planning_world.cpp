@@ -7,13 +7,13 @@
 
 namespace mplib {
 
-#define DEFINE_TEMPLATE_PW(S)         \
-  template class PlanningWorldTpl<S>; \
-  template class WorldCollisionResultTpl<S>;
+// Explicit Template Instantiation Definition =================================
+#define DEFINE_TEMPLATE_PLANNING_WORLD(S)    \
+  template class WorldCollisionResultTpl<S>; \
+  template class PlanningWorldTpl<S>
 
-DEFINE_TEMPLATE_PW(double)
-
-DEFINE_TEMPLATE_PW(float)
+DEFINE_TEMPLATE_PLANNING_WORLD(float);
+DEFINE_TEMPLATE_PLANNING_WORLD(double);
 
 template <typename S>
 PlanningWorldTpl<S>::PlanningWorldTpl(
@@ -31,9 +31,9 @@ PlanningWorldTpl<S>::PlanningWorldTpl(
       use_attach_(false) {
   // articulation_flags(articulation_flags) {}
   ASSERT(articulations.size() == articulation_names.size(),
-         "articulations and articulation_names should have the same size")
+         "articulations and articulation_names should have the same size");
   ASSERT(normal_objects.size() == normal_object_names.size(),
-         "normal_objects and normal_object_names should have the same size")
+         "normal_objects and normal_object_names should have the same size");
   for (size_t i = 0; i < normal_objects.size(); i++) {
     normal_objects_[normal_object_names[i]] = normal_objects[i];
   }

@@ -6,11 +6,12 @@
 
 namespace mplib {
 
-#define DEFINE_TEMPLATE_AM(S) template class ArticulatedModelTpl<S>;
+// Explicit Template Instantiation Definition =================================
+#define DEFINE_TEMPLATE_ARTICULATED_MODEL(S) \
+  template class ArticulatedModelTpl<S>
 
-DEFINE_TEMPLATE_AM(float)
-
-DEFINE_TEMPLATE_AM(double)
+DEFINE_TEMPLATE_ARTICULATED_MODEL(float);
+DEFINE_TEMPLATE_ARTICULATED_MODEL(double);
 
 template <typename S>
 ArticulatedModelTpl<S>::ArticulatedModelTpl(
