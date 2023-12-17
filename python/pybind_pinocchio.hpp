@@ -10,15 +10,10 @@
 #include <vector>
 
 #include "pinocchio_model.h"
+#include "pybind_macros.hpp"
 #include "types.h"
 
 namespace py = pybind11;
-
-#ifdef USE_SINGLE
-using S = float;
-#else
-using S = double;
-#endif
 
 namespace mplib {
 

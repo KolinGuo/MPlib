@@ -10,14 +10,9 @@
 #include <vector>
 
 #include "kdl_model.h"
+#include "pybind_macros.hpp"
 
 namespace py = pybind11;
-
-#ifdef USE_SINGLE
-using S = float;
-#else
-using S = double;
-#endif
 
 namespace mplib {
 

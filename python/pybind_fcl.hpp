@@ -10,16 +10,11 @@
 #include <vector>
 
 #include "fcl_model.h"
+#include "pybind_macros.hpp"
 #include "types.h"
 #include "urdf_utils.h"
 
 namespace py = pybind11;
-
-#ifdef USE_SINGLE
-using S = float;
-#else
-using S = double;
-#endif
 
 namespace mplib {
 
