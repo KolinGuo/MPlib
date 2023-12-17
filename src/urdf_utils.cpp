@@ -148,8 +148,7 @@ std::shared_ptr<fcl::BVHModel<fcl::OBBRSS<S>>> load_mesh_as_BVH(
                     triangles);
   // std::cout << "Num of vertex " << nbVertices << " " << vertices.size() << "
   // " << triangles.size() << std::endl;
-  using Model = fcl::BVHModel<fcl::OBBRSS<S>>;
-  std::shared_ptr<Model> geom = std::make_shared<Model>();
+  auto geom = std::make_shared<fcl::BVHModel<fcl::OBBRSS<S>>>();
   geom->beginModel();
   geom->addSubModel(vertices, triangles);
   geom->endModel();
@@ -180,23 +179,22 @@ std::shared_ptr<fcl::Convex<S>> load_mesh_as_Convex(
     faces->push_back(triangles[i][2]);
   }
   auto vertices_ptr = std::make_shared<std::vector<Vector3<S>>>(vertices);
-  using Convex = fcl::Convex<S>;
-  auto convex =
-      std::make_shared<Convex>(vertices_ptr, triangles.size(), faces, true);
+  auto convex = std::make_shared<fcl::Convex<S>>(vertices_ptr, triangles.size(),
+                                                 faces, true);
   return convex;
 }
 
-KDL::Vector toKdl(urdf::Vector3 v) { return KDL::Vector(v.x, v.y, v.z); }
+KDL::Vector toKdl(const urdf::Vector3 &v) { return KDL::Vector(v.x, v.y, v.z); }
 
-KDL::Rotation toKdl(urdf::Rotation r) {
+KDL::Rotation toKdl(const urdf::Rotation &r) {
   return KDL::Rotation::Quaternion(r.x, r.y, r.z, r.w);
 }
 
-KDL::Frame toKdl(urdf::Pose p) {
+KDL::Frame toKdl(const urdf::Pose &p) {
   return KDL::Frame(toKdl(p.rotation), toKdl(p.position));
 }
 
-KDL::Joint toKdl(urdf::JointSharedPtr jnt) {
+KDL::Joint toKdl(const urdf::JointSharedPtr &jnt) {
   KDL::Frame F_parent_jnt = toKdl(jnt->parent_to_joint_origin_transform);
   switch (jnt->type) {
     case urdf::Joint::FIXED:
@@ -220,7 +218,7 @@ KDL::Joint toKdl(urdf::JointSharedPtr jnt) {
   return KDL::Joint();
 }
 
-KDL::RigidBodyInertia toKdl(urdf::InertialSharedPtr i) {
+KDL::RigidBodyInertia toKdl(const urdf::InertialSharedPtr &i) {
   KDL::Frame origin = toKdl(i->origin);
 
   // the mass is frame independent
@@ -290,7 +288,7 @@ void AssimpLoader::load(const std::string &file_name) {
 
 // recursive function to walk through tree
 bool addChildrenToTree(const urdf::LinkConstSharedPtr &root, KDL::Tree &tree,
-                       bool const &verbose) {
+                       bool verbose) {
   std::vector<urdf::LinkSharedPtr> children = root->child_links;
   if (verbose)
     std::cout << "Link " + root->name + " had " << children.size()
@@ -316,7 +314,7 @@ bool addChildrenToTree(const urdf::LinkConstSharedPtr &root, KDL::Tree &tree,
 
 bool treeFromUrdfModel(const urdf::ModelInterfaceSharedPtr &robot_model,
                        KDL::Tree &tree, std::string &tree_root_name,
-                       bool const &verbose) {
+                       bool verbose) {
   if (!robot_model->getRoot()) return false;
   tree_root_name = robot_model->getRoot()->name;
   tree = KDL::Tree(robot_model->getRoot()->name);

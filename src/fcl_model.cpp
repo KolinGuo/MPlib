@@ -19,8 +19,198 @@ DEFINE_TEMPLATE_FCL_MODEL(float);
 DEFINE_TEMPLATE_FCL_MODEL(double);
 
 template <typename S>
+FCLModelTpl<S>::FCLModelTpl(urdf::ModelInterfaceSharedPtr const &urdfTree,
+                            std::string const &package_dir, bool verbose,
+                            bool convex)
+    : use_convex_(convex), verbose_(verbose) {
+  init(urdfTree, package_dir);
+}
+
+template <typename S>
+FCLModelTpl<S>::FCLModelTpl(std::string const &urdf_filename, bool verbose,
+                            bool convex)
+    : use_convex_(convex), verbose_(verbose) {
+  auto found = urdf_filename.find_last_of("/\\");
+  auto urdf_dir = urdf_filename.substr(0, found);
+  urdf::ModelInterfaceSharedPtr urdfTree = urdf::parseURDFFile(urdf_filename);
+  init(urdfTree, urdf_dir);
+}
+
+template <typename S>
+void FCLModelTpl<S>::setLinkOrder(const std::vector<std::string> &names) {
+  user_link_names_ = names;
+  collision_link_user_indices_ = {};
+  for (size_t i = 0; i < collision_link_names_.size(); i++) {
+    if (verbose_)
+      std::cout << collision_link_names_[i] << " " << names[i] << std::endl;
+    auto iter = std::find(names.begin(), names.end(), collision_link_names_[i]);
+    if (iter == names.end())
+      throw std::invalid_argument("The names does not contain link " +
+                                  collision_link_names_[i]);
+    size_t link_i = iter - names.begin();
+    collision_link_user_indices_.push_back(link_i);
+  }
+}
+
+template <typename S>
+void FCLModelTpl<S>::printCollisionPairs() const {
+  for (const auto &cp : collision_pairs_) {
+    auto i = cp.first, j = cp.second;
+    std::cout << collision_link_names_[i] << " " << collision_link_names_[j]
+              << std::endl;
+  }
+}
+
+template <typename S>
+void FCLModelTpl<S>::removeCollisionPairsFromSrdf(
+    std::string const &srdf_filename) {
+  const std::string extension =
+      srdf_filename.substr(srdf_filename.find_last_of('.') + 1);
+  if (srdf_filename == "") {
+    std::cout << "No SRDF file provided!" << std::endl;
+    return;
+  }
+
+  ASSERT(extension == "srdf",
+         srdf_filename + " does not have the right extension.");
+
+  std::ifstream srdf_stream(srdf_filename.c_str());
+
+  ASSERT(srdf_stream.is_open(), "Cannot open " + srdf_filename);
+
+  boost::property_tree::ptree pt;
+  boost::property_tree::xml_parser::read_xml(srdf_stream, pt);
+
+  for (auto node : pt.get_child("robot")) {
+    if (node.first == "disable_collisions") {
+      const std::string link1 = node.second.get<std::string>("<xmlattr>.link1");
+      const std::string link2 = node.second.get<std::string>("<xmlattr>.link2");
+      /*
+      // Check first if the two bodies exist in model
+      if (!model.existBodyName(link1) || !model.existBodyName(link2)) {
+          if (verbose)
+              std::cout << "It seems that " << link1 << " or " << link2 <<
+                  " do not exist in model. Skip." << std::endl;
+          continue;
+      }
+
+      FrameIndex frame_id1 = model.getBodyId(link1);
+      FrameIndex frame_id2 = model.getBodyId(link2);
+
+      if ((frame_id1 == model.nframes || frame_id2 == model.nframes) &&
+      logging_level > 90) { std::cout << "Links do not exist " << link1 << " "
+      << link2 << std::endl; continue;
+      }
+      // Malformed SRDF
+      if (frame_id1 == frame_id2) {
+          if (verbose)
+              std::cout << "Cannot disable collision between " << link1 << " and
+      " << link2 << std::endl; continue; } else if (frame_id1 > frame_id2)
+          std::swap(frame_id1, frame_id2);
+      */
+      if (verbose_) {
+        std::cout << "Try to Remove collision parts:" << link1 << " " << link2
+                  << std::endl;
+      }
+      for (auto iter = collision_pairs_.begin();
+           iter != collision_pairs_.end();) {
+        if ((collision_link_names_[iter->first] == link1 &&
+             collision_link_names_[iter->second] == link2) ||
+            (collision_link_names_[iter->first] == link2 &&
+             collision_link_names_[iter->second] == link1)) {
+          iter = collision_pairs_.erase(iter);
+        } else
+          iter++;
+      }
+    }
+  }
+}
+
+template <typename S>
+void FCLModelTpl<S>::updateCollisionObjects(
+    std::vector<Transform3<S>> const &link_pose) const {
+  for (size_t i = 0; i < collision_objects_.size(); i++) {
+    auto link_i = collision_link_user_indices_[i];
+    Transform3<S> t_i = link_pose[link_i] * collision_origin2link_poses_[i];
+    collision_objects_[i].get()->setTransform(t_i);
+    // auto tmp1 = collision_objects[i].get()->getTranslation();
+    // std::cout << collision_objects[i].get()->getTranslation() << std::endl;
+  }
+}
+
+template <typename S>
+void FCLModelTpl<S>::updateCollisionObjects(
+    std::vector<Vector7<S>> const &link_pose) const {
+  for (size_t i = 0; i < collision_objects_.size(); i++) {
+    auto link_i = collision_link_user_indices_[i];
+    Transform3<S> tt_i;
+    tt_i.linear() = Quaternion<S>(link_pose[link_i][3], link_pose[link_i][4],
+                                  link_pose[link_i][5], link_pose[link_i][6])
+                        .matrix();
+    tt_i.translation() = link_pose[link_i].head(3);
+    Transform3<S> t_i = tt_i * collision_origin2link_poses_[i];
+    collision_objects_[i].get()->setTransform(t_i);
+    // auto tmp1 = collision_objects[i].get()->getTranslation();
+    // auto tmp2 = collision_objects[i].get()->getRotation();
+    // Transform3 tmp = collision_objects[i]->getTransform();
+    // std::cout << collision_objects[i].get()->getTranslation() << std::endl;
+  }
+}
+
+template <typename S>
+bool FCLModelTpl<S>::collide(CollisionRequest<S> const &request) const {
+  // result will be returned via the collision result structure
+  CollisionResult<S> result;
+  for (const auto &col_pair : collision_pairs_) {
+    ::fcl::collide(collision_objects_[col_pair.first].get(),
+                   collision_objects_[col_pair.second].get(), request, result);
+    if (result.isCollision()) return true;
+  }
+  return false;
+}
+
+template <typename S>
+std::vector<CollisionResult<S>> FCLModelTpl<S>::collideFull(
+    CollisionRequest<S> const &request) const {
+  // CollisionRequest request(1, false, 1, false, true,
+  // fcl::GJKSolverType::GST_INDEP, 1e-6);
+  //  result will be returned via the collision result structure
+  std::vector<CollisionResult<S>> ret;
+  // double cnt = 0;
+  // std::cout << collision_pairs.size() << std::endl;
+  for (const auto &col_pair : collision_pairs_) {
+    CollisionResult<S> result;
+    result.clear();
+
+    // auto trans = collision_objects[col_pair.first].get()->getTranslation();
+    // cnt += trans[0] + trans[1] + trans[2];
+    // std::cout << result.numContacts() << std::endl;
+
+    // std::cout << col_pair.first << ' ' << col_pair.second << std::endl;
+    // std::cout << trans << std::endl << std::endl;
+    // std::cout << collision_objects[col_pair.first].get()->getTranslation() <<
+    // std::endl; std::cout <<
+    // collision_objects[col_pair.second].get()->getTranslation() << std::endl;
+    ::fcl::collide(collision_objects_[col_pair.first].get(),
+                   collision_objects_[col_pair.second].get(), request, result);
+    /*if (result.isCollision()) {
+        std::vector<Contact> contacts;
+        result.getContacts(contacts);
+        std::cout << "num: " << contacts.size() << std::endl;
+        for (auto contact: contacts)
+            std::cout << contact.penetration_depth << " " << contact.pos[0] << "
+    " << contact.pos[1] << " " << contact.pos[2] << std::endl; std::cout<<
+    std::endl;
+    }*/
+    ret.push_back(result);
+  }
+  // std::cout << cnt << "?" << std::endl;
+  return ret;
+}
+
+template <typename S>
 void FCLModelTpl<S>::dfs_parse_tree(urdf::LinkConstSharedPtr const &link,
-                                    std::string parent_link_name) {
+                                    std::string const &parent_link_name) {
   // const urdf::JointConstSharedPtr joint =
   // urdf::const_pointer_cast<urdf::Joint>(link->parent_joint); const Transform3
   // joint_placement =
@@ -121,196 +311,6 @@ void FCLModelTpl<S>::init(urdf::ModelInterfaceSharedPtr const &urdfTree,
             std::cout << collision_link_name[j] << " " << collision_link_name[i]
            << std::endl;*/
       }
-}
-
-template <typename S>
-FCLModelTpl<S>::FCLModelTpl(urdf::ModelInterfaceSharedPtr const &urdfTree,
-                            std::string const &package_dir, bool const &verbose,
-                            bool const &convex)
-    : use_convex_(convex), verbose_(verbose) {
-  init(urdfTree, package_dir);
-}
-
-template <typename S>
-FCLModelTpl<S>::FCLModelTpl(std::string const &urdf_filename,
-                            bool const &verbose, bool const &convex)
-    : use_convex_(convex), verbose_(verbose) {
-  auto found = urdf_filename.find_last_of("/\\");
-  auto urdf_dir = urdf_filename.substr(0, found);
-  urdf::ModelInterfaceSharedPtr urdfTree = urdf::parseURDFFile(urdf_filename);
-  init(urdfTree, urdf_dir);
-}
-
-template <typename S>
-void FCLModelTpl<S>::setLinkOrder(const std::vector<std::string> &names) {
-  user_link_names_ = names;
-  collision_link_user_indices_ = {};
-  for (size_t i = 0; i < collision_link_names_.size(); i++) {
-    if (verbose_)
-      std::cout << collision_link_names_[i] << " " << names[i] << std::endl;
-    auto iter = std::find(names.begin(), names.end(), collision_link_names_[i]);
-    if (iter == names.end())
-      throw std::invalid_argument("The names does not contain link " +
-                                  collision_link_names_[i]);
-    size_t link_i = iter - names.begin();
-    collision_link_user_indices_.push_back(link_i);
-  }
-}
-
-template <typename S>
-void FCLModelTpl<S>::removeCollisionPairsFromSrdf(
-    std::string const &srdf_filename) {
-  const std::string extension =
-      srdf_filename.substr(srdf_filename.find_last_of('.') + 1);
-  if (srdf_filename == "") {
-    std::cout << "No SRDF file provided!" << std::endl;
-    return;
-  }
-
-  ASSERT(extension == "srdf",
-         srdf_filename + " does not have the right extension.");
-
-  std::ifstream srdf_stream(srdf_filename.c_str());
-
-  ASSERT(srdf_stream.is_open(), "Cannot open " + srdf_filename);
-
-  boost::property_tree::ptree pt;
-  boost::property_tree::xml_parser::read_xml(srdf_stream, pt);
-
-  for (auto node : pt.get_child("robot")) {
-    if (node.first == "disable_collisions") {
-      const std::string link1 = node.second.get<std::string>("<xmlattr>.link1");
-      const std::string link2 = node.second.get<std::string>("<xmlattr>.link2");
-      /*
-      // Check first if the two bodies exist in model
-      if (!model.existBodyName(link1) || !model.existBodyName(link2)) {
-          if (verbose)
-              std::cout << "It seems that " << link1 << " or " << link2 <<
-                  " do not exist in model. Skip." << std::endl;
-          continue;
-      }
-
-      FrameIndex frame_id1 = model.getBodyId(link1);
-      FrameIndex frame_id2 = model.getBodyId(link2);
-
-      if ((frame_id1 == model.nframes || frame_id2 == model.nframes) &&
-      logging_level > 90) { std::cout << "Links do not exist " << link1 << " "
-      << link2 << std::endl; continue;
-      }
-      // Malformed SRDF
-      if (frame_id1 == frame_id2) {
-          if (verbose)
-              std::cout << "Cannot disable collision between " << link1 << " and
-      " << link2 << std::endl; continue; } else if (frame_id1 > frame_id2)
-          std::swap(frame_id1, frame_id2);
-      */
-      if (verbose_) {
-        std::cout << "Try to Remove collision parts:" << link1 << " " << link2
-                  << std::endl;
-      }
-      for (auto iter = collision_pairs_.begin();
-           iter != collision_pairs_.end();) {
-        if ((collision_link_names_[iter->first] == link1 &&
-             collision_link_names_[iter->second] == link2) ||
-            (collision_link_names_[iter->first] == link2 &&
-             collision_link_names_[iter->second] == link1)) {
-          iter = collision_pairs_.erase(iter);
-        } else
-          iter++;
-      }
-    }
-  }
-}
-
-template <typename S>
-bool FCLModelTpl<S>::collide(CollisionRequest<S> const &request) {
-  // result will be returned via the collision result structure
-  CollisionResult<S> result;
-  for (auto col_pair : collision_pairs_) {
-    ::fcl::collide(collision_objects_[col_pair.first].get(),
-                   collision_objects_[col_pair.second].get(), request, result);
-    if (result.isCollision()) return true;
-  }
-  return false;
-}
-
-template <typename S>
-std::vector<fcl::CollisionResult<S>> FCLModelTpl<S>::collideFull(
-    CollisionRequest<S> const &request) {
-  // CollisionRequest request(1, false, 1, false, true,
-  // fcl::GJKSolverType::GST_INDEP, 1e-6);
-  //  result will be returned via the collision result structure
-  std::vector<CollisionResult<S>> ret;
-  // double cnt = 0;
-  // std::cout << collision_pairs.size() << std::endl;
-  for (auto col_pair : collision_pairs_) {
-    CollisionResult<S> result;
-    result.clear();
-
-    // auto trans = collision_objects[col_pair.first].get()->getTranslation();
-    // cnt += trans[0] + trans[1] + trans[2];
-    // std::cout << result.numContacts() << std::endl;
-
-    // std::cout << col_pair.first << ' ' << col_pair.second << std::endl;
-    // std::cout << trans << std::endl << std::endl;
-    // std::cout << collision_objects[col_pair.first].get()->getTranslation() <<
-    // std::endl; std::cout <<
-    // collision_objects[col_pair.second].get()->getTranslation() << std::endl;
-    ::fcl::collide(collision_objects_[col_pair.first].get(),
-                   collision_objects_[col_pair.second].get(), request, result);
-    /*if (result.isCollision()) {
-        std::vector<Contact> contacts;
-        result.getContacts(contacts);
-        std::cout << "num: " << contacts.size() << std::endl;
-        for (auto contact: contacts)
-            std::cout << contact.penetration_depth << " " << contact.pos[0] << "
-    " << contact.pos[1] << " " << contact.pos[2] << std::endl; std::cout<<
-    std::endl;
-    }*/
-    ret.push_back(result);
-  }
-  // std::cout << cnt << "?" << std::endl;
-  return ret;
-}
-
-template <typename S>
-void FCLModelTpl<S>::updateCollisionObjects(
-    std::vector<Transform3<S>> const &link_pose) {
-  for (size_t i = 0; i < collision_objects_.size(); i++) {
-    auto link_i = collision_link_user_indices_[i];
-    Transform3<S> t_i = link_pose[link_i] * collision_origin2link_poses_[i];
-    collision_objects_[i].get()->setTransform(t_i);
-    // auto tmp1 = collision_objects[i].get()->getTranslation();
-    // std::cout << collision_objects[i].get()->getTranslation() << std::endl;
-  }
-}
-
-template <typename S>
-void FCLModelTpl<S>::updateCollisionObjects(
-    std::vector<Vector7<S>> const &link_pose) {
-  for (size_t i = 0; i < collision_objects_.size(); i++) {
-    auto link_i = collision_link_user_indices_[i];
-    Transform3<S> tt_i;
-    tt_i.linear() = Quaternion<S>(link_pose[link_i][3], link_pose[link_i][4],
-                                  link_pose[link_i][5], link_pose[link_i][6])
-                        .matrix();
-    tt_i.translation() = link_pose[link_i].head(3);
-    Transform3<S> t_i = tt_i * collision_origin2link_poses_[i];
-    collision_objects_[i].get()->setTransform(t_i);
-    // auto tmp1 = collision_objects[i].get()->getTranslation();
-    // auto tmp2 = collision_objects[i].get()->getRotation();
-    // Transform3 tmp = collision_objects[i]->getTransform();
-    // std::cout << collision_objects[i].get()->getTranslation() << std::endl;
-  }
-}
-
-template <typename S>
-void FCLModelTpl<S>::printCollisionPairs(void) {
-  for (auto cp : collision_pairs_) {
-    auto i = cp.first, j = cp.second;
-    std::cout << collision_link_names_[i] << " " << collision_link_names_[j]
-              << std::endl;
-  }
 }
 
 }  // namespace mplib::fcl

@@ -30,7 +30,7 @@ inline void build_pykdl(py::module &m_all) {
       py::class_<KDLModel, std::shared_ptr<KDLModel>>(m, "KDLModel");
   PyKDLModel
       .def(py::init<std::string const &, std::vector<std::string> const &,
-                    std::vector<std::string> const &, bool const &>(),
+                    std::vector<std::string> const &, bool>(),
            py::arg("urdf_filename"), py::arg("joint_names"),
            py::arg("link_names"), py::arg("verbose"))
       .def("get_tree_root_name", &KDLModel::getTreeRootName)

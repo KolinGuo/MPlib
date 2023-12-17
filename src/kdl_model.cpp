@@ -32,7 +32,7 @@ template <typename S>
 KDLModelTpl<S>::KDLModelTpl(std::string const &urdf_filename,
                             std::vector<std::string> const &joint_names,
                             std::vector<std::string> const &link_names,
-                            bool const &verbose)
+                            bool verbose)
     : user_link_names_(link_names),
       user_joint_names_(joint_names),
       verbose_(verbose) {
@@ -57,9 +57,8 @@ KDLModelTpl<S>::KDLModelTpl(std::string const &urdf_filename,
 }
 
 template <typename S>
-std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKLMA(size_t const &index,
-                                                       VectorX<S> const &q0,
-                                                       Vector7<S> const &pose) {
+std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKLMA(
+    size_t const &index, VectorX<S> const &q0, Vector7<S> const &pose) const {
   KDL::Chain chain;
   Vector6<double> L;
   L(0) = 1;
@@ -82,7 +81,7 @@ std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKLMA(size_t const &index,
   for (auto seg : chain.segments) {
     auto joint = seg.getJoint();
     if (joint.getType() != KDL::Joint::Fixed)
-      idx.push_back(user_joint_idx_mapping_[joint.getName()]);
+      idx.push_back(user_joint_idx_mapping_.at(joint.getName()));
   }
   for (int i = 0; i < n; i++) q_init(i) = q0[idx[i]];
   auto retval = solver.CartToJnt(q_init, frame_goal, q_sol);
@@ -92,9 +91,8 @@ std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKLMA(size_t const &index,
 }
 
 template <typename S>
-std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKNR(size_t const &index,
-                                                      VectorX<S> const &q0,
-                                                      Vector7<S> const &pose) {
+std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKNR(
+    size_t const &index, VectorX<S> const &q0, Vector7<S> const &pose) const {
   KDL::Chain chain;
   ASSERT(index < user_link_names_.size(), "link index out of bound");
   tree_.getChain(tree_root_name_, user_link_names_[index], chain);
@@ -115,7 +113,7 @@ std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKNR(size_t const &index,
   for (auto seg : chain.segments) {
     auto joint = seg.getJoint();
     if (joint.getType() != KDL::Joint::Fixed)
-      idx.push_back(user_joint_idx_mapping_[joint.getName()]);
+      idx.push_back(user_joint_idx_mapping_.at(joint.getName()));
   }
   for (int i = 0; i < n; i++) q_init(i) = q0[idx[i]];
   auto retval = solver.CartToJnt(q_init, frame_goal, q_sol);
@@ -127,7 +125,7 @@ std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKNR(size_t const &index,
 template <typename S>
 std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKNRJL(
     size_t const &index, VectorX<S> const &q0, Vector7<S> const &pose,
-    VectorX<S> const &qmin, VectorX<S> const &qmax) {
+    VectorX<S> const &qmin, VectorX<S> const &qmax) const {
   KDL::Chain chain;
   ASSERT(index < user_link_names_.size(), "link index out of bound");
   tree_.getChain(tree_root_name_, user_link_names_[index], chain);
@@ -146,7 +144,7 @@ std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKNRJL(
   for (auto seg : chain.segments) {
     auto joint = seg.getJoint();
     if (joint.getType() != KDL::Joint::Fixed)
-      idx.push_back(user_joint_idx_mapping_[joint.getName()]);
+      idx.push_back(user_joint_idx_mapping_.at(joint.getName()));
   }
 
   for (int i = 0; i < n; i++) {
@@ -169,7 +167,7 @@ template <typename S>
 std::tuple<VectorX<S>, int> KDLModelTpl<S>::TreeIKNRJL(
     const std::vector<std::string> endpoints, VectorX<S> const &q0,
     std::vector<Vector7<S>> const &poses, VectorX<S> const &qmin,
-    VectorX<S> const &qmax) {
+    VectorX<S> const &qmax) const {
   KDL::TreeFkSolverPos_recursive fkpossolver(tree_);
   KDL::TreeIkSolverVel_wdls ikvelsolver(tree_, endpoints);
   ikvelsolver.setLambda(1e-6);

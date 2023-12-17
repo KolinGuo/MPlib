@@ -48,15 +48,15 @@ template <typename S>
 std::shared_ptr<fcl::Convex<S>> load_mesh_as_Convex(
     const std::string &mesh_path, const Vector3<S> &scale);
 
-KDL::Vector toKdl(urdf::Vector3 v);
+KDL::Vector toKdl(const urdf::Vector3 &v);
 
-KDL::Rotation toKdl(urdf::Rotation r);
+KDL::Rotation toKdl(const urdf::Rotation &r);
 
-KDL::Frame toKdl(urdf::Pose p);
+KDL::Frame toKdl(const urdf::Pose &p);
 
-KDL::Joint toKdl(urdf::JointSharedPtr jnt);
+KDL::Joint toKdl(const urdf::JointSharedPtr &jnt);
 
-KDL::RigidBodyInertia toKdl(urdf::InertialSharedPtr i);
+KDL::RigidBodyInertia toKdl(const urdf::InertialSharedPtr &i);
 
 struct AssimpLoader {
   AssimpLoader();
@@ -69,11 +69,11 @@ struct AssimpLoader {
 };
 
 bool addChildrenToTree(const urdf::LinkConstSharedPtr &root, KDL::Tree &tree,
-                       bool const &verbose);
+                       bool verbose = false);
 
 bool treeFromUrdfModel(const urdf::ModelInterfaceSharedPtr &robot_model,
                        KDL::Tree &tree, std::string &tree_root_name,
-                       bool const &verbose = false);
+                       bool verbose = false);
 
 // Explicit Template Instantiation Declaration ================================
 #define DECLARE_TEMPLATE_URDF_UTILS(S)                                        \

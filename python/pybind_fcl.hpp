@@ -355,7 +355,7 @@ inline void build_pyfcl(py::module &m_all) {
   auto PyFCLModel =
       py::class_<FCLModel, std::shared_ptr<FCLModel>>(m, "FCLModel");
   PyFCLModel
-      .def(py::init<std::string const &, bool const &, bool const &>(),
+      .def(py::init<std::string const &, bool, bool>(),
            py::arg("urdf_filename"), py::arg("verbose") = true,
            py::arg("convex") = false)
       .def("get_collision_pairs", &FCLModel::getCollisionPairs)
@@ -366,7 +366,7 @@ inline void build_pyfcl(py::module &m_all) {
            &FCLModel::removeCollisionPairsFromSrdf, py::arg("srdf_filename"))
       .def("update_collision_objects",
            py::overload_cast<std::vector<Vector7<S>> const &>(
-               &FCLModel::updateCollisionObjects),
+               &FCLModel::updateCollisionObjects, py::const_),
            py::arg("link_poses"))
       .def("collide", &FCLModel::collide,
            py::arg("request") = CollisionRequest())

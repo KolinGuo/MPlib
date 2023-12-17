@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -32,43 +31,25 @@ MPLIB_CLASS_TEMPLATE_FORWARD(PlanningWorldTpl);
 
 template <typename S>
 class PlanningWorldTpl {
- private:
+ public:
+  // Common type alias
   using CollisionRequest = fcl::CollisionRequest<S>;
   using CollisionResult = fcl::CollisionResult<S>;
-
-  using CollisionGeometry = fcl::CollisionGeometry<S>;
   using CollisionGeometryPtr = fcl::CollisionGeometryPtr<S>;
-
   using CollisionObject = fcl::CollisionObject<S>;
   using CollisionObjectPtr = fcl::CollisionObjectPtr<S>;
-
   using DynamicAABBTreeCollisionManager =
       fcl::DynamicAABBTreeCollisionManager<S>;
   using BroadPhaseCollisionManagerPtr = fcl::BroadPhaseCollisionManagerPtr<S>;
 
-  using ArticulatedModel = ArticulatedModelTpl<S>;
+  using WorldCollisionResult = WorldCollisionResultTpl<S>;
   using ArticulatedModelPtr = ArticulatedModelTplPtr<S>;
 
-  using WorldCollisionResult = WorldCollisionResultTpl<S>;
-  using WorldCollisionResultPtr = WorldCollisionResultTplPtr<S>;
-
-  std::vector<ArticulatedModelPtr> articulations_;
-  std::vector<std::string> articulation_names_;
-  std::unordered_map<std::string, CollisionObjectPtr> normal_objects_;
-
-  int move_articulation_id_, attach_link_id_;
-  CollisionObjectPtr point_cloud_, attached_tool_;
-  bool has_point_cloud_, use_point_cloud_, has_attach_, use_attach_;
-  Transform3<S> attach_to_link_pose_;
-  // BroadPhaseCollisionManagerPtr normal_manager;
-
- public:
   PlanningWorldTpl(std::vector<ArticulatedModelPtr> const &articulations,
                    std::vector<std::string> const &articulation_names,
                    std::vector<CollisionObjectPtr> const &normal_objects = {},
                    std::vector<std::string> const &normal_object_names = {},
-                   int const &plan_articulation_id = 0);
-  // std::vector<bool> const &articulation_flags);
+                   int move_articulation_id = 0);
 
   const std::vector<ArticulatedModelPtr> &getArticulations() const {
     return articulations_;
@@ -119,15 +100,15 @@ class PlanningWorldTpl {
     return normal_objects_.find(name) != normal_objects_.end();
   }
 
-  void setMoveArticulationId(int const &id) { move_articulation_id_ = id; }
+  void setMoveArticulationId(int id) { move_articulation_id_ = id; }
 
-  const int &getMoveArticulationId() const { return move_articulation_id_; }
+  int getMoveArticulationId() const { return move_articulation_id_; }
 
-  void setUsePointCloud(bool const &use) { use_point_cloud_ = use; }
+  void setUsePointCloud(bool use) { use_point_cloud_ = use; }
 
-  void updatePointCloud(MatrixX3<S> const &vertices, double const &resolution);
+  void updatePointCloud(MatrixX3<S> const &vertices, double resolution);
 
-  void setUseAttach(bool const &use) {
+  void setUseAttach(bool use) {
     use_attach_ = use;
     if (!use) removeAttach();
   }
@@ -145,16 +126,15 @@ class PlanningWorldTpl {
    * @param pose the pose of the attached object w.r.t. the link it's attached
    * to
    */
-  void updateAttachedTool(CollisionGeometryPtr const &p_geom,
-                          int const &link_id, Vector7<S> const &pose);
+  void updateAttachedTool(CollisionGeometryPtr const &p_geom, int link_id,
+                          Vector7<S> const &pose);
 
-  void updateAttachedSphere(S const &radius, int const &link_id,
-                            const Vector7<S> &pose);
+  void updateAttachedSphere(S radius, int link_id, const Vector7<S> &pose);
 
-  void updateAttachedBox(Vector3<S> const &size, int const &link_id,
+  void updateAttachedBox(Vector3<S> const &size, int link_id,
                          Vector7<S> const &pose);
 
-  void updateAttachedMesh(std::string const &mesh_path, int const &link_id,
+  void updateAttachedMesh(std::string const &mesh_path, int link_id,
                           Vector7<S> const &pose);
 
   void printAttachedToolPose() const {
@@ -199,23 +179,29 @@ class PlanningWorldTpl {
     return false;
   }
 
-  void setQpos(int const &index, VectorX<S> const &qpos) const;
+  void setQpos(int index, VectorX<S> const &qpos) const;
 
   void setQposAll(VectorX<S> const &qpos) const;
-
-  //   bool collide_among_normal_objects()=0;
 
   bool collide() const;
 
   std::vector<WorldCollisionResult> selfCollide(
-      size_t const &index,
-      CollisionRequest const &request = CollisionRequest()) const;
+      size_t index, CollisionRequest const &request = CollisionRequest()) const;
   std::vector<WorldCollisionResult> collideWithOthers(
-      size_t const &index,
-      CollisionRequest const &request = CollisionRequest()) const;
+      size_t index, CollisionRequest const &request = CollisionRequest()) const;
   std::vector<WorldCollisionResult> collideFull(
-      size_t const &index,
-      CollisionRequest const &request = CollisionRequest()) const;
+      size_t index, CollisionRequest const &request = CollisionRequest()) const;
+
+ private:
+  std::vector<ArticulatedModelPtr> articulations_;
+  std::vector<std::string> articulation_names_;
+  std::unordered_map<std::string, CollisionObjectPtr> normal_objects_;
+
+  int move_articulation_id_, attach_link_id_;
+  CollisionObjectPtr point_cloud_, attached_tool_;
+  bool has_point_cloud_, use_point_cloud_, has_attach_, use_attach_;
+  Transform3<S> attach_to_link_pose_;
+  // BroadPhaseCollisionManagerPtr normal_manager;
 };
 
 // Common Type Alias ==========================================================

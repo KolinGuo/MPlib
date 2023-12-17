@@ -25,34 +25,8 @@
 namespace mplib::ompl {
 
 template <typename S>
-std::vector<S> state2vector(const ob::State *state_raw,
-                            SpaceInformation *const &si_) {
-  auto state = state_raw->as<ob::CompoundState>();
-  std::vector<S> ret;
-  auto si = si_->getStateSpace()->as<CompoundStateSpace>();
-
-  for (size_t i = 0; i < si->getSubspaceCount(); i++) {
-    auto subspace(si->getSubspace(i));
-    size_t n;
-    switch (subspace->getType()) {
-      case ob::STATE_SPACE_REAL_VECTOR:
-        n = subspace->as<ob::RealVectorStateSpace>()->getDimension();
-        for (size_t j = 0; j < n; j++)
-          ret.push_back((S)(*state)[i]
-                            ->as<ob::RealVectorStateSpace::StateType>()
-                            ->values[j]);
-        break;
-      case ob::STATE_SPACE_SO2:
-        ret.push_back(
-            (S)(*state)[i]->as<ob::SO2StateSpace::StateType>()->value);
-        break;
-      default:
-        throw std::invalid_argument("Unhandled subspace type.");
-        break;
-    }
-  }
-  return ret;
-}
+std::vector<S> state2vector(const ob::State *const &state_raw,
+                            const SpaceInformation *const &si_);
 
 template <typename IN_TYPE, typename OUT_TYPE>
 std::vector<OUT_TYPE> eigen2vector(VectorX<IN_TYPE> const &x) {
@@ -70,19 +44,10 @@ VectorX<OUT_TYPE> vector2eigen(std::vector<IN_TYPE> const &x) {
 }
 
 template <typename S>
-VectorX<S> state2eigen(const ob::State *state_raw,
-                       SpaceInformation *const &si_) {
+VectorX<S> state2eigen(const ob::State *const &state_raw,
+                       const SpaceInformation *const &si_) {
   auto vec_ret = state2vector<S>(state_raw, si_);
-  /*for (size_t i = 0; i < vec_ret.size(); i++)
-      std::cout << vec_ret[i] << " ";
-  std::cout << std::endl;
-  */
   auto ret = vector2eigen<S, S>(vec_ret);
-  /*std::cout << ret.rows() << " " << ret.cols() << std::endl;
-  for (size_t i = 0; i < ret.rows(); i++)
-      std::cout << ret[i] << " ";
-  std::cout << std::endl;
-  */
   return ret;
 }
 
@@ -91,11 +56,8 @@ MPLIB_CLASS_TEMPLATE_FORWARD(ValidityCheckerTpl);
 
 template <typename S>
 class ValidityCheckerTpl : public ob::StateValidityChecker {
- private:
-  PlanningWorldTplPtr<S> world_;
-
  public:
-  ValidityCheckerTpl(PlanningWorldTplPtr<S> world,
+  ValidityCheckerTpl(const PlanningWorldTplPtr<S> &world,
                      const SpaceInformationPtr &si)
       : ob::StateValidityChecker(si), world_(world) {}
 
@@ -107,10 +69,13 @@ class ValidityCheckerTpl : public ob::StateValidityChecker {
     return !world_->collide();
   }
 
-  bool _isValid(VectorX<S> state) const {
+  bool _isValid(const VectorX<S> &state) const {
     world_->setQposAll(state);
     return !world_->collide();
   }
+
+ private:
+  PlanningWorldTplPtr<S> world_;
 };
 
 // Common Type Alias ==========================================================
@@ -124,6 +89,20 @@ MPLIB_CLASS_TEMPLATE_FORWARD(OMPLPlannerTpl);
 
 template <typename S>
 class OMPLPlannerTpl {
+ public:
+  OMPLPlannerTpl(PlanningWorldTplPtr<S> const &world);
+
+  const PlanningWorldTplPtr<S> &get_world() const { return world_; }
+
+  size_t get_dim() const { return dim_; }
+
+  VectorX<S> random_sample_nearby(VectorX<S> const &start_state) const;
+
+  std::pair<std::string, MatrixX<S>> plan(
+      VectorX<S> const &start_state, std::vector<VectorX<S>> const &goal_states,
+      const std::string &planner_name = "RRTConnect", double time = 1.0,
+      double range = 0.0, bool verbose = false) const;
+
  private:
   CompoundStateSpacePtr cs_;
   SpaceInformationPtr si_;
@@ -134,21 +113,7 @@ class OMPLPlannerTpl {
   std::vector<S> lower_joint_limits_, upper_joint_limits_;
   std::vector<bool> is_revolute_;
 
- public:
-  VectorX<S> random_sample_nearby(VectorX<S> const &start_state);
-
-  OMPLPlannerTpl(PlanningWorldTplPtr<S> const &world);
-
   void build_state_space();
-
-  PlanningWorldTplPtr<S> get_world() { return world_; }
-
-  size_t get_dim() { return dim_; }
-
-  std::pair<std::string, MatrixX<S>> plan(
-      VectorX<S> const &start_state, std::vector<VectorX<S>> const &goal_states,
-      const std::string &planner_name = "RRTConnect", const double &time = 1.0,
-      const double &range = 0.0, const bool &verbose = false);
 };
 
 // Common Type Alias ==========================================================
@@ -158,8 +123,10 @@ using OMPLPlannerTplfPtr = OMPLPlannerTplPtr<float>;
 using OMPLPlannerTpldPtr = OMPLPlannerTplPtr<double>;
 
 // Explicit Template Instantiation Declaration ================================
-#define DECLARE_TEMPLATE_OMPL_PLANNER(S)       \
-  extern template class ValidityCheckerTpl<S>; \
+#define DECLARE_TEMPLATE_OMPL_PLANNER(S)                                      \
+  extern template std::vector<S> state2vector<S>(                             \
+      const ob::State *const &state_raw, const SpaceInformation *const &si_); \
+  extern template class ValidityCheckerTpl<S>;                                \
   extern template class OMPLPlannerTpl<S>
 
 DECLARE_TEMPLATE_OMPL_PLANNER(float);

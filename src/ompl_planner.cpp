@@ -6,11 +6,14 @@
 #include <memory>
 
 #include "macros_utils.h"
+
 namespace mplib::ompl {
 
 // Explicit Template Instantiation Definition =================================
-#define DEFINE_TEMPLATE_OMPL_PLANNER(S) \
-  template class ValidityCheckerTpl<S>; \
+#define DEFINE_TEMPLATE_OMPL_PLANNER(S)                                        \
+  template std::vector<S> state2vector<S>(const ob::State *const &state_raw,   \
+                                          const SpaceInformation *const &si_); \
+  template class ValidityCheckerTpl<S>;                                        \
   template class OMPLPlannerTpl<S>
 
 DEFINE_TEMPLATE_OMPL_PLANNER(float);
@@ -19,60 +22,33 @@ DEFINE_TEMPLATE_OMPL_PLANNER(double);
 #define PI 3.14159265359
 
 template <typename S>
-void OMPLPlannerTpl<S>::build_state_space(void) {
-  cs_ = std::make_shared<CompoundStateSpace>();
-  dim_ = 0;
-  std::string const joint_prefix = "JointModel";
-  for (auto robot : world_->getArticulations()) {
-    size_t dim_i = 0;
-    auto model = robot->getPinocchioModel();
-    auto joint_types = model.getJointTypes();
-    auto d =
-        robot->getQposDim();  // TODO!!! only construct for move group joints
-    auto indices = robot->getMoveGroupJointIndices();
-    ASSERT(d == indices.size(), "QposDim != size of the movegroup joints");
-    for (size_t i = 0; i < d; i++) {
-      auto id = indices[i];
-      auto joint_type = joint_types[id];
-      if (joint_type[joint_prefix.size()] == 'P' ||
-          (joint_type[joint_prefix.size()] == 'R' &&
-           joint_type[joint_prefix.size() + 1] !=
-               'U'))  // PRISMATIC and REVOLUTE
-      {
-        auto bound = model.getJointLimit(id);
-        auto subspcae =
-            std::make_shared<ob::RealVectorStateSpace>(bound.rows());
-        auto ob_bounds = ob::RealVectorBounds(bound.rows());
-        dim_i += bound.rows();
-        for (size_t j = 0; j < static_cast<size_t>(bound.rows()); j++) {
-          lower_joint_limits_.push_back(bound(j, 0));
-          upper_joint_limits_.push_back(bound(j, 1));
-          ob_bounds.setLow(j, bound(j, 0)), ob_bounds.setHigh(j, bound(j, 1));
-        }
-        subspcae->setBounds(ob_bounds);
-        cs_->addSubspace(subspcae, 1.0);
-      } else if (joint_type[joint_prefix.size()] == 'R' &&
-                 joint_type[joint_prefix.size() + 1] == 'U') {
-        cs_->addSubspace(std::make_shared<ob::SO2StateSpace>(), 1.0);
-        lower_joint_limits_.push_back(-PI);
-        upper_joint_limits_.push_back(PI);
-        dim_i += 1;
-      }
-      if (joint_type[joint_prefix.size()] == 'R' ||
-          joint_type[joint_prefix.size()] == 'P') {
-        if (joint_type[joint_prefix.size()] == 'R' &&
-            joint_type[joint_prefix.size() + 1] != 'U')
-          is_revolute_.push_back(true);
-        else
-          is_revolute_.push_back(false);
-      }
+std::vector<S> state2vector(const ob::State *const &state_raw,
+                            const SpaceInformation *const &si_) {
+  auto state = state_raw->as<ob::CompoundState>();
+  std::vector<S> ret;
+  auto si = si_->getStateSpace()->as<CompoundStateSpace>();
+
+  for (size_t i = 0; i < si->getSubspaceCount(); i++) {
+    auto subspace(si->getSubspace(i));
+    size_t n;
+    switch (subspace->getType()) {
+      case ob::STATE_SPACE_REAL_VECTOR:
+        n = subspace->as<ob::RealVectorStateSpace>()->getDimension();
+        for (size_t j = 0; j < n; j++)
+          ret.push_back((S)(*state)[i]
+                            ->as<ob::RealVectorStateSpace::StateType>()
+                            ->values[j]);
+        break;
+      case ob::STATE_SPACE_SO2:
+        ret.push_back(
+            (S)(*state)[i]->as<ob::SO2StateSpace::StateType>()->value);
+        break;
+      default:
+        throw std::invalid_argument("Unhandled subspace type.");
+        break;
     }
-    ASSERT(dim_i == robot->getQposDim(),
-           "Dim of bound is different from dim of qpos " +
-               std::to_string(dim_i) + " " +
-               std::to_string(robot->getQposDim()));
-    dim_ += dim_i;
   }
+  return ret;
 }
 
 template <typename S>
@@ -88,7 +64,7 @@ OMPLPlannerTpl<S>::OMPLPlannerTpl(PlanningWorldTplPtr<S> const &world)
 
 template <typename S>
 VectorX<S> OMPLPlannerTpl<S>::random_sample_nearby(
-    VectorX<S> const &start_state) {
+    VectorX<S> const &start_state) const {
   int cnt = 0;
   while (true) {
     S ratio = (S)(cnt + 1) / 1000;
@@ -115,8 +91,8 @@ VectorX<S> OMPLPlannerTpl<S>::random_sample_nearby(
 template <typename S>
 std::pair<std::string, MatrixX<S>> OMPLPlannerTpl<S>::plan(
     VectorX<S> const &start_state, std::vector<VectorX<S>> const &goal_states,
-    const std::string &planner_name, const double &time, const double &range,
-    const bool &verbose) {
+    const std::string &planner_name, double time, double range,
+    bool verbose) const {
   ASSERT(start_state.rows() == goal_states[0].rows(),
          "Length of start state and goal state should be equal");
   ASSERT(static_cast<size_t>(start_state.rows()) == dim_,
@@ -217,6 +193,63 @@ std::pair<std::string, MatrixX<S>> OMPLPlannerTpl<S>::plan(
   } else {
     MatrixX<S> ret(0, dim_);
     return std::make_pair(solved.asString(), ret);
+  }
+}
+
+template <typename S>
+void OMPLPlannerTpl<S>::build_state_space() {
+  cs_ = std::make_shared<CompoundStateSpace>();
+  dim_ = 0;
+  std::string const joint_prefix = "JointModel";
+  for (auto robot : world_->getArticulations()) {
+    size_t dim_i = 0;
+    auto model = robot->getPinocchioModel();
+    auto joint_types = model.getJointTypes();
+    auto d =
+        robot->getQposDim();  // TODO!!! only construct for move group joints
+    auto indices = robot->getMoveGroupJointIndices();
+    ASSERT(d == indices.size(), "QposDim != size of the movegroup joints");
+    for (size_t i = 0; i < d; i++) {
+      auto id = indices[i];
+      auto joint_type = joint_types[id];
+      if (joint_type[joint_prefix.size()] == 'P' ||
+          (joint_type[joint_prefix.size()] == 'R' &&
+           joint_type[joint_prefix.size() + 1] !=
+               'U'))  // PRISMATIC and REVOLUTE
+      {
+        auto bound = model.getJointLimit(id);
+        auto subspcae =
+            std::make_shared<ob::RealVectorStateSpace>(bound.rows());
+        auto ob_bounds = ob::RealVectorBounds(bound.rows());
+        dim_i += bound.rows();
+        for (size_t j = 0; j < static_cast<size_t>(bound.rows()); j++) {
+          lower_joint_limits_.push_back(bound(j, 0));
+          upper_joint_limits_.push_back(bound(j, 1));
+          ob_bounds.setLow(j, bound(j, 0)), ob_bounds.setHigh(j, bound(j, 1));
+        }
+        subspcae->setBounds(ob_bounds);
+        cs_->addSubspace(subspcae, 1.0);
+      } else if (joint_type[joint_prefix.size()] == 'R' &&
+                 joint_type[joint_prefix.size() + 1] == 'U') {
+        cs_->addSubspace(std::make_shared<ob::SO2StateSpace>(), 1.0);
+        lower_joint_limits_.push_back(-PI);
+        upper_joint_limits_.push_back(PI);
+        dim_i += 1;
+      }
+      if (joint_type[joint_prefix.size()] == 'R' ||
+          joint_type[joint_prefix.size()] == 'P') {
+        if (joint_type[joint_prefix.size()] == 'R' &&
+            joint_type[joint_prefix.size() + 1] != 'U')
+          is_revolute_.push_back(true);
+        else
+          is_revolute_.push_back(false);
+      }
+    }
+    ASSERT(dim_i == robot->getQposDim(),
+           "Dim of bound is different from dim of qpos " +
+               std::to_string(dim_i) + " " +
+               std::to_string(robot->getQposDim()));
+    dim_ += dim_i;
   }
 }
 

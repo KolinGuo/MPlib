@@ -17,8 +17,7 @@ template <typename S>
 ArticulatedModelTpl<S>::ArticulatedModelTpl(
     std::string const &urdf_filename, std::string const &srdf_filename,
     Vector3<S> const &gravity, std::vector<std::string> const &joint_names,
-    std::vector<std::string> const &link_names, bool const &verbose,
-    bool const &convex)
+    std::vector<std::string> const &link_names, bool verbose, bool convex)
     : pinocchio_model_(urdf_filename, gravity, verbose),
       fcl_model_(urdf_filename, verbose, convex),
       verbose_(verbose) {
@@ -34,6 +33,14 @@ ArticulatedModelTpl<S>::ArticulatedModelTpl(
   fcl_model_.removeCollisionPairsFromSrdf(srdf_filename);
   current_qpos_ = VectorX<S>::Constant(pinocchio_model_.getModel().nv, 0);
   setMoveGroup(user_link_names_);
+}
+
+template <typename S>
+std::vector<std::string> ArticulatedModelTpl<S>::getMoveGroupJointNames()
+    const {
+  std::vector<std::string> ret;
+  for (auto i : move_group_user_joints_) ret.push_back(user_joint_names_[i]);
+  return ret;
 }
 
 template <typename S>
@@ -62,14 +69,7 @@ void ArticulatedModelTpl<S>::setMoveGroup(
 }
 
 template <typename S>
-std::vector<std::string> ArticulatedModelTpl<S>::getMoveGroupJointName(void) {
-  std::vector<std::string> ret;
-  for (auto i : move_group_user_joints_) ret.push_back(user_joint_names_[i]);
-  return ret;
-}
-
-template <typename S>
-void ArticulatedModelTpl<S>::setQpos(VectorX<S> const &qpos, bool const &full) {
+void ArticulatedModelTpl<S>::setQpos(VectorX<S> const &qpos, bool full) {
   if (full)
     current_qpos_ = qpos;
   else {

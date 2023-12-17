@@ -13,6 +13,52 @@ MPLIB_CLASS_TEMPLATE_FORWARD(FCLModelTpl);
 
 template <typename S>
 class FCLModelTpl {
+ public:
+  FCLModelTpl(urdf::ModelInterfaceSharedPtr const &urdfTree,
+              std::string const &package_dir, bool verbose = true,
+              bool convex = false);
+
+  FCLModelTpl(std::string const &urdf_filename, bool verbose = true,
+              bool convex = false);
+
+  const std::vector<std::pair<size_t, size_t>> &getCollisionPairs() const {
+    return collision_pairs_;
+  }
+
+  const std::vector<CollisionObjectPtr<S>> &getCollisionObjects() const {
+    return collision_objects_;
+  }
+
+  const std::vector<std::string> &getCollisionLinkNames() const {
+    return collision_link_names_;
+  }
+
+  const std::vector<std::string> &getUserLinkNames() const {
+    return user_link_names_;
+  }
+
+  const std::vector<size_t> &getCollisionLinkUserIndices() const {
+    return collision_link_user_indices_;
+  }
+
+  void setLinkOrder(const std::vector<std::string> &names);
+
+  void printCollisionPairs() const;
+
+  void removeCollisionPairsFromSrdf(std::string const &srdf_filename);
+
+  void updateCollisionObjects(
+      std::vector<Transform3<S>> const &link_pose) const;
+
+  void updateCollisionObjects(std::vector<Vector7<S>> const &link_pose) const;
+
+  bool collide(
+      CollisionRequest<S> const &request = CollisionRequest<S>()) const;
+
+  std::vector<CollisionResult<S>> collideFull(
+      CollisionRequest<S> const &request = CollisionRequest<S>(
+          1, false, 1, false, true, GJKSolverType::GST_INDEP, 1e-6)) const;
+
  private:
   urdf::ModelInterfaceSharedPtr urdf_model_;
 
@@ -27,53 +73,11 @@ class FCLModelTpl {
   std::string package_dir_;
   bool have_link_order_, use_convex_, verbose_;
 
+  void dfs_parse_tree(urdf::LinkConstSharedPtr const &link,
+                      std::string const &parent_link_name);
+
   void init(urdf::ModelInterfaceSharedPtr const &urdfTree,
-            std::string const &package_dir_);
-  void dfs_parse_tree(urdf::LinkConstSharedPtr const &link, std::string);
-
- public:
-  FCLModelTpl(urdf::ModelInterfaceSharedPtr const &urdfTree,
-              std::string const &package_dir, bool const &verbose = true,
-              bool const &convex = false);
-
-  FCLModelTpl(std::string const &urdf_filename, bool const &verbose = true,
-              bool const &convex = false);
-
-  inline std::vector<std::pair<size_t, size_t>> &getCollisionPairs() {
-    return collision_pairs_;
-  }
-
-  inline std::vector<CollisionObjectPtr<S>> &getCollisionObjects() {
-    return collision_objects_;
-  }
-
-  inline std::vector<std::string> getCollisionLinkNames() {
-    return collision_link_names_;
-  }
-
-  inline std::vector<std::string> getUserLinkNames() {
-    return user_link_names_;
-  }
-
-  inline std::vector<size_t> getCollisionLinkUserIndices() {
-    return collision_link_user_indices_;
-  }
-
-  void setLinkOrder(const std::vector<std::string> &names);
-
-  void printCollisionPairs(void);
-
-  void removeCollisionPairsFromSrdf(std::string const &srdf_filename);
-
-  void updateCollisionObjects(std::vector<Transform3<S>> const &link_pose);
-
-  void updateCollisionObjects(std::vector<Vector7<S>> const &link_pose);
-
-  bool collide(CollisionRequest<S> const &request = CollisionRequest<S>());
-
-  std::vector<CollisionResult<S>> collideFull(
-      CollisionRequest<S> const &request = CollisionRequest<S>(
-          1, false, 1, false, true, GJKSolverType::GST_INDEP, 1e-6));
+            std::string const &package_dir);
 };
 
 // Common Type Alias ==========================================================
