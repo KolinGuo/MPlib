@@ -204,7 +204,7 @@ void OMPLPlannerTpl<S>::build_state_space() {
   for (auto robot : world_->getArticulations()) {
     size_t dim_i = 0;
     auto model = robot->getPinocchioModel();
-    auto joint_types = model.getJointTypes();
+    auto joint_types = model->getJointTypes();
     auto d =
         robot->getQposDim();  // TODO!!! only construct for move group joints
     auto indices = robot->getMoveGroupJointIndices();
@@ -217,7 +217,7 @@ void OMPLPlannerTpl<S>::build_state_space() {
            joint_type[joint_prefix.size() + 1] !=
                'U'))  // PRISMATIC and REVOLUTE
       {
-        auto bound = model.getJointLimit(id);
+        auto bound = model->getJointLimit(id);
         auto subspcae =
             std::make_shared<ob::RealVectorStateSpace>(bound.rows());
         auto ob_bounds = ob::RealVectorBounds(bound.rows());

@@ -20,11 +20,11 @@ class ArticulatedModelTpl {
                       std::vector<std::string> const &link_names = {},
                       bool verbose = true, bool convex = false);
 
-  const PinocchioModelTpl<S> &getPinocchioModel() const {
+  pinocchio::PinocchioModelTplPtr<S> getPinocchioModel() const {
     return pinocchio_model_;
   }
 
-  const FCLModelTpl<S> &getFCLModel() const { return fcl_model_; }
+  fcl::FCLModelTplPtr<S> getFCLModel() const { return fcl_model_; }
 
   const std::vector<std::string> &getUserLinkNames() const {
     return user_link_names_;
@@ -55,12 +55,12 @@ class ArticulatedModelTpl {
   size_t getQposDim() const { return qpos_dim_; }
 
   void updateSRDF(std::string const &srdf) {
-    fcl_model_.removeCollisionPairsFromSrdf(srdf);
+    fcl_model_->removeCollisionPairsFromSrdf(srdf);
   }
 
  private:
-  PinocchioModelTpl<S> pinocchio_model_;
-  FCLModelTpl<S> fcl_model_;
+  pinocchio::PinocchioModelTplPtr<S> pinocchio_model_;
+  fcl::FCLModelTplPtr<S> fcl_model_;
 
   // all links and joints you want to control. order matters
   std::vector<std::string> user_link_names_;
