@@ -201,7 +201,7 @@ void OMPLPlannerTpl<S>::build_state_space() {
   cs_ = std::make_shared<CompoundStateSpace>();
   dim_ = 0;
   std::string const joint_prefix = "JointModel";
-  for (auto robot : world_->getArticulations()) {
+  for (const auto &robot : world_->getPlannedArticulations()) {
     size_t dim_i = 0;
     auto model = robot->getPinocchioModel();
     auto joint_types = model->getJointTypes();

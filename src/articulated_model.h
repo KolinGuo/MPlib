@@ -20,6 +20,10 @@ class ArticulatedModelTpl {
                       std::vector<std::string> const &link_names = {},
                       bool verbose = true, bool convex = false);
 
+  std::string const &getName() const { return name_; }
+
+  void setName(std::string const &name) { name_ = name; }
+
   pinocchio::PinocchioModelTplPtr<S> getPinocchioModel() const {
     return pinocchio_model_;
   }
@@ -59,6 +63,7 @@ class ArticulatedModelTpl {
   }
 
  private:
+  std::string name_;
   pinocchio::PinocchioModelTplPtr<S> pinocchio_model_;
   fcl::FCLModelTplPtr<S> fcl_model_;
 
