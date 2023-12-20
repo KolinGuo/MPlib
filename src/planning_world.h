@@ -79,9 +79,8 @@ class PlanningWorldTpl {
   /**
    * @brief Adds an articulation (ArticulatedModelPtr) with given name to world
    * @param planned: whether the articulation is being planned
-   * @returns true if success, false if articulation with given name exists
    */
-  bool addArticulation(std::string const &name,
+  void addArticulation(std::string const &name,
                        ArticulatedModelPtr const &model, bool planned = false);
 
   /**
@@ -97,7 +96,7 @@ class PlanningWorldTpl {
   /**
    * @brief Sets articulation with given name as being planned
    * @returns true if success, false if articulation with given name does not
-   *  exist or the articulation is already planned/not planned
+   *  exist
    */
   bool setArticulationPlanned(std::string const &name, bool planned);
 
@@ -115,20 +114,14 @@ class PlanningWorldTpl {
     return normal_objects_.find(name) != normal_objects_.end();
   }
 
-  /**
-   * @brief Adds a normal object (CollisionObjectPtr) with given name to world
-   * @returns true if success, false if normal object with given name exists
-   */
-  bool addNormalObject(std::string const &name,
+  /// @brief Adds a normal object (CollisionObjectPtr) with given name to world
+  void addNormalObject(std::string const &name,
                        CollisionObjectPtr const &collision_object) {
-    return normal_objects_.insert({name, collision_object}).second;
+    normal_objects_[name] = collision_object;
   }
 
-  /**
-   * @brief Adds a point cloud as a normal object with given name to world
-   * @returns true if success, false if point cloud with given name exists
-   */
-  bool addPointCloud(std::string const &name, MatrixX3<S> const &vertices,
+  /// @brief Adds a point cloud as a normal object with given name to world
+  void addPointCloud(std::string const &name, MatrixX3<S> const &vertices,
                      double resolution = 0.01);
 
   /**
@@ -171,7 +164,7 @@ class PlanningWorldTpl {
    * @brief Detaches object with given name
    * @param also_remove: whether to also remove object from world
    * @returns true if success, false if normal object with given name does not
-   *  exist or it is already not attached
+   *  exist
    */
   bool detachObject(std::string const &name, bool also_remove = false);
 

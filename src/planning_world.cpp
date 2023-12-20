@@ -49,14 +49,12 @@ std::vector<std::string> PlanningWorldTpl<S>::getArticulationNames() const {
 }
 
 template <typename S>
-bool PlanningWorldTpl<S>::addArticulation(std::string const &name,
+void PlanningWorldTpl<S>::addArticulation(std::string const &name,
                                           ArticulatedModelPtr const &model,
                                           bool planned) {
   model->setName(name);
-  auto ret = articulations_.insert({name, model});
-  if (!ret.second) return false;
-  if (planned) planned_articulations_.push_back(model);
-  return true;
+  articulations_[name] = model;
+  setArticulationPlanned(name, planned);
 }
 
 template <typename S>
@@ -93,8 +91,6 @@ bool PlanningWorldTpl<S>::setArticulationPlanned(std::string const &name,
     planned_articulations_.push_back(art);
   else if (!planned && it2 != planned_articulations_.end())
     planned_articulations_.erase(it2);
-  else
-    return false;
   return true;
 }
 
@@ -106,7 +102,7 @@ std::vector<std::string> PlanningWorldTpl<S>::getNormalObjectNames() const {
 }
 
 template <typename S>
-bool PlanningWorldTpl<S>::addPointCloud(std::string const &name,
+void PlanningWorldTpl<S>::addPointCloud(std::string const &name,
                                         MatrixX3<S> const &vertices,
                                         double resolution) {
   auto tree = std::make_shared<octomap::OcTree>(resolution);
@@ -114,7 +110,7 @@ bool PlanningWorldTpl<S>::addPointCloud(std::string const &name,
     tree->updateNode(octomap::point3d(row(0), row(1), row(2)), true);
   auto obj =
       std::make_shared<CollisionObject>(std::make_shared<fcl::OcTree<S>>(tree));
-  return addNormalObject(name, obj);
+  addNormalObject(name, obj);
 }
 
 template <typename S>
@@ -206,8 +202,7 @@ bool PlanningWorldTpl<S>::detachObject(std::string const &name,
   auto it2 = std::find_if(
       attached_bodies_.begin(), attached_bodies_.end(),
       [&](AttachedBodyPtr const &p) { return p->getObject() == obj; });
-  if (it2 == attached_bodies_.end()) return false;
-  attached_bodies_.erase(it2);
+  if (it2 != attached_bodies_.end()) attached_bodies_.erase(it2);
   return true;
 }
 
