@@ -25,7 +25,7 @@ class Planner:
         joint_vel_limits: Union[Sequence[float], np.ndarray],
         joint_acc_limits: Union[Sequence[float], np.ndarray],
         srdf: str = "",
-        package_keyword_replacement: str = ""
+        package_keyword_replacement: str = "",
     ):
         r"""Motion planner for robots.
 
@@ -84,21 +84,17 @@ class Planner:
         assert move_group in self.user_link_names
         self.move_group = move_group
         self.robot.set_move_group(self.move_group)
-        self.move_group_joint_indices = (
-            self.robot.get_move_group_joint_indices()
-        )
+        self.move_group_joint_indices = self.robot.get_move_group_joint_indices()
 
         self.joint_types = self.pinocchio_model.get_joint_types()
-        self.joint_limits = np.concatenate(
-            self.pinocchio_model.get_joint_limits()
-        )
+        self.joint_limits = np.concatenate(self.pinocchio_model.get_joint_limits())
         self.planner = ompl.OMPLPlanner(world=self.planning_world)
         self.joint_vel_limits = joint_vel_limits
         self.joint_acc_limits = joint_acc_limits
         self.move_group_link_id = self.link_name_2_idx[self.move_group]
-        assert len(self.joint_vel_limits) == len(
+        assert len(self.joint_vel_limits) == len(self.move_group_joint_indices), len(
             self.move_group_joint_indices
-        ), len(self.move_group_joint_indices)
+        )
         assert len(self.joint_acc_limits) == len(self.move_group_joint_indices)
 
     def replace_package_keyword(self, package_keyword_replacement):
@@ -135,9 +131,9 @@ class Planner:
         import xml.etree.ElementTree as ET
         from xml.dom import minidom
 
-        root = ET.Element('robot')
-        robot_name = self.urdf.split('/')[-1].split('.')[0]
-        root.set('name', robot_name)
+        root = ET.Element("robot")
+        robot_name = self.urdf.split("/")[-1].split(".")[0]
+        root.set("name", robot_name)
         self.srdf = self.urdf.replace(".urdf", ".srdf")
 
         for i in range(n_link):
@@ -173,9 +169,7 @@ class Planner:
                 if np.abs(q[i] - self.joint_limits[i][0]) < 1e-3:
                     continue
                 q[i] -= (
-                    2
-                    * np.pi
-                    * np.floor((q[i] - self.joint_limits[i][0]) / (2 * np.pi))
+                    2 * np.pi * np.floor((q[i] - self.joint_limits[i][0]) / (2 * np.pi))
                 )
                 if q[i] > self.joint_limits[i][1] + 1e-3:
                     flag = False
@@ -190,35 +184,38 @@ class Planner:
     def check_for_collision(
         self,
         collision_function,
-        articulation: articulation.ArticulatedModel = None,
-        qpos: np.ndarray = None,
+        state: np.ndarray = None,
     ) -> list:
-        # handle no user input
-        if articulation is None:
-            articulation = self.robot
-        if qpos is None:
-            qpos = articulation.get_qpos()
-        # if the user does not specify the end-effector joints, append them to the qpos
-        if len(qpos) == len(self.move_group_joint_indices):
-            tmp = articulation.get_qpos()
-            tmp[:len(qpos)] = qpos
-            qpos = tmp
+        """
+        :param state: all planned articulations qpos state
+        """
+        planned_articulations = self.planning_world.get_planned_articulations()
+        assert (
+            len(planned_articulations) == 1
+        ), "Only support 1 planned articulation now"
+        articulation = planned_articulations[0]
 
         # first save the current qpos
         old_qpos = articulation.get_qpos()
+
+        # handle no user input
+        if state is None:
+            state = old_qpos
+        # if the user does not specify the end-effector joints, append them to the qpos
+        if len(state) == len(self.move_group_joint_indices):
+            tmp = old_qpos.copy()
+            tmp[: len(state)] = state
+            state = tmp
         # set robot to new qpos
-        articulation.set_qpos(qpos, True)
-        # find the index of the articulation inside the array
-        idx = self.planning_world.get_articulations().index(articulation)
+        articulation.set_qpos(state, True)
         # check for self-collision
-        collisions = collision_function(idx)
+        collisions = collision_function()
         # reset qpos
         articulation.set_qpos(old_qpos, True)
         return collisions
 
     def check_for_self_collision(
         self,
-        articulation: articulation.ArticulatedModel = None,
         qpos: np.ndarray = None,
     ) -> list:
         """Check if the robot is in self-collision.
@@ -230,13 +227,10 @@ class Planner:
         Returns:
             A list of collisions.
         """
-        return self.check_for_collision(
-            self.planning_world.self_collide, articulation, qpos
-        )
+        return self.check_for_collision(self.planning_world.self_collide, qpos)
 
     def check_for_env_collision(
         self,
-        articulation: articulation.ArticulatedModel = None,
         qpos: np.ndarray = None,
     ):
         """Check if the robot is in collision with the environment
@@ -248,9 +242,7 @@ class Planner:
         Returns:
             A list of collisions.
         """
-        return self.check_for_collision(
-            self.planning_world.collide_with_others, articulation, qpos
-        )
+        return self.check_for_collision(self.planning_world.collide_with_others, qpos)
 
     def IK(self, goal_pose, start_qpos, mask=[], n_init_qpos=20, threshold=1e-3):
         index = self.link_name_2_idx[self.move_group]
@@ -267,7 +259,7 @@ class Planner:
 
             # check collision
             self.planning_world.set_qpos_all(ik_results[0][idx])
-            if (len(self.planning_world.collide_full()) != 0):
+            if len(self.planning_world.collide_full()) != 0:
                 flag = False
 
             if flag:
@@ -295,9 +287,9 @@ class Planner:
         if len(results) != 0:
             status = "Success"
         elif min_dis != 1e9:
-            status = (
-                "IK Failed! Distance %lf is greater than threshold %lf."
-                % (min_dis, threshold)
+            status = "IK Failed! Distance %lf is greater than threshold %lf." % (
+                min_dis,
+                threshold,
             )
         else:
             status = "IK Failed! Cannot find valid solution."
@@ -316,36 +308,49 @@ class Planner:
             [pc_vel, pc_acc], path, parametrizer="ParametrizeConstAccel"
         )
         jnt_traj = instance.compute_trajectory()
-        ts_sample = np.linspace(
-            0, jnt_traj.duration, int(jnt_traj.duration / step)
-        )
+        ts_sample = np.linspace(0, jnt_traj.duration, int(jnt_traj.duration / step))
         qs_sample = jnt_traj(ts_sample)
         qds_sample = jnt_traj(ts_sample, 1)
         qdds_sample = jnt_traj(ts_sample, 2)
         return ts_sample, qs_sample, qds_sample, qdds_sample, jnt_traj.duration
 
-    def update_point_cloud(self, pc, resolution=1e-3):
-        self.planning_world.update_point_cloud(pc, resolution)
+    def update_point_cloud(self, pc, resolution=1e-3, name="scene_pcd"):
+        self.planning_world.add_point_cloud(name, pc, resolution)
 
-    def update_attached_tool(self, fcl_collision_geometry, pose, link_id=-1):
+    def remove_point_cloud(self, name="scene_pcd"):
+        self.planning_world.remove_normal_object(name)
+
+    def update_attach_object(
+        self,
+        fcl_collision_geometry,
+        pose,
+        name="attached_geom",
+        art_id=0,
+        link_id=-1,
+    ):
         if link_id == -1:
             link_id = self.move_group_link_id
-        self.planning_world.update_attached_tool(fcl_collision_geometry, link_id, pose)
+        self.planning_world.attach_object(
+            name, fcl_collision_geometry, art_id, link_id, pose
+        )
 
-    def update_attached_sphere(self, radius, pose, link_id=-1):
+    def update_attached_sphere(self, radius, pose, art_id=0, link_id=-1):
         if link_id == -1:
             link_id = self.move_group_link_id
-        self.planning_world.update_attached_sphere(radius, link_id, pose)
+        self.planning_world.attach_sphere(radius, art_id, link_id, pose)
 
-    def update_attached_box(self, size, pose, link_id=-1):
+    def update_attached_box(self, size, pose, art_id=0, link_id=-1):
         if link_id == -1:
             link_id = self.move_group_link_id
-        self.planning_world.update_attached_box(size, link_id, pose)
+        self.planning_world.attach_box(size, art_id, link_id, pose)
 
-    def update_attached_mesh(self, mesh_path, pose, link_id=-1):
+    def update_attached_mesh(self, mesh_path, pose, art_id=0, link_id=-1):
         if link_id == -1:
             link_id = self.move_group_link_id
-        self.planning_world.update_attached_mesh(mesh_path, link_id, pose)
+        self.planning_world.attach_mesh(mesh_path, art_id, link_id, pose)
+
+    def detach_object(self, name="attached_geom") -> bool:
+        return self.planning_world.detach_object(name)
 
     def plan(
         self,
@@ -356,12 +361,8 @@ class Planner:
         rrt_range=0.1,
         planning_time=1,
         fix_joint_limits=True,
-        use_point_cloud=False,
-        use_attach=False,
         verbose=False,
     ):
-        self.planning_world.set_use_point_cloud(use_point_cloud)
-        self.planning_world.set_use_attach(use_attach)
         n = current_qpos.shape[0]
         if fix_joint_limits:
             for i in range(n):
@@ -376,8 +377,7 @@ class Planner:
             print("Invalid start state!")
             for collision in collisions:
                 print(
-                    "%s and %s collide!"
-                    % (collision.link_name1, collision.link_name2)
+                    "%s and %s collide!" % (collision.link_name1, collision.link_name2)
                 )
 
         idx = self.move_group_joint_indices
@@ -427,12 +427,8 @@ class Planner:
         qpos,
         qpos_step=0.1,
         time_step=0.1,
-        use_point_cloud=False,
-        use_attach=False,
         verbose=False,
     ):
-        self.planning_world.set_use_point_cloud(use_point_cloud)
-        self.planning_world.set_use_attach(use_attach)
         qpos = np.copy(qpos)
         self.robot.set_qpos(qpos, True)
 
@@ -531,11 +527,7 @@ class Planner:
             self.planning_world.set_qpos_all(qpos[index])
             collide = self.planning_world.collide()
 
-            if (
-                np.linalg.norm(delta_twist) < 1e-4
-                or collide
-                or not within_joint_limit
-            ):
+            if np.linalg.norm(delta_twist) < 1e-4 or collide or not within_joint_limit:
                 return {"status": "screw plan failed"}
 
             path.append(np.copy(qpos[index]))
@@ -545,9 +537,7 @@ class Planner:
                     ta.setup_logging("INFO")
                 else:
                     ta.setup_logging("WARNING")
-                times, pos, vel, acc, duration = self.TOPP(
-                    np.vstack(path), time_step
-                )
+                times, pos, vel, acc, duration = self.TOPP(np.vstack(path), time_step)
                 return {
                     "status": "Success",
                     "time": times,

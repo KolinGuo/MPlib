@@ -78,9 +78,9 @@ class DemoSetup():
 
   def follow_path(self, result):
     n_step = result['position'].shape[0]
-    for i in range(n_step):  
+    for i in range(n_step):
       qf = self.robot.compute_passive_force(
-        gravity=True, 
+        gravity=True,
         coriolis_and_centrifugal=True)
       self.robot.set_qf(qf)
       for j in range(7):
@@ -94,9 +94,9 @@ class DemoSetup():
   def set_gripper(self, pos):
     for joint in self.active_joints[-2:]:
       joint.set_drive_target(pos)
-    for i in range(100): 
+    for i in range(100):
       qf = self.robot.compute_passive_force(
-        gravity=True, 
+        gravity=True,
         coriolis_and_centrifugal=True)
       self.robot.set_qf(qf)
       self.scene.step()
@@ -110,23 +110,23 @@ class DemoSetup():
   def close_gripper(self):
     self.set_gripper(0)
 
-  def move_to_pose_with_RRTConnect(self, pose, use_point_cloud=True, use_attach=True):
+  def move_to_pose_with_RRTConnect(self, pose):
     result = self.planner.plan(
-      pose, self.robot.get_qpos(), time_step=1/250, use_point_cloud=use_point_cloud, use_attach=use_attach)
+      pose, self.robot.get_qpos(), time_step=1/250)
     if result['status'] != "Success":
       print(result['status'])
       return -1
     self.follow_path(result)
     return 0
 
-  def move_to_pose_with_screw(self, pose, use_point_cloud=True, use_attach=True):
+  def move_to_pose_with_screw(self, pose):
     result = self.planner.plan_screw(
-      pose, self.robot.get_qpos(), time_step=1/250, use_point_cloud=use_point_cloud, use_attach=use_attach)
+      pose, self.robot.get_qpos(), time_step=1/250)
     if result['status'] != "Success":
-      return self.move_to_pose_with_RRTConnect(pose, use_point_cloud, use_attach)
+      return self.move_to_pose_with_RRTConnect(pose)
 
-  def move_to_pose(self, pose, with_screw=True, use_point_cloud=True, use_attach=True):
+  def move_to_pose(self, pose, with_screw=True):
     if with_screw:
-      return self.move_to_pose_with_screw(pose, use_point_cloud, use_attach)
+      return self.move_to_pose_with_screw(pose)
     else:
-      return self.move_to_pose_with_RRTConnect(pose, use_point_cloud, use_attach)
+      return self.move_to_pose_with_RRTConnect(pose)

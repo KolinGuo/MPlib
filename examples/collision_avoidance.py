@@ -52,36 +52,38 @@ class PlanningDemo(DemoSetup):
         points, _ = trimesh.sample.sample_surface(box, 1000)
         points += [0.55, 0, 0.1]
         self.planner.update_point_cloud(points)
-        return 
 
     def demo(self, with_screw = True, use_point_cloud = True, use_attach = True):
         pickup_pose = [0.7, 0, 0.12, 0, 1, 0, 0]
         delivery_pose = [0.4, 0.3, 0.13, 0, 1, 0, 0]
-        
+
         if use_point_cloud:
             self.add_point_cloud()
-        
+
         pickup_pose[2] += 0.2
         # no attach since nothing picked up yet
-        self.move_to_pose(pickup_pose, with_screw, use_point_cloud, use_attach=False) 
+        self.move_to_pose(pickup_pose, with_screw)
         self.open_gripper()
         pickup_pose[2] -= 0.12
         # no attach since nothing picked up yet
-        self.move_to_pose(pickup_pose, with_screw, use_point_cloud, use_attach=False) 
+        self.move_to_pose(pickup_pose, with_screw)
         self.close_gripper()
 
         if use_attach:
             self.planner.update_attached_box([0.04, 0.04, 0.12], [0, 0, 0.14, 1, 0, 0, 0])
 
         pickup_pose[2] += 0.12
-        self.move_to_pose(pickup_pose, with_screw, use_point_cloud, use_attach) 
+        self.move_to_pose(pickup_pose, with_screw)
         delivery_pose[2] += 0.2
-        self.move_to_pose(delivery_pose, with_screw, use_point_cloud, use_attach) 
+        self.move_to_pose(delivery_pose, with_screw)
         delivery_pose[2] -= 0.12
-        self.move_to_pose(delivery_pose, with_screw, use_point_cloud, use_attach) 
+        self.move_to_pose(delivery_pose, with_screw)
         self.open_gripper()
         delivery_pose[2] += 0.12
-        self.move_to_pose(delivery_pose, with_screw, use_point_cloud, use_attach=False) 
+        if use_attach:
+            ret = self.planner.detach_object(f"0_{self.planner.move_group_link_id}_box")
+            assert ret, "attached object does not exist"
+        self.move_to_pose(delivery_pose, with_screw)
 
 if __name__ == '__main__':
     demo = PlanningDemo()
