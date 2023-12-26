@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "collision_matrix.h"
 #include "macros_utils.h"
 #include "math_utils.h"
 #include "urdf_utils.h"
@@ -26,7 +27,8 @@ PlanningWorldTpl<S>::PlanningWorldTpl(
     std::vector<ArticulatedModelPtr> const &articulations,
     std::vector<std::string> const &articulation_names,
     std::vector<CollisionObjectPtr> const &normal_objects,
-    std::vector<std::string> const &normal_object_names) {
+    std::vector<std::string> const &normal_object_names)
+    : acm_(std::make_shared<AllowedCollisionMatrix>()) {
   ASSERT(articulations.size() == articulation_names.size(),
          "articulations and articulation_names should have the same size");
   ASSERT(normal_objects.size() == normal_object_names.size(),
@@ -236,6 +238,20 @@ void PlanningWorldTpl<S>::setQposAll(VectorX<S> const &state) const {
 }
 
 template <typename S>
+std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::filterCollisions(
+    const std::vector<WorldCollisionResultTpl<S>> &collisions) const {
+  std::vector<WorldCollisionResult> ret;
+
+  for (const auto &collision : collisions)
+    if (auto type = acm_->getAllowedCollision(collision.link_name1,
+                                              collision.link_name2);
+        !type || type == AllowedCollision::NEVER)
+      ret.push_back(collision);
+
+  return ret;
+}
+
+template <typename S>
 std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::selfCollide(
     CollisionRequest const &request) const {
   std::vector<WorldCollisionResult> ret;
@@ -306,7 +322,7 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::selfCollide(
         ret.push_back(tmp);
       }
     }
-  return ret;
+  return filterCollisions(ret);
 }
 
 template <typename S>
@@ -427,7 +443,7 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideWithOthers(
       }
     }
   }
-  return ret;
+  return filterCollisions(ret);
 }
 
 template <typename S>

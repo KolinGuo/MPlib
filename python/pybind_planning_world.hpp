@@ -92,6 +92,9 @@ inline void build_planning_world(py::module &m_all) {
            py::arg("qpos"))
       .def("set_qpos_all", &PlanningWorld::setQposAll, py::arg("state"))
 
+      .def("get_allowed_collision_matrix",
+           &PlanningWorld::getAllowedCollisionMatrix)
+
       .def("collide", &PlanningWorld::collide,
            py::arg("request") = CollisionRequest())
       .def("self_collide", &PlanningWorld::selfCollide,

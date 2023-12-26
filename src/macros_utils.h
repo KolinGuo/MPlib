@@ -7,6 +7,14 @@
     throw std::runtime_error((info)); \
   }
 
+/** @brief Macro that defines a forward declaration for a class, and
+    shared pointers to the class.
+    For example MPLIB_CLASS_FORWARD(MyType);
+    will produce type definitions for MyType and MyTypePtr. */
+#define MPLIB_CLASS_FORWARD(C) \
+  class C;                     \
+  using C##Ptr = std::shared_ptr<C>
+
 /** @brief Macro that defines a forward declaration for a class template, and
     shared pointers to the class template.
     For example MPLIB_CLASS_TEMPLATE_FORWARD(MyTypeTpl);

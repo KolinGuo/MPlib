@@ -6,6 +6,7 @@
 
 #include "articulated_model.h"
 #include "attached_body.h"
+#include "collision_matrix.h"
 #include "macros_utils.h"
 #include "types.h"
 
@@ -177,6 +178,9 @@ class PlanningWorldTpl {
   /// @brief Set qpos of all planned articulations
   void setQposAll(VectorX<S> const &state) const;
 
+  /// @brief Get pointer to allowed collision matrix to modify
+  AllowedCollisionMatrixPtr getAllowedCollisionMatrix() const { return acm_; }
+
   /// @brief Check full collision and return only a boolean indicating collision
   bool collide(CollisionRequest const &request = CollisionRequest()) const {
     return collideFull(request).size() > 0;
@@ -207,6 +211,8 @@ class PlanningWorldTpl {
   std::vector<ArticulatedModelPtr> planned_articulations_;
   std::vector<AttachedBodyPtr> attached_bodies_;
 
+  AllowedCollisionMatrixPtr acm_;
+
   // TODO: Switch to BroadPhaseCollision
   // BroadPhaseCollisionManagerPtr normal_manager;
 
@@ -215,6 +221,10 @@ class PlanningWorldTpl {
     for (const auto &attached_body : attached_bodies_)
       attached_body->updatePose();
   }
+
+  /// @brief Filter collisions using acm_
+  std::vector<WorldCollisionResult> filterCollisions(
+      const std::vector<WorldCollisionResult> &collisions) const;
 };
 
 // Common Type Alias ==========================================================
