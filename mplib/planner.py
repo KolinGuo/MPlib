@@ -325,29 +325,29 @@ class Planner:
         fcl_collision_geometry,
         pose,
         name="attached_geom",
-        art_id=0,
+        art_name="robot",
         link_id=-1,
     ):
         if link_id == -1:
             link_id = self.move_group_link_id
         self.planning_world.attach_object(
-            name, fcl_collision_geometry, art_id, link_id, pose
+            name, fcl_collision_geometry, art_name, link_id, pose
         )
 
-    def update_attached_sphere(self, radius, pose, art_id=0, link_id=-1):
+    def update_attached_sphere(self, radius, pose, art_name="robot", link_id=-1):
         if link_id == -1:
             link_id = self.move_group_link_id
-        self.planning_world.attach_sphere(radius, art_id, link_id, pose)
+        self.planning_world.attach_sphere(radius, art_name, link_id, pose)
 
-    def update_attached_box(self, size, pose, art_id=0, link_id=-1):
+    def update_attached_box(self, size, pose, art_name="robot", link_id=-1):
         if link_id == -1:
             link_id = self.move_group_link_id
-        self.planning_world.attach_box(size, art_id, link_id, pose)
+        self.planning_world.attach_box(size, art_name, link_id, pose)
 
-    def update_attached_mesh(self, mesh_path, pose, art_id=0, link_id=-1):
+    def update_attached_mesh(self, mesh_path, pose, art_name="robot", link_id=-1):
         if link_id == -1:
             link_id = self.move_group_link_id
-        self.planning_world.attach_mesh(mesh_path, art_id, link_id, pose)
+        self.planning_world.attach_mesh(mesh_path, art_name, link_id, pose)
 
     def detach_object(self, name="attached_geom") -> bool:
         return self.planning_world.detach_object(name)

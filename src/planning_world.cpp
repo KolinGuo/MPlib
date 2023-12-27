@@ -36,7 +36,7 @@ PlanningWorldTpl<S>::PlanningWorldTpl(
   for (size_t i = 0; i < articulations.size(); i++) {
     articulations[i]->setName(articulation_names[i]);
     articulations_[articulation_names[i]] = articulations[i];
-    planned_articulations_.push_back(articulations[i]);
+    planned_articulations_[articulation_names[i]] = articulations[i];
   }
   for (size_t i = 0; i < normal_objects.size(); i++) {
     normal_objects_[normal_object_names[i]] = normal_objects[i];
@@ -46,8 +46,16 @@ PlanningWorldTpl<S>::PlanningWorldTpl(
 template <typename S>
 std::vector<std::string> PlanningWorldTpl<S>::getArticulationNames() const {
   std::vector<std::string> names;
-  for (const auto &art : articulations_) names.push_back(art.first);
+  for (const auto &pair : articulations_) names.push_back(pair.first);
   return names;
+}
+
+template <typename S>
+std::vector<ArticulatedModelTplPtr<S>>
+PlanningWorldTpl<S>::getPlannedArticulations() const {
+  std::vector<ArticulatedModelPtr> arts;
+  for (const auto &pair : planned_articulations_) arts.push_back(pair.second);
+  return arts;
 }
 
 template <typename S>
@@ -61,45 +69,26 @@ void PlanningWorldTpl<S>::addArticulation(std::string const &name,
 
 template <typename S>
 bool PlanningWorldTpl<S>::removeArticulation(std::string const &name) {
-  auto it = articulations_.find(name);
-  if (it == articulations_.end()) return false;
-  auto art = it->second;
-  articulations_.erase(it);
-
-  auto it2 = std::find(planned_articulations_.begin(),
-                       planned_articulations_.end(), art);
-  if (it2 != planned_articulations_.end()) planned_articulations_.erase(it2);
-  return true;
+  bool exists = articulations_.erase(name) == 1;
+  if (exists) planned_articulations_.erase(name);
+  return exists;
 }
 
 template <typename S>
-bool PlanningWorldTpl<S>::isArticulationPlanned(std::string const &name) const {
-  auto it = articulations_.find(name);
-  return it != articulations_.end() &&
-         std::find(planned_articulations_.begin(), planned_articulations_.end(),
-                   it->second) != planned_articulations_.end();
-}
-
-template <typename S>
-bool PlanningWorldTpl<S>::setArticulationPlanned(std::string const &name,
+void PlanningWorldTpl<S>::setArticulationPlanned(std::string const &name,
                                                  bool planned) {
-  auto it = articulations_.find(name);
-  if (it == articulations_.end()) return false;
-
-  auto art = it->second;
-  auto it2 = std::find(planned_articulations_.begin(),
-                       planned_articulations_.end(), art);
-  if (planned && it2 == planned_articulations_.end())
-    planned_articulations_.push_back(art);
-  else if (!planned && it2 != planned_articulations_.end())
-    planned_articulations_.erase(it2);
-  return true;
+  auto art = articulations_.at(name);
+  auto it = planned_articulations_.find(name);
+  if (planned && it == planned_articulations_.end())
+    planned_articulations_[name] = art;
+  else if (!planned && it != planned_articulations_.end())
+    planned_articulations_.erase(it);
 }
 
 template <typename S>
 std::vector<std::string> PlanningWorldTpl<S>::getNormalObjectNames() const {
   std::vector<std::string> names;
-  for (const auto &object : normal_objects_) names.push_back(object.first);
+  for (const auto &pair : normal_objects_) names.push_back(pair.first);
   return names;
 }
 
@@ -117,101 +106,79 @@ void PlanningWorldTpl<S>::addPointCloud(std::string const &name,
 
 template <typename S>
 bool PlanningWorldTpl<S>::removeNormalObject(std::string const &name) {
-  auto it = normal_objects_.find(name);
-  if (it == normal_objects_.end()) return false;
-  auto obj = it->second;
-  normal_objects_.erase(it);
-
-  auto it2 = std::find_if(
-      attached_bodies_.begin(), attached_bodies_.end(),
-      [&](AttachedBodyPtr const &p) { return p->getObject() == obj; });
-  if (it2 != attached_bodies_.end()) attached_bodies_.erase(it2);
-  return true;
+  bool exists = normal_objects_.erase(name) == 1;
+  if (exists) attached_bodies_.erase(name);
+  return exists;
 }
 
-template <typename S>
-bool PlanningWorldTpl<S>::isNormalObjectAttached(
-    std::string const &name) const {
-  auto it = normal_objects_.find(name);
-  return it != normal_objects_.end() &&
-         std::find_if(attached_bodies_.begin(), attached_bodies_.end(),
-                      [&](AttachedBodyPtr const &p) {
-                        return p->getObject() == it->second;
-                      }) != attached_bodies_.end();
-}
 
 template <typename S>
-void PlanningWorldTpl<S>::attachObject(std::string const &name, int art_id,
-                                       int link_id, Vector7<S> const &pose) {
+void PlanningWorldTpl<S>::attachObject(std::string const &name,
+                                       std::string const &art_name, int link_id,
+                                       Vector7<S> const &pose) {
   auto obj = normal_objects_.at(name);
-  auto it = std::find_if(
-      attached_bodies_.begin(), attached_bodies_.end(),
-      [&](AttachedBodyPtr const &p) { return p->getObject() == obj; });
-  if (it != attached_bodies_.end()) attached_bodies_.erase(it);
-
+  auto nh = attached_bodies_.extract(name);
   auto body = std::make_shared<AttachedBody>(
-      name, obj, planned_articulations_.at(art_id), link_id,
+      name, obj, planned_articulations_.at(art_name), link_id,
       posevec_to_transform(pose));
-  attached_bodies_.push_back(body);
+  if (!nh.empty()) {
+    nh.mapped() = body;
+    attached_bodies_.insert(std::move(nh));
+  } else
+    attached_bodies_[name] = body;
+  // TODO: update acm_
 }
 
 template <typename S>
 void PlanningWorldTpl<S>::attachObject(std::string const &name,
                                        CollisionGeometryPtr const &p_geom,
-                                       int art_id, int link_id,
+                                       std::string const &art_name, int link_id,
                                        Vector7<S> const &pose) {
   removeNormalObject(name);
   addNormalObject(name, std::make_shared<CollisionObject>(p_geom));
-  attachObject(name, art_id, link_id, pose);
+  attachObject(name, art_name, link_id, pose);
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::attachSphere(S radius, int art_id, int link_id,
-                                       Vector7<S> const &pose) {
-  // FIXME: Use art_name/link_name to avoid changes
-  auto name =
-      std::to_string(art_id) + "_" + std::to_string(link_id) + "_sphere";
-  attachObject(name, std::make_shared<fcl::Sphere<S>>(radius), art_id, link_id,
+void PlanningWorldTpl<S>::attachSphere(S radius, std::string const &art_name,
+                                       int link_id, Vector7<S> const &pose) {
+  // FIXME: Use link_name to avoid changes
+  auto name = art_name + "_" + std::to_string(link_id) + "_sphere";
+  attachObject(name, std::make_shared<fcl::Sphere<S>>(radius), art_name,
+               link_id, pose);
+}
+
+template <typename S>
+void PlanningWorldTpl<S>::attachBox(Vector3<S> const &size,
+                                    std::string const &art_name, int link_id,
+                                    Vector7<S> const &pose) {
+  // FIXME: Use link_name to avoid changes
+  auto name = art_name + "_" + std::to_string(link_id) + "_box";
+  attachObject(name, std::make_shared<fcl::Box<S>>(size), art_name, link_id,
                pose);
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::attachBox(Vector3<S> const &size, int art_id,
-                                    int link_id, Vector7<S> const &pose) {
-  // FIXME: Use art_name/link_name to avoid changes
-  auto name = std::to_string(art_id) + "_" + std::to_string(link_id) + "_box";
-  attachObject(name, std::make_shared<fcl::Box<S>>(size), art_id, link_id,
-               pose);
-}
-
-template <typename S>
-void PlanningWorldTpl<S>::attachMesh(std::string const &mesh_path, int art_id,
-                                     int link_id, Vector7<S> const &pose) {
-  // FIXME: Use art_name/link_name to avoid changes
-  auto name = std::to_string(art_id) + "_" + std::to_string(link_id) + "_mesh";
-  attachObject(name, load_mesh_as_BVH(mesh_path, Vector3<S>(1, 1, 1)), art_id,
+void PlanningWorldTpl<S>::attachMesh(std::string const &mesh_path,
+                                     std::string const &art_name, int link_id,
+                                     Vector7<S> const &pose) {
+  // FIXME: Use link_name to avoid changes
+  auto name = art_name + "_" + std::to_string(link_id) + "_mesh";
+  attachObject(name, load_mesh_as_BVH(mesh_path, Vector3<S>(1, 1, 1)), art_name,
                link_id, pose);
 }
 
 template <typename S>
 bool PlanningWorldTpl<S>::detachObject(std::string const &name,
                                        bool also_remove) {
-  auto it = normal_objects_.find(name);
-  if (it == normal_objects_.end()) return false;
-  auto obj = it->second;
-  if (also_remove) normal_objects_.erase(it);
-
-  auto it2 = std::find_if(
-      attached_bodies_.begin(), attached_bodies_.end(),
-      [&](AttachedBodyPtr const &p) { return p->getObject() == obj; });
-  if (it2 != attached_bodies_.end()) attached_bodies_.erase(it2);
-  return true;
+  if (also_remove) normal_objects_.erase(name);
+  return attached_bodies_.erase(name) == 1;
 }
 
 template <typename S>
 void PlanningWorldTpl<S>::printAttachedBodyPose() const {
-  for (const auto &body : attached_bodies_)
-    std::cout << body->getName() << " global pose:\n"
+  for (const auto &[name, body] : attached_bodies_)
+    std::cout << name << " global pose:\n"
               << body->getGlobalPose().matrix() << std::endl;
 }
 
@@ -224,7 +191,8 @@ void PlanningWorldTpl<S>::setQpos(std::string const &name,
 template <typename S>
 void PlanningWorldTpl<S>::setQposAll(VectorX<S> const &state) const {
   size_t i = 0;
-  for (const auto &art : planned_articulations_) {
+  for (const auto &pair : planned_articulations_) {
+    auto art = pair.second;
     auto n = art->getQposDim();
     auto qpos = state.segment(i, n);  // [i, i + n)
     ASSERT(static_cast<size_t>(qpos.size()) == n,
@@ -260,8 +228,7 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::selfCollide(
   updateAttachedBodiesPose();
 
   // Collision involving planned articulation
-  for (const auto &art : planned_articulations_) {
-    auto art_name = art->getName();
+  for (const auto &[art_name, art] : planned_articulations_) {
     auto fcl_model = art->getFCLModel();
     auto col_objs = fcl_model->getCollisionObjects();
     auto col_link_names = fcl_model->getCollisionLinkNames();
@@ -283,9 +250,8 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::selfCollide(
       }
 
     // Articulation collide with attached_bodies_
-    for (const auto &attached_body : attached_bodies_) {
+    for (const auto &[attached_body_name, attached_body] : attached_bodies_) {
       auto attached_obj = attached_body->getObject();
-      auto attached_body_name = attached_body->getName();
       for (size_t i = 0; i < col_objs.size(); i++) {
         result.clear();
         ::fcl::collide(attached_obj.get(), col_objs[i].get(), request, result);
@@ -304,14 +270,13 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::selfCollide(
   }
 
   // Collision among attached_bodies_
-  for (size_t i = 0; i < attached_bodies_.size(); i++)
-    for (size_t j = 0; j < i; j++) {
+  for (auto it = attached_bodies_.begin(); it != attached_bodies_.end(); ++it)
+    for (auto it2 = attached_bodies_.begin(); it2 != it; ++it2) {
       result.clear();
-      ::fcl::collide(attached_bodies_[i]->getObject().get(),
-                     attached_bodies_[j]->getObject().get(), request, result);
+      ::fcl::collide(it->second->getObject().get(),
+                     it2->second->getObject().get(), request, result);
       if (result.isCollision()) {
-        auto name1 = attached_bodies_[i]->getName(),
-             name2 = attached_bodies_[j]->getName();
+        auto name1 = it->first, name2 = it2->first;
         WorldCollisionResult tmp;
         tmp.res = result;
         tmp.object_name1 = name1;
@@ -336,22 +301,15 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideWithOthers(
   // Collect unplanned articulations, not attached scene objects
   std::vector<ArticulatedModelPtr> unplanned_articulations;
   std::unordered_map<std::string, CollisionObjectPtr> scene_objects;
-  for (const auto &[name, art] : articulations_) {
-    auto it2 = std::find(planned_articulations_.begin(),
-                         planned_articulations_.end(), art);
-    if (it2 == planned_articulations_.end())
+  for (const auto &[name, art] : articulations_)
+    if (planned_articulations_.find(name) == planned_articulations_.end())
       unplanned_articulations.push_back(art);
-  }
-  for (const auto &[name, obj] : normal_objects_) {
-    auto it2 = std::find_if(
-        attached_bodies_.begin(), attached_bodies_.end(),
-        [&](AttachedBodyPtr const &p) { return p->getObject() == obj; });
-    if (it2 == attached_bodies_.end()) scene_objects[name] = obj;
-  }
+  for (const auto &[name, obj] : normal_objects_)
+    if (attached_bodies_.find(name) == attached_bodies_.end())
+      scene_objects[name] = obj;
 
   // Collision involving planned articulation
-  for (const auto &art : planned_articulations_) {
-    auto art_name = art->getName();
+  for (const auto &[art_name, art] : planned_articulations_) {
     auto fcl_model = art->getFCLModel();
     auto col_objs = fcl_model->getCollisionObjects();
     auto col_link_names = fcl_model->getCollisionLinkNames();
@@ -400,9 +358,8 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideWithOthers(
   }
 
   // Collision involving attached_bodies_
-  for (const auto &attached_body : attached_bodies_) {
+  for (const auto &[attached_body_name, attached_body] : attached_bodies_) {
     auto attached_obj = attached_body->getObject();
-    auto attached_body_name = attached_body->getName();
 
     // Collision with unplanned articulation
     for (const auto &art2 : unplanned_articulations) {

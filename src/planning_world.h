@@ -61,10 +61,8 @@ class PlanningWorldTpl {
   /// @brief Gets names of all articulations in world (unordered)
   std::vector<std::string> getArticulationNames() const;
 
-  /// @brief Gets the articulation (ArticulatedModelPtr) with given name
-  std::vector<ArticulatedModelPtr> const &getPlannedArticulations() const {
-    return planned_articulations_;
-  }
+  /// @brief Gets all planned articulations (ArticulatedModelPtr)
+  std::vector<ArticulatedModelPtr> getPlannedArticulations() const;
 
   /// @brief Gets the articulation (ArticulatedModelPtr) with given name
   ArticulatedModelPtr getArticulation(std::string const &name) const {
@@ -91,15 +89,16 @@ class PlanningWorldTpl {
    */
   bool removeArticulation(std::string const &name);
 
-  /// @brief Whether articulation with given name exists and is being planned
-  bool isArticulationPlanned(std::string const &name) const;
+  /// @brief Whether articulation with given name is being planned
+  bool isArticulationPlanned(std::string const &name) const {
+    return planned_articulations_.find(name) != planned_articulations_.end();
+  }
 
   /**
    * @brief Sets articulation with given name as being planned
-   * @returns true if success, false if articulation with given name does not
-   *  exist
+   * @throws std::out_of_range if articulation with given name does not exist
    */
-  bool setArticulationPlanned(std::string const &name, bool planned);
+  void setArticulationPlanned(std::string const &name, bool planned);
 
   /// @brief Gets names of all normal objects in world (unordered)
   std::vector<std::string> getNormalObjectNames() const;
@@ -132,40 +131,44 @@ class PlanningWorldTpl {
    */
   bool removeNormalObject(std::string const &name);
 
-  /// @brief Whether normal object with given name exists and is attached
-  bool isNormalObjectAttached(std::string const &name) const;
+  /// @brief Whether normal object with given name is attached
+  bool isNormalObjectAttached(std::string const &name) const {
+    return attached_bodies_.find(name) != attached_bodies_.end();
+  }
 
   /**
    * @brief Attaches existing normal object to specified link of articulation
    * @param name: normal object name to attach
-   * @param art_id: index of the planned articulation to attach to
+   * @param art_name: name of the planned articulation to attach to
    * @param link_id: index of the link of the planned articulation to attach to
    * @param pose: attached pose (relative pose from attached link to object)
-   * @throws std::out_of_range if normal object does not already exists
+   * @throws std::out_of_range if normal object with given name does not exist
    */
-  void attachObject(std::string const &name, int art_id, int link_id,
-                    Vector7<S> const &pose);
+  void attachObject(std::string const &name, std::string const &art_name,
+                    int link_id, Vector7<S> const &pose);
 
   /// @brief Attaches given object (w/ p_geom) to specified link of articulation
   void attachObject(std::string const &name, CollisionGeometryPtr const &p_geom,
-                    int art_id, int link_id, Vector7<S> const &pose);
+                    std::string const &art_name, int link_id,
+                    Vector7<S> const &pose);
 
   /// @brief Attaches given sphere to specified link of articulation
-  void attachSphere(S radius, int art_id, int link_id, Vector7<S> const &pose);
+  void attachSphere(S radius, std::string const &art_name, int link_id,
+                    Vector7<S> const &pose);
 
   /// @brief Attaches given box to specified link of articulation
-  void attachBox(Vector3<S> const &size, int art_id, int link_id,
-                 Vector7<S> const &pose);
+  void attachBox(Vector3<S> const &size, std::string const &art_name,
+                 int link_id, Vector7<S> const &pose);
 
   /// @brief Attaches given mesh to specified link of articulation
-  void attachMesh(std::string const &mesh_path, int art_id, int link_id,
-                  Vector7<S> const &pose);
+  void attachMesh(std::string const &mesh_path, std::string const &art_name,
+                  int link_id, Vector7<S> const &pose);
 
   /**
    * @brief Detaches object with given name
    * @param also_remove: whether to also remove object from world
-   * @returns true if success, false if normal object with given name does not
-   *  exist
+   * @returns true if success, false if the object with given name is not
+   *  attached
    */
   bool detachObject(std::string const &name, bool also_remove = false);
 
@@ -208,8 +211,9 @@ class PlanningWorldTpl {
   std::unordered_map<std::string, ArticulatedModelPtr> articulations_;
   std::unordered_map<std::string, CollisionObjectPtr> normal_objects_;
 
-  std::vector<ArticulatedModelPtr> planned_articulations_;
-  std::vector<AttachedBodyPtr> attached_bodies_;
+  // TODO: can planned_articulations_ be unordered_map? (setQposAll)
+  std::map<std::string, ArticulatedModelPtr> planned_articulations_;
+  std::unordered_map<std::string, AttachedBodyPtr> attached_bodies_;
 
   AllowedCollisionMatrixPtr acm_;
 
@@ -218,7 +222,7 @@ class PlanningWorldTpl {
 
   /// @brief Update attached bodies global pose using current state
   void updateAttachedBodiesPose() const {
-    for (const auto &attached_body : attached_bodies_)
+    for (const auto &[name, attached_body] : attached_bodies_)
       attached_body->updatePose();
   }
 

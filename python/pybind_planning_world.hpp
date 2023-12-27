@@ -68,22 +68,22 @@ inline void build_planning_world(py::module &m_all) {
       .def("is_normal_object_attached", &PlanningWorld::isNormalObjectAttached,
            py::arg("name"))
       .def("attach_object",
-           py::overload_cast<std::string const &, int, int, Vector7<S> const &>(
-               &PlanningWorld::attachObject),
-           py::arg("name"), py::arg("art_id"), py::arg("link_id"),
+           py::overload_cast<std::string const &, std::string const &, int,
+                             Vector7<S> const &>(&PlanningWorld::attachObject),
+           py::arg("name"), py::arg("art_name"), py::arg("link_id"),
            py::arg("pose"))
       .def("attach_object",
            py::overload_cast<std::string const &, CollisionGeometryPtr const &,
-                             int, int, Vector7<S> const &>(
+                             std::string const &, int, Vector7<S> const &>(
                &PlanningWorld::attachObject),
-           py::arg("name"), py::arg("p_geom"), py::arg("art_id"),
+           py::arg("name"), py::arg("p_geom"), py::arg("art_name"),
            py::arg("link_id"), py::arg("pose"))
       .def("attach_sphere", &PlanningWorld::attachSphere, py::arg("radius"),
-           py::arg("art_id"), py::arg("link_id"), py::arg("pose"))
+           py::arg("art_name"), py::arg("link_id"), py::arg("pose"))
       .def("attach_box", &PlanningWorld::attachBox, py::arg("size"),
-           py::arg("art_id"), py::arg("link_id"), py::arg("pose"))
+           py::arg("art_name"), py::arg("link_id"), py::arg("pose"))
       .def("attach_mesh", &PlanningWorld::attachMesh, py::arg("mesh_path"),
-           py::arg("art_id"), py::arg("link_id"), py::arg("pose"))
+           py::arg("art_name"), py::arg("link_id"), py::arg("pose"))
       .def("detach_object", &PlanningWorld::detachObject, py::arg("name"),
            py::arg("also_remove") = false)
       .def("print_attached_body_pose", &PlanningWorld::printAttachedBodyPose)
