@@ -74,39 +74,69 @@ void AllowedCollisionMatrix::setEntry(const std::string &name, bool allowed) {
     if (name != entry.first) setEntry(name, entry.first, allowed);
 }
 
+void AllowedCollisionMatrix::setEntry(const std::vector<std::string> &names,
+                                      bool allowed) {
+  for (const auto &name : names) setEntry(name, allowed);
+}
+
 void AllowedCollisionMatrix::setEntry(bool allowed) {
   const auto v = allowed ? AllowedCollision::ALWAYS : AllowedCollision::NEVER;
   for (auto &entry : entries_)
     for (auto &it2 : entry.second) it2.second = v;
+  /* unused for now
+  allowed_contacts_.clear();
+  */
 }
 
 void AllowedCollisionMatrix::removeEntry(const std::string &name1,
                                          const std::string &name2) {
-  if (auto jt = entries_.find(name1); jt != entries_.end())
-    if (auto it = jt->second.find(name2); it != jt->second.end())
-      jt->second.erase(it);
-  if (auto jt = entries_.find(name2); jt != entries_.end())
-    if (auto it = jt->second.find(name1); it != jt->second.end())
-      jt->second.erase(it);
+  if (auto it = entries_.find(name1); it != entries_.end())
+    if (it->second.erase(name2) == 1 && it->second.empty()) entries_.erase(it);
+  if (auto it = entries_.find(name2); it != entries_.end())
+    if (it->second.erase(name1) == 1 && it->second.empty()) entries_.erase(it);
 
   /* unused for now
   if (auto it = allowed_contacts_.find(name1); it != allowed_contacts_.end())
-    if (auto jt = it->second.find(name2); jt != it->second.end())
-      it->second.erase(jt);
+    if (it->second.erase(name2) == 1 && it->second.empty())
+      allowed_contacts_.erase(it);
   if (auto it = allowed_contacts_.find(name2); it != allowed_contacts_.end())
-    if (auto jt = it->second.find(name1); jt != it->second.end())
-      it->second.erase(jt);
+    if (it->second.erase(name1) == 1 && it->second.empty())
+      allowed_contacts_.erase(it);
   */
+}
+
+void AllowedCollisionMatrix::removeEntry(
+    const std::string &name, const std::vector<std::string> &other_names) {
+  for (const auto &other_name : other_names)
+    if (other_name != name) removeEntry(other_name, name);
+}
+
+void AllowedCollisionMatrix::removeEntry(
+    const std::vector<std::string> &names1,
+    const std::vector<std::string> &names2) {
+  for (const auto &name1 : names1) removeEntry(name1, names2);
 }
 
 void AllowedCollisionMatrix::removeEntry(const std::string &name) {
   entries_.erase(name);
-  for (auto &entry : entries_) entry.second.erase(name);
+  for (auto it = entries_.begin(); it != entries_.end();)
+    if (it->second.erase(name) == 1 && it->second.empty())
+      it = entries_.erase(it);
+    else
+      ++it;
   /* unused for now
   allowed_contacts_.erase(name);
-  for (auto &allowed_contact : allowed_contacts_)
-    allowed_contact.second.erase(name);
+  for (auto it = allowed_contacts_.begin(); it != allowed_contacts_.end();)
+    if (it->second.erase(name) == 1 && it->second.empty())
+      it = allowed_contacts_.erase(it);
+    else
+      ++it;
   */
+}
+
+void AllowedCollisionMatrix::removeEntry(
+    const std::vector<std::string> &names) {
+  for (const auto &name : names) removeEntry(name);
 }
 
 std::optional<AllowedCollision> AllowedCollisionMatrix::getDefaultEntry(
@@ -149,11 +179,21 @@ void AllowedCollisionMatrix::setDefaultEntry(const std::string &name,
   */
 }
 
+void AllowedCollisionMatrix::setDefaultEntry(
+    const std::vector<std::string> &names, bool allowed) {
+  for (const auto &name : names) setDefaultEntry(name, allowed);
+}
+
 void AllowedCollisionMatrix::removeDefaultEntry(const std::string &name) {
   default_entries_.erase(name);
   /* unused for now
   default_allowed_contacts_.erase(name);
   */
+}
+
+void AllowedCollisionMatrix::removeDefaultEntry(
+    const std::vector<std::string> &names) {
+  for (const auto &name : names) removeDefaultEntry(name);
 }
 
 std::optional<AllowedCollision> AllowedCollisionMatrix::getAllowedCollision(

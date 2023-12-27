@@ -69,9 +69,14 @@ void PlanningWorldTpl<S>::addArticulation(std::string const &name,
 
 template <typename S>
 bool PlanningWorldTpl<S>::removeArticulation(std::string const &name) {
-  bool exists = articulations_.erase(name) == 1;
-  if (exists) planned_articulations_.erase(name);
-  return exists;
+  auto nh = articulations_.extract(name);
+  if (nh.empty()) return false;
+  planned_articulations_.erase(name);
+  // Update acm_
+  auto art_link_names = nh.mapped()->getUserLinkNames();
+  acm_->removeEntry(art_link_names);
+  acm_->removeDefaultEntry(art_link_names);
+  return true;
 }
 
 template <typename S>
@@ -106,11 +111,34 @@ void PlanningWorldTpl<S>::addPointCloud(std::string const &name,
 
 template <typename S>
 bool PlanningWorldTpl<S>::removeNormalObject(std::string const &name) {
-  bool exists = normal_objects_.erase(name) == 1;
-  if (exists) attached_bodies_.erase(name);
-  return exists;
+  auto nh = normal_objects_.extract(name);
+  if (nh.empty()) return false;
+  attached_bodies_.erase(name);
+  // Update acm_
+  acm_->removeEntry(name);
+  acm_->removeDefaultEntry(name);
+  return true;
 }
 
+template <typename S>
+void PlanningWorldTpl<S>::attachObject(
+    std::string const &name, std::string const &art_name, int link_id,
+    Vector7<S> const &pose, std::vector<std::string> const &touch_links) {
+  auto obj = normal_objects_.at(name);
+  auto nh = attached_bodies_.extract(name);
+  auto body = std::make_shared<AttachedBody>(
+      name, obj, planned_articulations_.at(art_name), link_id,
+      posevec_to_transform(pose), touch_links);
+  if (!nh.empty()) {
+    // Update acm_ to disallow collision between name and previous touch_links
+    acm_->removeEntry(name, nh.mapped()->getTouchLinks());
+    nh.mapped() = body;
+    attached_bodies_.insert(std::move(nh));
+  } else
+    attached_bodies_[name] = body;
+  // Update acm_ to allow collision between name and touch_links
+  acm_->setEntry(name, touch_links, true);
+}
 
 template <typename S>
 void PlanningWorldTpl<S>::attachObject(std::string const &name,
@@ -122,11 +150,33 @@ void PlanningWorldTpl<S>::attachObject(std::string const &name,
       name, obj, planned_articulations_.at(art_name), link_id,
       posevec_to_transform(pose));
   if (!nh.empty()) {
+    body->setTouchLinks(nh.mapped()->getTouchLinks());
     nh.mapped() = body;
     attached_bodies_.insert(std::move(nh));
-  } else
+  } else {
     attached_bodies_[name] = body;
-  // TODO: update acm_
+    // Set touch_links to the name of self links colliding with object currently
+    std::vector<std::string> touch_links;
+    auto collisions = selfCollide();
+    for (const auto &collision : collisions)
+      if (collision.link_name1 == name)
+        touch_links.push_back(collision.link_name2);
+      else if (collision.link_name2 == name)
+        touch_links.push_back(collision.link_name1);
+    body->setTouchLinks(touch_links);
+    // Update acm_ to allow collision between name and touch_links
+    acm_->setEntry(name, touch_links, true);
+  }
+}
+
+template <typename S>
+void PlanningWorldTpl<S>::attachObject(
+    std::string const &name, CollisionGeometryPtr const &p_geom,
+    std::string const &art_name, int link_id, Vector7<S> const &pose,
+    std::vector<std::string> const &touch_links) {
+  removeNormalObject(name);
+  addNormalObject(name, std::make_shared<CollisionObject>(p_geom));
+  attachObject(name, art_name, link_id, pose, touch_links);
 }
 
 template <typename S>
@@ -171,8 +221,18 @@ void PlanningWorldTpl<S>::attachMesh(std::string const &mesh_path,
 template <typename S>
 bool PlanningWorldTpl<S>::detachObject(std::string const &name,
                                        bool also_remove) {
-  if (also_remove) normal_objects_.erase(name);
-  return attached_bodies_.erase(name) == 1;
+  if (also_remove) {
+    normal_objects_.erase(name);
+    // Update acm_
+    acm_->removeEntry(name);
+    acm_->removeDefaultEntry(name);
+  }
+
+  auto nh = attached_bodies_.extract(name);
+  if (nh.empty()) return false;
+  // Update acm_ to disallow collision between name and touch_links
+  acm_->removeEntry(name, nh.mapped()->getTouchLinks());
+  return true;
 }
 
 template <typename S>
@@ -209,13 +269,11 @@ template <typename S>
 std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::filterCollisions(
     const std::vector<WorldCollisionResultTpl<S>> &collisions) const {
   std::vector<WorldCollisionResult> ret;
-
   for (const auto &collision : collisions)
     if (auto type = acm_->getAllowedCollision(collision.link_name1,
                                               collision.link_name2);
         !type || type == AllowedCollision::NEVER)
       ret.push_back(collision);
-
   return ret;
 }
 

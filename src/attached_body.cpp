@@ -12,13 +12,14 @@ template <typename S>
 AttachedBodyTpl<S>::AttachedBodyTpl(
     std::string const &name, CollisionObjectPtr const &object,
     ArticulatedModelPtr const &attached_articulation, int attached_link_id,
-    Transform3<S> const &pose)
+    Transform3<S> const &pose, std::vector<std::string> const &touch_links)
     : name_(name),
       object_(object),
       attached_articulation_(attached_articulation),
       pinocchio_model_(attached_articulation->getPinocchioModel()),
       attached_link_id_(attached_link_id),
-      pose_(pose) {
+      pose_(pose),
+      touch_links_(touch_links) {
   updatePose();  // updates global pose using link_pose and attached_pose
 }
 

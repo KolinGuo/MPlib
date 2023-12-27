@@ -69,9 +69,23 @@ inline void build_planning_world(py::module &m_all) {
            py::arg("name"))
       .def("attach_object",
            py::overload_cast<std::string const &, std::string const &, int,
+                             Vector7<S> const &,
+                             std::vector<std::string> const &>(
+               &PlanningWorld::attachObject),
+           py::arg("name"), py::arg("art_name"), py::arg("link_id"),
+           py::arg("pose"), py::arg("touch_links"))
+      .def("attach_object",
+           py::overload_cast<std::string const &, std::string const &, int,
                              Vector7<S> const &>(&PlanningWorld::attachObject),
            py::arg("name"), py::arg("art_name"), py::arg("link_id"),
            py::arg("pose"))
+      .def("attach_object",
+           py::overload_cast<std::string const &, CollisionGeometryPtr const &,
+                             std::string const &, int, Vector7<S> const &,
+                             std::vector<std::string> const &>(
+               &PlanningWorld::attachObject),
+           py::arg("name"), py::arg("p_geom"), py::arg("art_name"),
+           py::arg("link_id"), py::arg("pose"), py::arg("touch_links"))
       .def("attach_object",
            py::overload_cast<std::string const &, CollisionGeometryPtr const &,
                              std::string const &, int, Vector7<S> const &>(

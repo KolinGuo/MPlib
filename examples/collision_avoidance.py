@@ -68,6 +68,8 @@ class PlanningDemo(DemoSetup):
         # no attach since nothing picked up yet
         self.move_to_pose(pickup_pose, with_screw)
         self.close_gripper()
+        # Set planner robot qpos to allow auto-detect touch_links
+        self.planner.robot.set_qpos(self.robot.get_qpos(), True)
 
         if use_attach:
             self.planner.update_attached_box([0.04, 0.04, 0.12], [0, 0, 0.14, 1, 0, 0, 0])
@@ -81,8 +83,10 @@ class PlanningDemo(DemoSetup):
         self.open_gripper()
         delivery_pose[2] += 0.12
         if use_attach:
-            ret = self.planner.detach_object(f"0_{self.planner.move_group_link_id}_box")
-            assert ret, "attached object does not exist"
+            ret = self.planner.detach_object(
+                f"robot_{self.planner.move_group_link_id}_box", also_remove=True
+            )
+            assert ret, "object is not attached"
         self.move_to_pose(delivery_pose, with_screw)
 
 if __name__ == '__main__':

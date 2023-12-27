@@ -349,8 +349,8 @@ class Planner:
             link_id = self.move_group_link_id
         self.planning_world.attach_mesh(mesh_path, art_name, link_id, pose)
 
-    def detach_object(self, name="attached_geom") -> bool:
-        return self.planning_world.detach_object(name)
+    def detach_object(self, name="attached_geom", also_remove=False) -> bool:
+        return self.planning_world.detach_object(name, also_remove)
 
     def plan(
         self,

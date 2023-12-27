@@ -83,7 +83,7 @@ class PlanningWorldTpl {
                        ArticulatedModelPtr const &model, bool planned = false);
 
   /**
-   * @brief Removes the articulation with given name if exists
+   * @brief Removes the articulation with given name if exists. Updates acm_
    * @returns true if success, false if articulation with given name does not
    *  exist
    */
@@ -125,7 +125,8 @@ class PlanningWorldTpl {
                      double resolution = 0.01);
 
   /**
-   * @brief Removes (and detaches) the normal object with given name if exists
+   * @brief Removes (and detaches) the normal object with given name if exists.
+   *  Updates acm_
    * @returns true if success, false if normal object with given name does not
    *  exist
    */
@@ -137,17 +138,51 @@ class PlanningWorldTpl {
   }
 
   /**
-   * @brief Attaches existing normal object to specified link of articulation
+   * @brief Attaches existing normal object to specified link of articulation.
+   *  If the object is currently attached, disallow collision between the object
+   *  and previous touch_links.
+   *  Updates acm_ to allow collisions between attached object and touch_links.
    * @param name: normal object name to attach
    * @param art_name: name of the planned articulation to attach to
    * @param link_id: index of the link of the planned articulation to attach to
    * @param pose: attached pose (relative pose from attached link to object)
+   * @param touch_links: link names that the attached object touches
    * @throws std::out_of_range if normal object with given name does not exist
+   *  or if planned articulation with given name does not exist
+   */
+  void attachObject(std::string const &name, std::string const &art_name,
+                    int link_id, Vector7<S> const &pose,
+                    std::vector<std::string> const &touch_links);
+
+  /**
+   * @brief Attaches existing normal object to specified link of articulation.
+   *  If the object is not currently attached, automatically sets touch_links as
+   *  the name of self links that collide with the object in the current state.
+   *  Updates acm_ to allow collisions between attached object and touch_links.
+   *  If the object is already attached, the touch_links of the attached object
+   *  is preserved and acm_ remains unchanged.
+   * @throws std::out_of_range if normal object with given name does not exist
+   *  or if planned articulation with given name does not exist
    */
   void attachObject(std::string const &name, std::string const &art_name,
                     int link_id, Vector7<S> const &pose);
 
-  /// @brief Attaches given object (w/ p_geom) to specified link of articulation
+  /**
+   * @brief Attaches given object (w/ p_geom) to specified link of articulation.
+   *  This is done by removing normal object and then adding and attaching
+   *  object. As a result, all previous acm_ entries with the object are removed
+   * @param touch_links: link names that the attached object touches
+   */
+  void attachObject(std::string const &name, CollisionGeometryPtr const &p_geom,
+                    std::string const &art_name, int link_id,
+                    Vector7<S> const &pose,
+                    std::vector<std::string> const &touch_links);
+
+  /**
+   * @brief Attaches given object (w/ p_geom) to specified link of articulation.
+   *  This is done by removing normal object and then adding and attaching
+   *  object. As a result, all previous acm_ entries with the object are removed
+   */
   void attachObject(std::string const &name, CollisionGeometryPtr const &p_geom,
                     std::string const &art_name, int link_id,
                     Vector7<S> const &pose);
@@ -165,7 +200,8 @@ class PlanningWorldTpl {
                   int link_id, Vector7<S> const &pose);
 
   /**
-   * @brief Detaches object with given name
+   * @brief Detaches object with given name. Updates acm_ to disallow collision
+   *  between the object and touch_links
    * @param also_remove: whether to also remove object from world
    * @returns true if success, false if the object with given name is not
    *  attached

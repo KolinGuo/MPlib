@@ -56,6 +56,10 @@ inline void build_collision_matrix(py::module &m_all) {
                &AllowedCollisionMatrix::setEntry),
            py::arg("name"), py::arg("allowed"))
       .def("set_entry",
+           py::overload_cast<const std::vector<std::string> &, bool>(
+               &AllowedCollisionMatrix::setEntry),
+           py::arg("names"), py::arg("allowed"))
+      .def("set_entry",
            py::overload_cast<bool>(&AllowedCollisionMatrix::setEntry),
            py::arg("allowed"))
       .def("remove_entry",
@@ -63,9 +67,23 @@ inline void build_collision_matrix(py::module &m_all) {
                &AllowedCollisionMatrix::removeEntry),
            py::arg("name1"), py::arg("name2"))
       .def("remove_entry",
+           py::overload_cast<const std::string &,
+                             const std::vector<std::string> &>(
+               &AllowedCollisionMatrix::removeEntry),
+           py::arg("name"), py::arg("other_names"))
+      .def("remove_entry",
+           py::overload_cast<const std::vector<std::string> &,
+                             const std::vector<std::string> &>(
+               &AllowedCollisionMatrix::removeEntry),
+           py::arg("names1"), py::arg("names2"))
+      .def("remove_entry",
            py::overload_cast<const std::string &>(
                &AllowedCollisionMatrix::removeEntry),
            py::arg("name"))
+      .def("remove_entry",
+           py::overload_cast<const std::vector<std::string> &>(
+               &AllowedCollisionMatrix::removeEntry),
+           py::arg("names"))
       .def("__len__",
            [](const AllowedCollisionMatrix &acm) { return acm.getSize(); })
 
@@ -75,10 +93,22 @@ inline void build_collision_matrix(py::module &m_all) {
            py::arg("name"))
       .def("has_default_entry", &AllowedCollisionMatrix::hasDefaultEntry,
            py::arg("name"))
-      .def("set_default_entry", &AllowedCollisionMatrix::setDefaultEntry,
+      .def("set_default_entry",
+           py::overload_cast<const std::string &, bool>(
+               &AllowedCollisionMatrix::setDefaultEntry),
            py::arg("name"), py::arg("allowed"))
-      .def("remove_default_entry", &AllowedCollisionMatrix::removeDefaultEntry,
+      .def("set_default_entry",
+           py::overload_cast<const std::vector<std::string> &, bool>(
+               &AllowedCollisionMatrix::setDefaultEntry),
+           py::arg("names"), py::arg("allowed"))
+      .def("remove_default_entry",
+           py::overload_cast<const std::string &>(
+               &AllowedCollisionMatrix::removeDefaultEntry),
            py::arg("name"))
+      .def("remove_default_entry",
+           py::overload_cast<const std::vector<std::string> &>(
+               &AllowedCollisionMatrix::removeDefaultEntry),
+           py::arg("names"))
 
       .def("get_allowed_collision",
            &AllowedCollisionMatrix::getAllowedCollision, py::arg("name1"),

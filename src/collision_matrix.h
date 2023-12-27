@@ -44,16 +44,23 @@ class AllowedCollisionMatrix {
   void setEntry(const std::string &name,
                 const std::vector<std::string> &other_names, bool allowed);
 
-  /// @brief Set the entries for all possible pairs between two sets of elements
+  /// @brief Set the entries for all possible pairs among two sets of elements
   void setEntry(const std::vector<std::string> &names1,
                 const std::vector<std::string> &names2, bool allowed);
 
   /**
-   * @brief Set the entries between the element and all existing elements.
-   *  As the set of elements might change in the future, consider using
-   *  setDefaultEntry() instead.
+   * @brief Set the entries for all possible pairs between the element and
+   *  existing elements. As the set of elements might change in the future,
+   *  consider using setDefaultEntry() instead.
    */
   void setEntry(const std::string &name, bool allowed);
+
+  /**
+   * @brief Set the entries for all possible pairs between each of the elements
+   *  and existing elements. As the set of elements might change in the
+   *  future, consider using setDefaultEntry() instead.
+   */
+  void setEntry(const std::vector<std::string> &names, bool allowed);
 
   /// @brief Set the entries for all possible pairs among all existing elements
   void setEntry(bool allowed);
@@ -61,8 +68,31 @@ class AllowedCollisionMatrix {
   /// @brief Remove the entry for a pair of elements if exists
   void removeEntry(const std::string &name1, const std::string &name2);
 
-  /// @brief Remove all entries between the element and all existing elements
+  /**
+   * @brief Remove existing entries between the element and each element in
+   *  other_names
+   */
+  void removeEntry(const std::string &name,
+                   const std::vector<std::string> &other_names);
+
+  /**
+   * @brief Remove any existing entries for all possible pairs among two sets of
+   *  elements
+   */
+  void removeEntry(const std::vector<std::string> &names1,
+                   const std::vector<std::string> &names2);
+
+  /**
+   * @brief Remove all entries for all possible pairs between the element and
+   *  existing elements
+   */
   void removeEntry(const std::string &name);
+
+  /**
+   * @brief Remove all entries for all possible pairs between each of the
+   *  elements and existing elements
+   */
+  void removeEntry(const std::vector<std::string> &names);
 
   /// @brief Get the size of the allowed collision matrix (number of entries)
   size_t getSize() const { return entries_.size(); }
@@ -83,8 +113,17 @@ class AllowedCollisionMatrix {
    */
   void setDefaultEntry(const std::string &name, bool allowed);
 
+  /**
+   * @brief Set the default entries for the elements. Apply to future changes of
+   *  the element set.
+   */
+  void setDefaultEntry(const std::vector<std::string> &names, bool allowed);
+
   /// @brief Remove the default entry for the element if exists
   void removeDefaultEntry(const std::string &name);
+
+  /// @brief Remove the existing default entries for the elements
+  void removeDefaultEntry(const std::vector<std::string> &names);
 
   /**
    * @brief Get the type of the allowed collision between two elements

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "articulated_model.h"
 #include "macros_utils.h"
 #include "math_utils.h"
@@ -20,7 +23,8 @@ class AttachedBodyTpl {
 
   AttachedBodyTpl(std::string const &name, CollisionObjectPtr const &object,
                   ArticulatedModelPtr const &attached_articulation,
-                  int attached_link_id, Transform3<S> const &pose);
+                  int attached_link_id, Transform3<S> const &pose,
+                  std::vector<std::string> const &touch_links = {});
 
   /// @brief Gets the attached object name
   std::string const &getName() const { return name_; }
@@ -52,6 +56,14 @@ class AttachedBodyTpl {
   /// @brief Updates the global pose of the attached object using current state
   void updatePose() const { object_->setTransform(getGlobalPose()); }
 
+  /// @brief Gets the link names that the attached body touches
+  std::vector<std::string> const &getTouchLinks() const { return touch_links_; }
+
+  /// @brief Sets the link names that the attached body touches
+  void setTouchLinks(std::vector<std::string> const &touch_links) {
+    touch_links_ = touch_links;
+  }
+
  private:
   std::string name_;
   CollisionObjectPtr object_;
@@ -59,6 +71,7 @@ class AttachedBodyTpl {
   pinocchio::PinocchioModelTplPtr<S> pinocchio_model_;
   int attached_link_id_;
   Transform3<S> pose_;
+  std::vector<std::string> touch_links_;
 };
 
 // Common Type Alias ==========================================================
