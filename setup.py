@@ -106,6 +106,7 @@ setup(
         "count_commits_from_version_file": True,
         "dev_template": "{tag}.dev{timestamp:%Y%m%d}+git.{sha}",
         "dirty_template": "{tag}.dev{timestamp:%Y%m%d}+git.{sha}.dirty",
+        "tag_filter": "v.*",
     },
     setup_requires=["setuptools-git-versioning<2"],
 )

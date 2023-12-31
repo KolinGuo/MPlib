@@ -1,2 +1,10 @@
 [tool.black]
 line_length = 79
+
+[tool.cibuildwheel]
+skip = ["*-musllinux_*", "pp*"]
+build-frontend = "build"
+manylinux-x86_64-image = "kolinguo/mplib-build:latest"
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64"]
