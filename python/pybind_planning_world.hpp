@@ -11,6 +11,7 @@
 
 #include "planning_world.h"
 #include "pybind_macros.hpp"
+#include "random_utils.h"
 #include "types.h"
 
 namespace py = pybind11;
@@ -26,6 +27,8 @@ using CollisionGeometryPtr = fcl::CollisionGeometryPtr<S>;
 using CollisionObjectPtr = fcl::CollisionObjectPtr<S>;
 
 inline void build_planning_world(py::module &m_all) {
+  m_all.def("set_global_seed", &setGlobalSeed<S>, py::arg("seed"));
+
   auto m = m_all.def_submodule("planning_world");
 
   auto PyPlanningWorld =
