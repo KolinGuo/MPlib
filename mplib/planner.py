@@ -76,6 +76,7 @@ class Planner:
         self.planning_world = planning_world.PlanningWorld(
             [self.robot], ["robot"], [], []
         )
+        self.acm = self.planning_world.get_allowed_collision_matrix()
 
         if srdf == "":
             self.generate_collision_pair()
@@ -96,6 +97,11 @@ class Planner:
             self.move_group_joint_indices
         )
         assert len(self.joint_acc_limits) == len(self.move_group_joint_indices)
+
+        # Mask for joints that have equivalent values (revolute joints with range > 2pi)
+        self.equiv_joint_mask = [
+            t.startswith("JointModelR") for t in self.joint_types
+        ] & (self.joint_limits[:, 1] - self.joint_limits[:, 0] > 2 * np.pi)
 
     def replace_package_keyword(self, package_keyword_replacement):
         rtn_urdf = self.urdf
@@ -161,25 +167,28 @@ class Planner:
             np.linalg.norm(q1 - q2), np.linalg.norm(q1 + q2)
         )
 
-    def check_joint_limit(self, q):
-        n = len(q)
-        flag = True
-        for i in range(n):
-            if self.joint_types[i].startswith("JointModelR"):
-                if np.abs(q[i] - self.joint_limits[i][0]) < 1e-3:
+    def check_joint_limit(self, qpos: np.ndarray) -> bool:
+        """Check joint limits, always clip q towards lower limits for revolute joints
+        i.e., q will be in range [qlimit[0], qlimit[0] + 2*pi)
+
+        :param qpos: joint positions, qpos will be clipped if within_limits.
+                     If not within_limits, qpos might not be fully clipped.
+        :return within_limits: whether the joint positions are within joint limits.
+        """
+        for i, (q, joint_type, qlimit) in enumerate(
+            zip(qpos, self.joint_types, self.joint_limits)
+        ):
+            if joint_type.startswith("JointModelR"):  # revolute joint
+                if np.abs(q - qlimit[0]) < 1e-3:
                     continue
-                q[i] -= (
-                    2 * np.pi * np.floor((q[i] - self.joint_limits[i][0]) / (2 * np.pi))
-                )
-                if q[i] > self.joint_limits[i][1] + 1e-3:
-                    flag = False
+                q -= 2 * np.pi * np.floor((q - qlimit[0]) / (2 * np.pi))
+                qpos[i] = q  # clip qpos
+                if q > qlimit[1] + 1e-3:
+                    return False
             else:
-                if (
-                    q[i] < self.joint_limits[i][0] - 1e-3
-                    or q[i] > self.joint_limits[i][1] + 1e-3
-                ):
-                    flag = False
-        return flag
+                if q < qlimit[0] - 1e-3 or q > qlimit[1] + 1e-3:
+                    return False
+        return True
 
     def check_for_collision(
         self,
@@ -232,7 +241,7 @@ class Planner:
     def check_for_env_collision(
         self,
         qpos: np.ndarray = None,
-    ):
+    ) -> list:
         """Check if the robot is in collision with the environment
 
         Args:
@@ -244,56 +253,104 @@ class Planner:
         """
         return self.check_for_collision(self.planning_world.collide_with_others, qpos)
 
-    def IK(self, goal_pose, start_qpos, mask=[], n_init_qpos=20, threshold=1e-3):
-        index = self.link_name_2_idx[self.move_group]
-        min_dis = 1e9
-        idx = self.move_group_joint_indices
-        qpos0 = np.copy(start_qpos)
-        results = []
+    def IK(
+        self,
+        goal_pose: np.ndarray,
+        start_qpos: np.ndarray,
+        mask: np.ndarray = [],
+        *,
+        n_init_qpos: int = 20,
+        threshold: float = 0.001,
+        return_closest: bool = False,
+        verbose: bool = False,
+    ):
+        """Compute inverse kinematics
+
+        :param goal_pose: goal pose (xyz, wxyz), (7,) np.floating np.ndarray.
+        :param start_qpos: starting qpos, (ndof,) np.floating np.ndarray.
+        :param mask: qpos mask to disable planning, (ndof,) bool np.ndarray.
+        :param n_init_qpos: number of init qpos to sample.
+        :param threshold: distance_6D threshold for marking sampled IK as success.
+                          distance_6D is position error norm + quaternion error norm.
+        :param return_closest: whether to return the qpos that is closest to start_qpos,
+                               considering equivalent joint values.
+        :param verbose: whether to print collision info if any collision exists.
+        :return status: IK status, "Success" if succeeded.
+        :return q_goals: list of sampled IK qpos, (ndof,) np.floating np.ndarray.
+                         IK is successful if q_goals is not None.
+                         If return_closest, q_goals is np.ndarray if successful
+                         and None if not successful.
+        """
+        # TODO: verbose: print collision info
+        move_link_idx = self.link_name_2_idx[self.move_group]
+        move_joint_idx = self.move_group_joint_indices
         self.robot.set_qpos(start_qpos, True)
-        for i in range(n_init_qpos):
-            ik_results = self.pinocchio_model.compute_IK_CLIK(
-                index, goal_pose, start_qpos, mask
+
+        min_dis = 1e9
+        q_goals = []
+        qpos = start_qpos
+        for _ in range(n_init_qpos):
+            ik_qpos, ik_success, ik_error = self.pinocchio_model.compute_IK_CLIK(
+                move_link_idx, goal_pose, qpos, mask
             )
-            flag = self.check_joint_limit(ik_results[0])  # will clip qpos
+            # NOTE: check_joint_limit() will clip qpos towards lower limits
+            success = ik_success and self.check_joint_limit(ik_qpos)
 
-            # check collision
-            self.planning_world.set_qpos_all(ik_results[0][idx])
-            if len(self.planning_world.collide_full()) != 0:
-                flag = False
+            if success:
+                # check collision
+                self.planning_world.set_qpos_all(ik_qpos[move_joint_idx])
+                if len(self.planning_world.collide_full()) > 0:
+                    success = False
 
-            if flag:
-                self.pinocchio_model.compute_forward_kinematics(ik_results[0])
-                new_pose = self.pinocchio_model.get_link_pose(index)
+            if success:
+                self.pinocchio_model.compute_forward_kinematics(ik_qpos)
+                new_pose = self.pinocchio_model.get_link_pose(move_link_idx)
                 tmp_dis = self.distance_6D(
                     goal_pose[:3], goal_pose[3:], new_pose[:3], new_pose[3:]
                 )
                 if tmp_dis < min_dis:
                     min_dis = tmp_dis
                 if tmp_dis < threshold:
-                    result = ik_results[0]
-                    unique = True
-                    for j in range(len(results)):
-                        if np.linalg.norm(results[j][idx] - result[idx]) < 0.1:
-                            unique = False
-                    if unique:
-                        results.append(result)
-            start_qpos = self.pinocchio_model.get_random_configuration()
-            mask_len = len(mask)
-            if mask_len > 0:
-                for j in range(mask_len):
-                    if mask[j]:
-                        start_qpos[j] = qpos0[j]
-        if len(results) != 0:
+                    for q_goal in q_goals:
+                        if (
+                            np.linalg.norm(
+                                q_goal[move_joint_idx] - ik_qpos[move_joint_idx]
+                            ) < 0.1
+                        ):
+                            break  # not unique ik_qpos
+                    else:
+                        q_goals.append(ik_qpos)
+
+            qpos = self.pinocchio_model.get_random_configuration()
+            qpos[mask] = start_qpos[mask]  # use start_qpos for disabled joints
+
+        if len(q_goals) > 0:
             status = "Success"
         elif min_dis != 1e9:
-            status = "IK Failed! Distance %lf is greater than threshold %lf." % (
-                min_dis,
-                threshold,
-            )
+            status = f"IK Failed! Distance {min_dis} is greater than {threshold=}."
+            return status, None
         else:
             status = "IK Failed! Cannot find valid solution."
-        return status, results
+            return status, None
+
+        if return_closest:
+            q_goals = np.asarray(q_goals)  # [N, ndof]
+            start_qpos = np.asarray(start_qpos)[None]  # [1, ndof]
+
+            # Consider equivalent joint values
+            q1 = q_goals[:, self.equiv_joint_mask]  # [N, n_equiv_joint]
+            q2 = q1 + 2 * np.pi  # equivalent joints
+            start_q = start_qpos[:, self.equiv_joint_mask]  # [1, n_equiv_joint]
+
+            # Mask where q2 is valid and closer to start_q
+            q2_closer_mask = (
+                q2 < self.joint_limits[:, 1][None, self.equiv_joint_mask]
+            ) & (np.abs(q1 - start_q) > np.abs(q2 - start_q))  # [N, n_equiv_joint]
+            # Convert q_goals to equivalent joint values closest to start_qpos
+            q_goals[:, self.equiv_joint_mask] = np.where(q2_closer_mask, q2, q1)
+
+            q_goals = q_goals[np.linalg.norm(q_goals - start_qpos, axis=1).argmin()]
+        return status, q_goals
 
     def TOPP(self, path, step=0.1, verbose=False):
         N_samples = path.shape[0]
@@ -354,33 +411,58 @@ class Planner:
 
     def plan(
         self,
-        goal_pose,
-        current_qpos,
-        mask=[],
-        time_step=0.1,
-        rrt_range=0.1,
-        planning_time=1,
-        fix_joint_limits=True,
-        verbose=False,
-    ):
-        n = current_qpos.shape[0]
+        goal_pose: np.ndarray,
+        current_qpos: np.ndarray,
+        mask: np.ndarray = [],
+        *,
+        time_step: float = 0.1,
+        rrt_range: float = 0.1,
+        planning_time: float = 1,
+        fix_joint_limits: bool = True,
+        verbose: bool = False,
+    ) -> dict[str, str | np.ndarray | np.float64]:
+        """Plan path with RRTConnect
+
+        :param goal_pose: goal pose (xyz, wxyz), (7,) np.floating np.ndarray.
+        :param current_qpos: current qpos, (ndof,) np.floating np.ndarray.
+        :param mask: qpos mask to disable planning, (ndof,) bool np.ndarray.
+        :param time_step: time interval between the generated waypoints.
+                          The larger the value, the sparser the output waypoints.
+        :param rrt_range: the incremental distance in the RRTConnect algorithm,
+                          The larger the value, the sparser the sampled waypoints
+                          (before time parameterization).
+        :param planning_time: time limit for RRTConnect algorithm, in seconds.
+        :param fix_joint_limits: whether to clip the current joint positions
+                                 if they are out of the joint limits.
+        :param use_point_cloud: whether to avoid collisions
+                                between the robot and the point cloud.
+        :param use_attach: whether to avoid collisions
+                           between the attached tool and the point cloud.
+                           Requires use_point_cloud to be True.
+        :param verbose: whether to display some internal outputs.
+        :return result: A dictionary containing:
+                        * status: ik_status if IK failed, "Success" if RRT succeeded.
+                        If successful, the following key/value will be included:
+                        * time: Time step of each waypoint, (n_step,) np.float64
+                        * position: qpos of each waypoint, (n_step, ndof) np.float64
+                        * velocity: qvel of each waypoint, (n_step, ndof) np.float64
+                        * acceleration: qacc of each waypoint, (n_step, ndof) np.float64
+                        * duration: optimal duration of the generated path, np.float64
+                        Note that ndof is n_active_dof
+        """
         if fix_joint_limits:
-            for i in range(n):
-                if current_qpos[i] < self.joint_limits[i][0]:
-                    current_qpos[i] = self.joint_limits[i][0] + 1e-3
-                if current_qpos[i] > self.joint_limits[i][1]:
-                    current_qpos[i] = self.joint_limits[i][1] - 1e-3
+            current_qpos = np.clip(
+                current_qpos, self.joint_limits[:, 0], self.joint_limits[:, 1]
+            )
 
         self.robot.set_qpos(current_qpos, True)
         collisions = self.planning_world.collide_full()
-        if len(collisions) != 0:
+        if len(collisions) > 0:
             print("Invalid start state!")
             for collision in collisions:
-                print(
-                    "%s and %s collide!" % (collision.link_name1, collision.link_name2)
-                )
+                print(f"{collision.link_name1} and {collision.link_name2} collide!")
 
-        idx = self.move_group_joint_indices
+        move_joint_idx = self.move_group_joint_indices
         ik_status, goal_qpos = self.IK(goal_pose, current_qpos, mask)
         if ik_status != "Success":
             return {"status": ik_status}
@@ -392,11 +474,11 @@ class Planner:
 
         goal_qpos_ = []
         for i in range(len(goal_qpos)):
-            goal_qpos_.append(goal_qpos[i][idx])
+            goal_qpos_.append(goal_qpos[i][move_joint_idx])
         self.robot.set_qpos(current_qpos, True)
 
         status, path = self.planner.plan(
-            current_qpos[idx],
+            current_qpos[move_joint_idx],
             goal_qpos_,
             range=rrt_range,
             verbose=verbose,
@@ -419,18 +501,43 @@ class Planner:
                 "duration": duration,
             }
         else:
-            return {"status": "RRT Failed. %s" % status}
+            return {"status": f"RRT Failed. {status}"}
 
     def plan_screw(
         self,
-        target_pose,
-        qpos,
-        qpos_step=0.1,
-        time_step=0.1,
-        verbose=False,
-    ):
-        qpos = np.copy(qpos)
-        self.robot.set_qpos(qpos, True)
+        goal_pose: np.ndarray,
+        current_qpos: np.ndarray,
+        *,
+        time_step: float = 0.1,
+        qpos_step: float = 0.1,
+        verbose: bool = False,
+    ) -> dict[str, str | np.ndarray | np.float64]:
+        """Plan path with straight-line screw motion
+
+        :param goal_pose: goal pose (xyz, wxyz), (7,) np.floating np.ndarray.
+        :param current_qpos: current qpos, (ndof,) np.floating np.ndarray.
+        :param time_step: time interval between the generated waypoints.
+                          The larger the value, the sparser the output waypoints.
+        :param qpos_step: the incremental distance of the joint positions
+                          during the path generation (before time paramtertization).
+        :param use_point_cloud: whether to avoid collisions
+                                between the robot and the point cloud.
+        :param use_attach: whether to avoid collisions
+                           between the attached tool and the point cloud.
+                           Requires use_point_cloud to be True.
+        :param verbose: whether to display some internal outputs.
+        :return result: A dictionary containing:
+                        * status: "Success" if succeeded.
+                        If successful, the following key/value will be included:
+                        * time: Time step of each waypoint, (n_step,) np.float64
+                        * position: qpos of each waypoint, (n_step, ndof) np.float64
+                        * velocity: qvel of each waypoint, (n_step, ndof) np.float64
+                        * acceleration: qacc of each waypoint, (n_step, ndof) np.float64
+                        * duration: optimal duration of the generated path, np.float64
+                        Note that ndof is n_active_dof
+        """
+        current_qpos = np.copy(current_qpos)
+        self.robot.set_qpos(current_qpos, True)
 
         def pose7D2mat(pose):
             mat = np.eye(4)
@@ -481,10 +588,10 @@ class Planner:
             v = inv_left_jacobian @ pose[:3, 3]
             return np.concatenate([v, omega]), theta
 
-        self.pinocchio_model.compute_forward_kinematics(qpos)
+        self.pinocchio_model.compute_forward_kinematics(current_qpos)
         ee_index = self.link_name_2_idx[self.move_group]
         current_p = pose7D2mat(self.pinocchio_model.get_link_pose(ee_index))
-        target_p = pose7D2mat(target_pose)
+        target_p = pose7D2mat(goal_pose)
         relative_transform = target_p @ np.linalg.inv(current_p)
 
         omega, theta = pose2exp_coordinate(relative_transform)
@@ -493,11 +600,11 @@ class Planner:
             return {"status": "screw plan failed."}
         omega = omega.reshape((-1, 1)) * theta
 
-        index = self.move_group_joint_indices
-        path = [np.copy(qpos[index])]
+        move_joint_idx = self.move_group_joint_indices
+        path = [np.copy(current_qpos[move_joint_idx])]
 
         while True:
-            self.pinocchio_model.compute_full_jacobian(qpos)
+            self.pinocchio_model.compute_full_jacobian(current_qpos)
             J = self.pinocchio_model.get_link_jacobian(ee_index, local=False)
             delta_q = np.linalg.pinv(J) @ omega
             delta_q *= qpos_step / (np.linalg.norm(delta_q))
@@ -510,7 +617,7 @@ class Planner:
                 delta_twist = delta_twist * ratio
                 flag = True
 
-            qpos += delta_q.reshape(-1)
+            current_qpos += delta_q.reshape(-1)
             omega -= delta_twist
 
             def check_joint_limit(q):
@@ -523,14 +630,14 @@ class Planner:
                         return False
                 return True
 
-            within_joint_limit = check_joint_limit(qpos)
-            self.planning_world.set_qpos_all(qpos[index])
+            within_joint_limit = check_joint_limit(current_qpos)
+            self.planning_world.set_qpos_all(current_qpos[move_joint_idx])
             collide = self.planning_world.collide()
 
             if np.linalg.norm(delta_twist) < 1e-4 or collide or not within_joint_limit:
                 return {"status": "screw plan failed"}
 
-            path.append(np.copy(qpos[index]))
+            path.append(np.copy(current_qpos[move_joint_idx]))
 
             if flag:
                 if verbose:
