@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -28,6 +29,24 @@ using WorldCollisionResultd = WorldCollisionResultTpl<double>;
 using WorldCollisionResultfPtr = WorldCollisionResultTplPtr<float>;
 using WorldCollisionResultdPtr = WorldCollisionResultTplPtr<double>;
 
+// WorldDistanceResultTplPtr
+MPLIB_STRUCT_TEMPLATE_FORWARD(WorldDistanceResultTpl);
+
+template <typename S>
+struct WorldDistanceResultTpl {
+  fcl::DistanceResult<S> res;
+  S min_distance;
+  std::string distance_type, object_name1, object_name2, link_name1, link_name2;
+
+  WorldDistanceResultTpl() : min_distance(std::numeric_limits<S>::max()) {}
+};
+
+// Common Type Alias ==========================================================
+using WorldDistanceResultf = WorldDistanceResultTpl<float>;
+using WorldDistanceResultd = WorldDistanceResultTpl<double>;
+using WorldDistanceResultfPtr = WorldDistanceResultTplPtr<float>;
+using WorldDistanceResultdPtr = WorldDistanceResultTplPtr<double>;
+
 // PlanningWorldTplPtr
 MPLIB_CLASS_TEMPLATE_FORWARD(PlanningWorldTpl);
 
@@ -37,6 +56,8 @@ class PlanningWorldTpl {
   // Common type alias
   using CollisionRequest = fcl::CollisionRequest<S>;
   using CollisionResult = fcl::CollisionResult<S>;
+  using DistanceRequest = fcl::DistanceRequest<S>;
+  using DistanceResult = fcl::DistanceResult<S>;
   using CollisionGeometryPtr = fcl::CollisionGeometryPtr<S>;
   using CollisionObject = fcl::CollisionObject<S>;
   using CollisionObjectPtr = fcl::CollisionObjectPtr<S>;
@@ -45,6 +66,7 @@ class PlanningWorldTpl {
   using BroadPhaseCollisionManagerPtr = fcl::BroadPhaseCollisionManagerPtr<S>;
 
   using WorldCollisionResult = WorldCollisionResultTpl<S>;
+  using WorldDistanceResult = WorldDistanceResultTpl<S>;
   using ArticulatedModelPtr = ArticulatedModelTplPtr<S>;
   using AttachedBody = AttachedBodyTpl<S>;
   using AttachedBodyPtr = AttachedBodyTplPtr<S>;
@@ -243,6 +265,26 @@ class PlanningWorldTpl {
   std::vector<WorldCollisionResult> collideFull(
       CollisionRequest const &request = CollisionRequest()) const;
 
+  /// @brief Returns the minimum distance to collision in current state
+  S distance(DistanceRequest const &request = DistanceRequest()) const {
+    return distanceFull().min_distance;
+  }
+
+  /// @brief The min distance to self-collision given the robot in current state
+  WorldDistanceResult distanceSelf(
+      DistanceRequest const &request = DistanceRequest()) const;
+
+  /// @brief Compute the min distance between a robot and the world
+  WorldDistanceResult distanceOthers(
+      DistanceRequest const &request = DistanceRequest()) const;
+
+  /**
+   * @brief Compute the min distance to collision (calls distanceSelf() and
+   *  distanceOthers())
+   */
+  WorldDistanceResult distanceFull(
+      DistanceRequest const &request = DistanceRequest()) const;
+
  private:
   std::unordered_map<std::string, ArticulatedModelPtr> articulations_;
   std::unordered_map<std::string, CollisionObjectPtr> normal_objects_;
@@ -276,6 +318,7 @@ using PlanningWorlddPtr = PlanningWorldTplPtr<double>;
 // Explicit Template Instantiation Declaration ================================
 #define DECLARE_TEMPLATE_PLANNING_WORLD(S)          \
   extern template class WorldCollisionResultTpl<S>; \
+  extern template class WorldDistanceResultTpl<S>;  \
   extern template class PlanningWorldTpl<S>
 
 DECLARE_TEMPLATE_PLANNING_WORLD(float);

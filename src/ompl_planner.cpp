@@ -2,6 +2,10 @@
 
 #include <ompl/base/Planner.h>
 #include <ompl/base/goals/GoalStates.h>
+#include <ompl/base/objectives/MaximizeMinClearanceObjective.h>
+#include <ompl/base/objectives/PathLengthOptimizationObjective.h>
+#include <ompl/geometric/planners/rrt/RRTConnect.h>
+#include <ompl/geometric/planners/rrt/RRTstar.h>
 
 #include <memory>
 
@@ -92,7 +96,7 @@ template <typename S>
 std::pair<std::string, MatrixX<S>> OMPLPlannerTpl<S>::plan(
     VectorX<S> const &start_state, std::vector<VectorX<S>> const &goal_states,
     const std::string &planner_name, double time, double range,
-    bool verbose) const {
+    double pathlen_obj_weight, bool verbose) const {
   ASSERT(start_state.rows() == goal_states[0].rows(),
          "Length of start state and goal state should be equal");
   ASSERT(static_cast<size_t>(start_state.rows()) == dim_,
@@ -165,6 +169,17 @@ std::pair<std::string, MatrixX<S>> OMPLPlannerTpl<S>::plan(
     auto rrt_connect = std::make_shared<og::RRTConnect>(si_);
     if (range > 1E-6) rrt_connect->setRange(range);
     planner = rrt_connect;
+  } else if (planner_name == "RRTstar") {
+    // Create optimization objective
+    auto length_objective =
+        std::make_shared<ob::PathLengthOptimizationObjective>(si_);
+    auto clear_objective =
+        std::make_shared<ob::MaximizeMinClearanceObjective>(si_);
+    pdef_->setOptimizationObjective(pathlen_obj_weight * length_objective +
+                                    clear_objective);
+    auto rrt_star = std::make_shared<og::RRTstar>(si_);
+    if (range > 1E-6) rrt_star->setRange(range);
+    planner = rrt_star;
   } else
     throw std::runtime_error("Planner Not implemented");
 

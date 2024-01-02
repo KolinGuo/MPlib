@@ -415,9 +415,11 @@ class Planner:
         current_qpos: np.ndarray,
         mask: np.ndarray = [],
         *,
+        planner_name: str = "RRTConnect",
         time_step: float = 0.1,
         rrt_range: float = 0.1,
         planning_time: float = 1,
+        pathlen_obj_weight: float = 10.0,
         fix_joint_limits: bool = True,
         verbose: bool = False,
     ) -> dict[str, str | np.ndarray | np.float64]:
@@ -426,12 +428,14 @@ class Planner:
         :param goal_pose: goal pose (xyz, wxyz), (7,) np.floating np.ndarray.
         :param current_qpos: current qpos, (ndof,) np.floating np.ndarray.
         :param mask: qpos mask to disable planning, (ndof,) bool np.ndarray.
+        :param planner_name: name of planner to use. ["RRTConnect", "RRTstar"]
         :param time_step: time interval between the generated waypoints.
                           The larger the value, the sparser the output waypoints.
         :param rrt_range: the incremental distance in the RRTConnect algorithm,
                           The larger the value, the sparser the sampled waypoints
                           (before time parameterization).
         :param planning_time: time limit for RRTConnect algorithm, in seconds.
+        :param pathlen_obj_weight: weight of path length objective for RRTstar.
         :param fix_joint_limits: whether to clip the current joint positions
                                  if they are out of the joint limits.
         :param use_point_cloud: whether to avoid collisions
@@ -480,9 +484,11 @@ class Planner:
         status, path = self.planner.plan(
             current_qpos[move_joint_idx],
             goal_qpos_,
-            range=rrt_range,
-            verbose=verbose,
+            planner_name=planner_name,
             time=planning_time,
+            range=rrt_range,
+            pathlen_obj_weight=pathlen_obj_weight,
+            verbose=verbose,
         )
 
         if status == "Exact solution":

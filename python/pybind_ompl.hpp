@@ -27,7 +27,7 @@ inline void build_pyompl(py::module &m_all) {
       .def("plan", &OMPLPlanner::plan, py::arg("start_state"),
            py::arg("goal_states"), py::arg("planner_name") = "RRTConnect",
            py::arg("time") = 1.0, py::arg("range") = 0.0,
-           py::arg("verbose") = false);
+           py::arg("pathlen_obj_weight") = 10.0, py::arg("verbose") = false);
 }
 
 }  // namespace mplib

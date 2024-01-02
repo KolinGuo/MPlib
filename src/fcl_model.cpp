@@ -172,39 +172,14 @@ bool FCLModelTpl<S>::collide(CollisionRequest<S> const &request) const {
 template <typename S>
 std::vector<CollisionResult<S>> FCLModelTpl<S>::collideFull(
     CollisionRequest<S> const &request) const {
-  // CollisionRequest request(1, false, 1, false, true,
-  // fcl::GJKSolverType::GST_INDEP, 1e-6);
-  //  result will be returned via the collision result structure
   std::vector<CollisionResult<S>> ret;
-  // double cnt = 0;
-  // std::cout << collision_pairs.size() << std::endl;
   for (const auto &col_pair : collision_pairs_) {
     CollisionResult<S> result;
     result.clear();
-
-    // auto trans = collision_objects[col_pair.first].get()->getTranslation();
-    // cnt += trans[0] + trans[1] + trans[2];
-    // std::cout << result.numContacts() << std::endl;
-
-    // std::cout << col_pair.first << ' ' << col_pair.second << std::endl;
-    // std::cout << trans << std::endl << std::endl;
-    // std::cout << collision_objects[col_pair.first].get()->getTranslation() <<
-    // std::endl; std::cout <<
-    // collision_objects[col_pair.second].get()->getTranslation() << std::endl;
     ::fcl::collide(collision_objects_[col_pair.first].get(),
                    collision_objects_[col_pair.second].get(), request, result);
-    /*if (result.isCollision()) {
-        std::vector<Contact> contacts;
-        result.getContacts(contacts);
-        std::cout << "num: " << contacts.size() << std::endl;
-        for (auto contact: contacts)
-            std::cout << contact.penetration_depth << " " << contact.pos[0] << "
-    " << contact.pos[1] << " " << contact.pos[2] << std::endl; std::cout<<
-    std::endl;
-    }*/
     ret.push_back(result);
   }
-  // std::cout << cnt << "?" << std::endl;
   return ret;
 }
 

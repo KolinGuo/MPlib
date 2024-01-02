@@ -4,18 +4,14 @@
 #include <ompl/base/StateValidityChecker.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <ompl/base/spaces/SO2StateSpace.h>
-#include <ompl/geometric/planners/rrt/RRTConnect.h>
 
 #include <vector>
 
 /* #include <ompl/base/goals/GoalStates.h> */
-/* #include <ompl/base/objectives/MaximizeMinClearanceObjective.h> */
-/* #include <ompl/base/objectives/PathLengthOptimizationObjective.h> */
 /* #include <ompl/base/objectives/StateCostIntegralObjective.h> */
 /* #include <ompl/base/samplers/ObstacleBasedValidStateSampler.h> */
 /* #include <ompl/geometric/PathSimplifier.h> */
 /* #include <ompl/geometric/SimpleSetup.h> */
-/* #include <ompl/geometric/planners/rrt/RRTstar.h> */
 /* #include <ompl/util/RandomNumbers.h> */
 
 #include "macros_utils.h"
@@ -62,11 +58,18 @@ class ValidityCheckerTpl : public ob::StateValidityChecker {
       : ob::StateValidityChecker(si), world_(world) {}
 
   bool isValid(const ob::State *state_raw) const {
-    // std::cout << "Begin to check state" << std::endl;
-    // std::cout << "check " << state2eigen<S>(state_raw, si_) <<
-    // std::endl;
     world_->setQposAll(state2eigen<S>(state_raw, si_));
     return !world_->collide();
+  }
+
+  /**
+   * @brief Report the distance to the nearest invalid state when starting from
+   *  state. If the distance is negative, the value of clearance is the
+   *  penetration depth.
+   */
+  double clearance(const ob::State *state_raw) const {
+    world_->setQposAll(state2eigen<S>(state_raw, si_));
+    return static_cast<double>(world_->distance());
   }
 
   bool _isValid(const VectorX<S> &state) const {
@@ -101,7 +104,8 @@ class OMPLPlannerTpl {
   std::pair<std::string, MatrixX<S>> plan(
       VectorX<S> const &start_state, std::vector<VectorX<S>> const &goal_states,
       const std::string &planner_name = "RRTConnect", double time = 1.0,
-      double range = 0.0, bool verbose = false) const;
+      double range = 0.0, double pathlen_obj_weight = 10.0,
+      bool verbose = false) const;
 
  private:
   CompoundStateSpacePtr cs_;

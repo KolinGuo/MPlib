@@ -20,9 +20,11 @@ namespace mplib {
 
 using PlanningWorld = PlanningWorldTpl<S>;
 using WorldCollisionResult = WorldCollisionResultTpl<S>;
+using WorldDistanceResult = WorldDistanceResultTpl<S>;
 
 using ArticulatedModelPtr = ArticulatedModelTplPtr<S>;
 using CollisionRequest = fcl::CollisionRequest<S>;
+using DistanceRequest = fcl::DistanceRequest<S>;
 using CollisionGeometryPtr = fcl::CollisionGeometryPtr<S>;
 using CollisionObjectPtr = fcl::CollisionObjectPtr<S>;
 
@@ -119,17 +121,37 @@ inline void build_planning_world(py::module &m_all) {
       .def("collide_with_others", &PlanningWorld::collideWithOthers,
            py::arg("request") = CollisionRequest())
       .def("collide_full", &PlanningWorld::collideFull,
-           py::arg("request") = CollisionRequest());
+           py::arg("request") = CollisionRequest())
+
+      .def("distance", &PlanningWorld::distance,
+           py::arg("request") = DistanceRequest())
+      .def("self_distance", &PlanningWorld::distanceSelf,
+           py::arg("request") = DistanceRequest())
+      .def("distance_with_others", &PlanningWorld::distanceOthers,
+           py::arg("request") = DistanceRequest())
+      .def("distance_full", &PlanningWorld::distanceFull,
+           py::arg("request") = DistanceRequest());
 
   auto PyWorldCollisionResult =
       py::class_<WorldCollisionResult, std::shared_ptr<WorldCollisionResult>>(
           m, "WorldCollisionResult");
   PyWorldCollisionResult.def_readonly("res", &WorldCollisionResult::res)
+      .def_readonly("collision_type", &WorldCollisionResult::collision_type)
       .def_readonly("object_name1", &WorldCollisionResult::object_name1)
       .def_readonly("object_name2", &WorldCollisionResult::object_name2)
-      .def_readonly("collision_type", &WorldCollisionResult::collision_type)
       .def_readonly("link_name1", &WorldCollisionResult::link_name1)
       .def_readonly("link_name2", &WorldCollisionResult::link_name2);
+
+  auto PyWorldDistanceResult =
+      py::class_<WorldDistanceResult, std::shared_ptr<WorldDistanceResult>>(
+          m, "WorldDistanceResult");
+  PyWorldDistanceResult.def_readonly("res", &WorldDistanceResult::res)
+      .def_readonly("min_distance", &WorldDistanceResult::min_distance)
+      .def_readonly("distance_type", &WorldDistanceResult::distance_type)
+      .def_readonly("object_name1", &WorldDistanceResult::object_name1)
+      .def_readonly("object_name2", &WorldDistanceResult::object_name2)
+      .def_readonly("link_name1", &WorldDistanceResult::link_name1)
+      .def_readonly("link_name2", &WorldDistanceResult::link_name2);
 }
 
 }  // namespace mplib
