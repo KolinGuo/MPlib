@@ -105,7 +105,7 @@ class OMPLPlannerTpl {
       VectorX<S> const &start_state, std::vector<VectorX<S>> const &goal_states,
       const std::string &planner_name = "RRTConnect", double time = 1.0,
       double range = 0.0, double pathlen_obj_weight = 10.0,
-      bool verbose = false) const;
+      bool pathlen_obj_only = false, bool verbose = false) const;
 
  private:
   CompoundStateSpacePtr cs_;

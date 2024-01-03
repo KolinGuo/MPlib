@@ -4,7 +4,12 @@
 #include <ompl/base/goals/GoalStates.h>
 #include <ompl/base/objectives/MaximizeMinClearanceObjective.h>
 #include <ompl/base/objectives/PathLengthOptimizationObjective.h>
+#include <ompl/geometric/planners/prm/LazyPRMstar.h>
+#include <ompl/geometric/planners/prm/PRMstar.h>
+#include <ompl/geometric/planners/rrt/InformedRRTstar.h>
 #include <ompl/geometric/planners/rrt/RRTConnect.h>
+#include <ompl/geometric/planners/rrt/RRTXstatic.h>
+#include <ompl/geometric/planners/rrt/RRTsharp.h>
 #include <ompl/geometric/planners/rrt/RRTstar.h>
 
 #include <memory>
@@ -96,7 +101,7 @@ template <typename S>
 std::pair<std::string, MatrixX<S>> OMPLPlannerTpl<S>::plan(
     VectorX<S> const &start_state, std::vector<VectorX<S>> const &goal_states,
     const std::string &planner_name, double time, double range,
-    double pathlen_obj_weight, bool verbose) const {
+    double pathlen_obj_weight, bool pathlen_obj_only, bool verbose) const {
   ASSERT(start_state.rows() == goal_states[0].rows(),
          "Length of start state and goal state should be equal");
   ASSERT(static_cast<size_t>(start_state.rows()) == dim_,
@@ -169,19 +174,42 @@ std::pair<std::string, MatrixX<S>> OMPLPlannerTpl<S>::plan(
     auto rrt_connect = std::make_shared<og::RRTConnect>(si_);
     if (range > 1E-6) rrt_connect->setRange(range);
     planner = rrt_connect;
-  } else if (planner_name == "RRTstar") {
+  } else {
     // Create optimization objective
     auto length_objective =
         std::make_shared<ob::PathLengthOptimizationObjective>(si_);
     auto clear_objective =
         std::make_shared<ob::MaximizeMinClearanceObjective>(si_);
-    pdef_->setOptimizationObjective(pathlen_obj_weight * length_objective +
-                                    clear_objective);
-    auto rrt_star = std::make_shared<og::RRTstar>(si_);
-    if (range > 1E-6) rrt_star->setRange(range);
-    planner = rrt_star;
-  } else
-    throw std::runtime_error("Planner Not implemented");
+    if (pathlen_obj_only)
+      pdef_->setOptimizationObjective(length_objective);
+    else
+      pdef_->setOptimizationObjective(pathlen_obj_weight * length_objective +
+                                      clear_objective);
+    if (planner_name == "PRMstar")
+      planner = std::make_shared<og::PRMstar>(si_);
+    else if (planner_name == "LazyPRMstar") {
+      auto lazy_prm_star = std::make_shared<og::LazyPRMstar>(si_);
+      if (range > 1E-6) lazy_prm_star->setRange(range);
+      planner = lazy_prm_star;
+    } else if (planner_name == "RRTstar") {
+      auto rrt_star = std::make_shared<og::RRTstar>(si_);
+      if (range > 1E-6) rrt_star->setRange(range);
+      planner = rrt_star;
+    } else if (planner_name == "RRTsharp") {
+      auto rrt_sharp = std::make_shared<og::RRTsharp>(si_);
+      if (range > 1E-6) rrt_sharp->setRange(range);
+      planner = rrt_sharp;
+    } else if (planner_name == "RRTXstatic") {
+      auto rrtx_static = std::make_shared<og::RRTXstatic>(si_);
+      if (range > 1E-6) rrtx_static->setRange(range);
+      planner = rrtx_static;
+    } else if (planner_name == "InformedRRTstar") {
+      auto informed_rrt_star = std::make_shared<og::InformedRRTstar>(si_);
+      if (range > 1E-6) informed_rrt_star->setRange(range);
+      planner = informed_rrt_star;
+    } else
+      throw std::runtime_error("Planner Not implemented");
+  }
 
   planner->setProblemDefinition(pdef_);
   planner->setup();

@@ -420,6 +420,7 @@ class Planner:
         rrt_range: float = 0.1,
         planning_time: float = 1,
         pathlen_obj_weight: float = 10.0,
+        pathlen_obj_only: bool = False,
         fix_joint_limits: bool = True,
         verbose: bool = False,
     ) -> dict[str, str | np.ndarray | np.float64]:
@@ -428,7 +429,9 @@ class Planner:
         :param goal_pose: goal pose (xyz, wxyz), (7,) np.floating np.ndarray.
         :param current_qpos: current qpos, (ndof,) np.floating np.ndarray.
         :param mask: qpos mask to disable planning, (ndof,) bool np.ndarray.
-        :param planner_name: name of planner to use. ["RRTConnect", "RRTstar"]
+        :param planner_name: name of planner to use. ["RRTConnect", "PRMstar",
+                             "LazyPRMstar", "RRTstar", "RRTsharp", "RRTXstatic",
+                             "InformedRRTstar"]
         :param time_step: time interval between the generated waypoints.
                           The larger the value, the sparser the output waypoints.
         :param rrt_range: the incremental distance in the RRTConnect algorithm,
@@ -436,6 +439,7 @@ class Planner:
                           (before time parameterization).
         :param planning_time: time limit for RRTConnect algorithm, in seconds.
         :param pathlen_obj_weight: weight of path length objective for RRTstar.
+        :param pathlen_obj_only: Only plan with shorted path length objective.
         :param fix_joint_limits: whether to clip the current joint positions
                                  if they are out of the joint limits.
         :param use_point_cloud: whether to avoid collisions
@@ -488,6 +492,7 @@ class Planner:
             time=planning_time,
             range=rrt_range,
             pathlen_obj_weight=pathlen_obj_weight,
+            pathlen_obj_only=pathlen_obj_only,
             verbose=verbose,
         )
 
@@ -507,7 +512,10 @@ class Planner:
                 "duration": duration,
             }
         else:
-            return {"status": f"RRT Failed. {status}"}
+            return {
+                "status": f"{planner_name} failed. {status}",
+                "path": path,
+            }
 
     def plan_screw(
         self,
