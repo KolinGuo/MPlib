@@ -28,9 +28,9 @@ DEFINE_TEMPLATE_KDL_MODEL(float);
 DEFINE_TEMPLATE_KDL_MODEL(double);
 
 template <typename S>
-KDLModelTpl<S>::KDLModelTpl(std::string const &urdf_filename,
-                            std::vector<std::string> const &joint_names,
-                            std::vector<std::string> const &link_names,
+KDLModelTpl<S>::KDLModelTpl(const std::string &urdf_filename,
+                            const std::vector<std::string> &joint_names,
+                            const std::vector<std::string> &link_names,
                             bool verbose)
     : user_link_names_(link_names),
       user_joint_names_(joint_names),
@@ -57,7 +57,7 @@ KDLModelTpl<S>::KDLModelTpl(std::string const &urdf_filename,
 
 template <typename S>
 std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKLMA(
-    size_t const &index, VectorX<S> const &q0, Vector7<S> const &pose) const {
+    size_t index, const VectorX<S> &q0, const Vector7<S> &pose) const {
   KDL::Chain chain;
   Vector6<double> L;
   L(0) = 1;
@@ -91,7 +91,7 @@ std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKLMA(
 
 template <typename S>
 std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKNR(
-    size_t const &index, VectorX<S> const &q0, Vector7<S> const &pose) const {
+    size_t index, const VectorX<S> &q0, const Vector7<S> &pose) const {
   KDL::Chain chain;
   ASSERT(index < user_link_names_.size(), "link index out of bound");
   tree_.getChain(tree_root_name_, user_link_names_[index], chain);
@@ -123,8 +123,8 @@ std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKNR(
 
 template <typename S>
 std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKNRJL(
-    size_t const &index, VectorX<S> const &q0, Vector7<S> const &pose,
-    VectorX<S> const &qmin, VectorX<S> const &qmax) const {
+    size_t index, const VectorX<S> &q0, const Vector7<S> &pose,
+    const VectorX<S> &qmin, const VectorX<S> &qmax) const {
   KDL::Chain chain;
   ASSERT(index < user_link_names_.size(), "link index out of bound");
   tree_.getChain(tree_root_name_, user_link_names_[index], chain);
@@ -164,9 +164,9 @@ std::tuple<VectorX<S>, int> KDLModelTpl<S>::chainIKNRJL(
 
 template <typename S>
 std::tuple<VectorX<S>, int> KDLModelTpl<S>::TreeIKNRJL(
-    const std::vector<std::string> endpoints, VectorX<S> const &q0,
-    std::vector<Vector7<S>> const &poses, VectorX<S> const &qmin,
-    VectorX<S> const &qmax) const {
+    const std::vector<std::string> &endpoints, const VectorX<S> &q0,
+    const std::vector<Vector7<S>> &poses, const VectorX<S> &qmin,
+    const VectorX<S> &qmax) const {
   KDL::TreeFkSolverPos_recursive fkpossolver(tree_);
   KDL::TreeIkSolverVel_wdls ikvelsolver(tree_, endpoints);
   ikvelsolver.setLambda(1e-6);

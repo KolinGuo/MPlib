@@ -98,8 +98,8 @@ inline void build_pyfcl(py::module &m_all) {
                     const std::shared_ptr<const std::vector<int>> &, bool>(),
            py::arg("vertices"), py::arg("num_faces"), py::arg("faces"),
            py::arg("throw_if_invalid") = true)
-      .def(py::init([](MatrixX3<S> const &vertices, MatrixX3i const &faces,
-                       bool const &throw_if_invalid) {
+      .def(py::init([](const MatrixX3<S> &vertices, const MatrixX3i &faces,
+                       bool throw_if_invalid) {
              auto vertices_new = std::make_shared<std::vector<Vector3<S>>>();
              auto faces_new = std::make_shared<std::vector<int>>();
              for (size_t i = 0; i < static_cast<size_t>(vertices.rows()); i++) {
@@ -191,7 +191,7 @@ inline void build_pyfcl(py::module &m_all) {
   auto PyOcTree = py::class_<OcTree, std::shared_ptr<OcTree>>(
       m, "OcTree", PyCollisionGeometry);
   PyOcTree.def(py::init<S>(), py::arg("resolution"))
-      .def(py::init([](MatrixX3<S> const &vertices, double const &resolution) {
+      .def(py::init([](const MatrixX3<S> &vertices, double resolution) {
              octomap::OcTree *tree = new octomap::OcTree(resolution);
 
              // insert some measurements of occupied cells
@@ -350,7 +350,7 @@ inline void build_pyfcl(py::module &m_all) {
   auto PyFCLModel =
       py::class_<FCLModel, std::shared_ptr<FCLModel>>(m, "FCLModel");
   PyFCLModel
-      .def(py::init<std::string const &, bool, bool>(),
+      .def(py::init<const std::string &, bool, bool>(),
            py::arg("urdf_filename"), py::arg("verbose") = true,
            py::arg("convex") = false)
       .def("get_collision_pairs", &FCLModel::getCollisionPairs)
@@ -360,7 +360,7 @@ inline void build_pyfcl(py::module &m_all) {
       .def("remove_collision_pairs_from_srdf",
            &FCLModel::removeCollisionPairsFromSrdf, py::arg("srdf_filename"))
       .def("update_collision_objects",
-           py::overload_cast<std::vector<Vector7<S>> const &>(
+           py::overload_cast<const std::vector<Vector7<S>> &>(
                &FCLModel::updateCollisionObjects, py::const_),
            py::arg("link_poses"))
       .def("collide", &FCLModel::collide,

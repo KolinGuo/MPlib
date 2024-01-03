@@ -1,5 +1,12 @@
 BasedOnStyle: Google
 
+# Write pointer / reference as "int &foo" instead of "int& foo"
+DerivePointerAlignment: false
+PointerAlignment: Right
+
+# Write cv-qualifiers as "const std::string" instead of "std::string const"
+QualifierAlignment: Left
+
 IncludeCategories:
 - Regex:           '^<.*\.(h|hpp)>'
   Priority:        2

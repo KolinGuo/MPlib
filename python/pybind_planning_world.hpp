@@ -37,10 +37,10 @@ inline void build_planning_world(py::module &m_all) {
       py::class_<PlanningWorld, std::shared_ptr<PlanningWorld>>(
           m, "PlanningWorld");
   PyPlanningWorld
-      .def(py::init<std::vector<ArticulatedModelPtr> const &,
-                    std::vector<std::string> const &,
-                    std::vector<CollisionObjectPtr> const &,
-                    std::vector<std::string> const &>(),
+      .def(py::init<const std::vector<ArticulatedModelPtr> &,
+                    const std::vector<std::string> &,
+                    const std::vector<CollisionObjectPtr> &,
+                    const std::vector<std::string> &>(),
            py::arg("articulations"), py::arg("articulation_names"),
            py::arg("normal_objects") = std::vector<CollisionObjectPtr>(),
            py::arg("normal_object_names") = std::vector<std::string>())
@@ -73,27 +73,27 @@ inline void build_planning_world(py::module &m_all) {
       .def("is_normal_object_attached", &PlanningWorld::isNormalObjectAttached,
            py::arg("name"))
       .def("attach_object",
-           py::overload_cast<std::string const &, std::string const &, int,
-                             Vector7<S> const &,
-                             std::vector<std::string> const &>(
+           py::overload_cast<const std::string &, const std::string &, int,
+                             const Vector7<S> &,
+                             const std::vector<std::string> &>(
                &PlanningWorld::attachObject),
            py::arg("name"), py::arg("art_name"), py::arg("link_id"),
            py::arg("pose"), py::arg("touch_links"))
       .def("attach_object",
-           py::overload_cast<std::string const &, std::string const &, int,
-                             Vector7<S> const &>(&PlanningWorld::attachObject),
+           py::overload_cast<const std::string &, const std::string &, int,
+                             const Vector7<S> &>(&PlanningWorld::attachObject),
            py::arg("name"), py::arg("art_name"), py::arg("link_id"),
            py::arg("pose"))
       .def("attach_object",
-           py::overload_cast<std::string const &, CollisionGeometryPtr const &,
-                             std::string const &, int, Vector7<S> const &,
-                             std::vector<std::string> const &>(
+           py::overload_cast<const std::string &, const CollisionGeometryPtr &,
+                             const std::string &, int, const Vector7<S> &,
+                             const std::vector<std::string> &>(
                &PlanningWorld::attachObject),
            py::arg("name"), py::arg("p_geom"), py::arg("art_name"),
            py::arg("link_id"), py::arg("pose"), py::arg("touch_links"))
       .def("attach_object",
-           py::overload_cast<std::string const &, CollisionGeometryPtr const &,
-                             std::string const &, int, Vector7<S> const &>(
+           py::overload_cast<const std::string &, const CollisionGeometryPtr &,
+                             const std::string &, int, const Vector7<S> &>(
                &PlanningWorld::attachObject),
            py::arg("name"), py::arg("p_geom"), py::arg("art_name"),
            py::arg("link_id"), py::arg("pose"))

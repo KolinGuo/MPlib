@@ -14,11 +14,11 @@ MPLIB_CLASS_TEMPLATE_FORWARD(FCLModelTpl);
 template <typename S>
 class FCLModelTpl {
  public:
-  FCLModelTpl(urdf::ModelInterfaceSharedPtr const &urdfTree,
-              std::string const &package_dir, bool verbose = true,
+  FCLModelTpl(const urdf::ModelInterfaceSharedPtr &urdfTree,
+              const std::string &package_dir, bool verbose = true,
               bool convex = false);
 
-  FCLModelTpl(std::string const &urdf_filename, bool verbose = true,
+  FCLModelTpl(const std::string &urdf_filename, bool verbose = true,
               bool convex = false);
 
   const std::vector<std::pair<size_t, size_t>> &getCollisionPairs() const {
@@ -45,18 +45,18 @@ class FCLModelTpl {
 
   void printCollisionPairs() const;
 
-  void removeCollisionPairsFromSrdf(std::string const &srdf_filename);
+  void removeCollisionPairsFromSrdf(const std::string &srdf_filename);
 
   void updateCollisionObjects(
-      std::vector<Transform3<S>> const &link_pose) const;
+      const std::vector<Transform3<S>> &link_pose) const;
 
-  void updateCollisionObjects(std::vector<Vector7<S>> const &link_pose) const;
+  void updateCollisionObjects(const std::vector<Vector7<S>> &link_pose) const;
 
   bool collide(
-      CollisionRequest<S> const &request = CollisionRequest<S>()) const;
+      const CollisionRequest<S> &request = CollisionRequest<S>()) const;
 
   std::vector<CollisionResult<S>> collideFull(
-      CollisionRequest<S> const &request = CollisionRequest<S>(
+      const CollisionRequest<S> &request = CollisionRequest<S>(
           1, false, 1, false, true, GJKSolverType::GST_INDEP, 1e-6)) const;
 
  private:
@@ -73,11 +73,11 @@ class FCLModelTpl {
   std::string package_dir_;
   bool have_link_order_, use_convex_, verbose_;
 
-  void dfs_parse_tree(urdf::LinkConstSharedPtr const &link,
-                      std::string const &parent_link_name);
+  void dfs_parse_tree(const urdf::LinkConstSharedPtr &link,
+                      const std::string &parent_link_name);
 
-  void init(urdf::ModelInterfaceSharedPtr const &urdfTree,
-            std::string const &package_dir);
+  void init(const urdf::ModelInterfaceSharedPtr &urdfTree,
+            const std::string &package_dir);
 };
 
 // Common Type Alias ==========================================================

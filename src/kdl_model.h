@@ -13,30 +13,27 @@ MPLIB_CLASS_TEMPLATE_FORWARD(KDLModelTpl);
 template <typename S>
 class KDLModelTpl {
  public:
-  KDLModelTpl(std::string const &urdf_filename,
-              std::vector<std::string> const &joint_names,
-              std::vector<std::string> const &link_names, bool verbose);
+  KDLModelTpl(const std::string &urdf_filename,
+              const std::vector<std::string> &joint_names,
+              const std::vector<std::string> &link_names, bool verbose);
 
   const std::string &getTreeRootName() const { return tree_root_name_; }
 
-  std::tuple<VectorX<S>, int> chainIKLMA(size_t const &index,
-                                         VectorX<S> const &q0,
-                                         Vector7<S> const &pose) const;
+  std::tuple<VectorX<S>, int> chainIKLMA(size_t index, const VectorX<S> &q0,
+                                         const Vector7<S> &pose) const;
 
-  std::tuple<VectorX<S>, int> chainIKNR(size_t const &index,
-                                        VectorX<S> const &q0,
-                                        Vector7<S> const &pose) const;
+  std::tuple<VectorX<S>, int> chainIKNR(size_t index, const VectorX<S> &q0,
+                                        const Vector7<S> &pose) const;
 
-  std::tuple<VectorX<S>, int> chainIKNRJL(size_t const &index,
-                                          VectorX<S> const &q0,
-                                          Vector7<S> const &pose,
-                                          VectorX<S> const &q_min,
-                                          VectorX<S> const &q_max) const;
+  std::tuple<VectorX<S>, int> chainIKNRJL(size_t index, const VectorX<S> &q0,
+                                          const Vector7<S> &pose,
+                                          const VectorX<S> &q_min,
+                                          const VectorX<S> &q_max) const;
 
   std::tuple<VectorX<S>, int> TreeIKNRJL(
-      const std::vector<std::string> endpoints, VectorX<S> const &q0,
-      std::vector<Vector7<S>> const &poses, VectorX<S> const &q_min,
-      VectorX<S> const &q_max) const;
+      const std::vector<std::string> &endpoints, const VectorX<S> &q0,
+      const std::vector<Vector7<S>> &poses, const VectorX<S> &q_min,
+      const VectorX<S> &q_max) const;
 
  private:
   KDL::Tree tree_;

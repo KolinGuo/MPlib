@@ -62,7 +62,7 @@ std::vector<S> state2vector(const ob::State *const &state_raw,
 }
 
 template <typename S>
-OMPLPlannerTpl<S>::OMPLPlannerTpl(PlanningWorldTplPtr<S> const &world)
+OMPLPlannerTpl<S>::OMPLPlannerTpl(const PlanningWorldTplPtr<S> &world)
     : world_(world) {
   build_state_space();
   si_ = std::make_shared<SpaceInformation>(cs_);
@@ -74,7 +74,7 @@ OMPLPlannerTpl<S>::OMPLPlannerTpl(PlanningWorldTplPtr<S> const &world)
 
 template <typename S>
 VectorX<S> OMPLPlannerTpl<S>::random_sample_nearby(
-    VectorX<S> const &start_state) const {
+    const VectorX<S> &start_state) const {
   int cnt = 0;
   while (true) {
     S ratio = (S)(cnt + 1) / 1000;
@@ -100,7 +100,7 @@ VectorX<S> OMPLPlannerTpl<S>::random_sample_nearby(
 
 template <typename S>
 std::pair<std::string, MatrixX<S>> OMPLPlannerTpl<S>::plan(
-    VectorX<S> const &start_state, std::vector<VectorX<S>> const &goal_states,
+    const VectorX<S> &start_state, const std::vector<VectorX<S>> &goal_states,
     const std::string &planner_name, double time, double range,
     double goal_bias, double pathlen_obj_weight, bool pathlen_obj_only,
     bool verbose) const {
@@ -254,7 +254,7 @@ template <typename S>
 void OMPLPlannerTpl<S>::build_state_space() {
   cs_ = std::make_shared<CompoundStateSpace>();
   dim_ = 0;
-  std::string const joint_prefix = "JointModel";
+  const std::string joint_prefix = "JointModel";
   for (const auto &robot : world_->getPlannedArticulations()) {
     size_t dim_i = 0;
     auto model = robot->getPinocchioModel();

@@ -15,9 +15,9 @@ DEFINE_TEMPLATE_ARTICULATED_MODEL(double);
 
 template <typename S>
 ArticulatedModelTpl<S>::ArticulatedModelTpl(
-    std::string const &urdf_filename, std::string const &srdf_filename,
-    Vector3<S> const &gravity, std::vector<std::string> const &joint_names,
-    std::vector<std::string> const &link_names, bool verbose, bool convex)
+    const std::string &urdf_filename, const std::string &srdf_filename,
+    const Vector3<S> &gravity, const std::vector<std::string> &joint_names,
+    const std::vector<std::string> &link_names, bool verbose, bool convex)
     : pinocchio_model_(std::make_shared<PinocchioModelTpl<S>>(
           urdf_filename, gravity, verbose)),
       fcl_model_(
@@ -46,14 +46,14 @@ std::vector<std::string> ArticulatedModelTpl<S>::getMoveGroupJointNames()
 }
 
 template <typename S>
-void ArticulatedModelTpl<S>::setMoveGroup(std::string const &end_effector) {
+void ArticulatedModelTpl<S>::setMoveGroup(const std::string &end_effector) {
   std::vector<std::string> end_effectors = {end_effector};
   setMoveGroup(end_effectors);
 }
 
 template <typename S>
 void ArticulatedModelTpl<S>::setMoveGroup(
-    std::vector<std::string> const &end_effectors) {
+    const std::vector<std::string> &end_effectors) {
   move_group_end_effectors_ = end_effectors;
   move_group_user_joints_ = {};
   for (auto end_effector : end_effectors) {
@@ -71,7 +71,7 @@ void ArticulatedModelTpl<S>::setMoveGroup(
 }
 
 template <typename S>
-void ArticulatedModelTpl<S>::setQpos(VectorX<S> const &qpos, bool full) {
+void ArticulatedModelTpl<S>::setQpos(const VectorX<S> &qpos, bool full) {
   if (full)
     current_qpos_ = qpos;
   else {

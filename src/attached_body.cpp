@@ -10,9 +10,9 @@ DEFINE_TEMPLATE_ATTACHED_BODY(double);
 
 template <typename S>
 AttachedBodyTpl<S>::AttachedBodyTpl(
-    std::string const &name, CollisionObjectPtr const &object,
-    ArticulatedModelPtr const &attached_articulation, int attached_link_id,
-    Transform3<S> const &pose, std::vector<std::string> const &touch_links)
+    const std::string &name, const CollisionObjectPtr &object,
+    const ArticulatedModelPtr &attached_articulation, int attached_link_id,
+    const Transform3<S> &pose, const std::vector<std::string> &touch_links)
     : name_(name),
       object_(object),
       attached_articulation_(attached_articulation),

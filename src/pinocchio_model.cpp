@@ -18,8 +18,8 @@ DEFINE_TEMPLATE_PINOCCHIO_MODEL(float);
 DEFINE_TEMPLATE_PINOCCHIO_MODEL(double);
 
 template <typename S>
-PinocchioModelTpl<S>::PinocchioModelTpl(std::string const &urdf_filename,
-                                        Vector3<S> const &gravity, bool verbose)
+PinocchioModelTpl<S>::PinocchioModelTpl(const std::string &urdf_filename,
+                                        const Vector3<S> &gravity, bool verbose)
     : verbose_(verbose) {
   urdf::ModelInterfaceSharedPtr urdf = urdf::parseURDFFile(urdf_filename);
   init(urdf, gravity);
@@ -27,7 +27,7 @@ PinocchioModelTpl<S>::PinocchioModelTpl(std::string const &urdf_filename,
 
 template <typename S>
 PinocchioModelTpl<S>::PinocchioModelTpl(
-    urdf::ModelInterfaceSharedPtr const &urdfTree, Vector3<S> const &gravity,
+    const urdf::ModelInterfaceSharedPtr &urdfTree, const Vector3<S> &gravity,
     bool verbose)
     : verbose_(verbose) {
   init(urdfTree, gravity);
@@ -189,7 +189,7 @@ void PinocchioModelTpl<S>::printFrames() const {
 
 template <typename S>
 void PinocchioModelTpl<S>::setJointOrder(
-    std::vector<std::string> const &names) {
+    const std::vector<std::string> &names) {
   user_joint_names_ = names;
   v_index_user2pinocchio_ = VectorXi(model_.nv);
   vidx_ = VectorXi(names.size());
@@ -228,7 +228,7 @@ void PinocchioModelTpl<S>::setJointOrder(
 }
 
 template <typename S>
-void PinocchioModelTpl<S>::setLinkOrder(std::vector<std::string> const &names) {
+void PinocchioModelTpl<S>::setLinkOrder(const std::vector<std::string> &names) {
   user_link_names_ = names;
   link_index_user2pinocchio_ = VectorXi(names.size());
   for (size_t i = 0; i < names.size(); i++) {
@@ -273,7 +273,7 @@ VectorX<S> PinocchioModelTpl<S>::getRandomConfiguration() const {
 }
 
 template <typename S>
-void PinocchioModelTpl<S>::computeForwardKinematics(VectorX<S> const &qpos) {
+void PinocchioModelTpl<S>::computeForwardKinematics(const VectorX<S> &qpos) {
   ::pinocchio::forwardKinematics(model_, data_, qposUser2Pinocchio(qpos));
 }
 
@@ -365,7 +365,7 @@ Matrix6X<S> PinocchioModelTpl<S>::getLinkJacobian(size_t index,
 
 template <typename S>
 Matrix6X<S> PinocchioModelTpl<S>::computeSingleLinkLocalJacobian(
-    VectorX<S> const &qpos, size_t index) {
+    const VectorX<S> &qpos, size_t index) {
   ASSERT(index < static_cast<size_t>(link_index_user2pinocchio_.size()),
          "The link index is out of bound!");
   auto frameId = link_index_user2pinocchio_[index];
@@ -381,8 +381,8 @@ Matrix6X<S> PinocchioModelTpl<S>::computeSingleLinkLocalJacobian(
 
 template <typename S>
 std::tuple<VectorX<S>, bool, Vector6<S>> PinocchioModelTpl<S>::computeIKCLIK(
-    size_t index, Vector7<S> const &pose, VectorX<S> const &q_init,
-    std::vector<bool> const &mask, double eps, int maxIter, double dt,
+    size_t index, const Vector7<S> &pose, const VectorX<S> &q_init,
+    const std::vector<bool> &mask, double eps, int maxIter, double dt,
     double damp) {
   ASSERT(index < static_cast<size_t>(link_index_user2pinocchio_.size()),
          "The link index is out of bound!");
@@ -439,8 +439,8 @@ std::tuple<VectorX<S>, bool, Vector6<S>> PinocchioModelTpl<S>::computeIKCLIK(
 
 template <typename S>
 std::tuple<VectorX<S>, bool, Vector6<S>> PinocchioModelTpl<S>::computeIKCLIKJL(
-    size_t index, Vector7<S> const &pose, VectorX<S> const &q_init,
-    VectorX<S> const &q_min, VectorX<S> const &q_max, double eps, int maxIter,
+    size_t index, const Vector7<S> &pose, const VectorX<S> &q_init,
+    const VectorX<S> &q_min, const VectorX<S> &q_max, double eps, int maxIter,
     double dt, double damp) {
   ASSERT(index < static_cast<size_t>(link_index_user2pinocchio_.size()),
          "The link index is out of bound!");
@@ -503,7 +503,7 @@ std::tuple<VectorX<S>, bool, Vector6<S>> PinocchioModelTpl<S>::computeIKCLIKJL(
 
 template <typename S>
 VectorX<S> PinocchioModelTpl<S>::qposUser2Pinocchio(
-    VectorX<S> const &q_user) const {
+    const VectorX<S> &q_user) const {
   VectorX<S> q_pinocchio(model_.nq);
   size_t count = 0;
   for (size_t i = 0;
@@ -535,7 +535,7 @@ VectorX<S> PinocchioModelTpl<S>::qposUser2Pinocchio(
 
 template <typename S>
 VectorX<S> PinocchioModelTpl<S>::qposPinocchio2User(
-    VectorX<S> const &q_pinocchio) const {
+    const VectorX<S> &q_pinocchio) const {
   VectorX<S> q_user(model_.nv);
   size_t count = 0;
   for (size_t i = 0;
@@ -738,8 +738,8 @@ void PinocchioModelTpl<S>::dfs_parse_tree(const urdf::LinkConstSharedPtr &link,
 }
 
 template <typename S>
-void PinocchioModelTpl<S>::init(urdf::ModelInterfaceSharedPtr const &urdfTree,
-                                Vector3<S> const &gravity) {
+void PinocchioModelTpl<S>::init(const urdf::ModelInterfaceSharedPtr &urdfTree,
+                                const Vector3<S> &gravity) {
   urdf_model_ = urdfTree;
 
   ::pinocchio::urdf::details::UrdfVisitor<

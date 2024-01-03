@@ -25,9 +25,9 @@ inline void build_pyarticulation(py::module &m_all) {
       py::class_<ArticulatedModel, std::shared_ptr<ArticulatedModel>>(
           m, "ArticulatedModel");
   PyArticulatedModel
-      .def(py::init<std::string const &, std::string const &,
-                    Eigen::Matrix<S, 3, 1>, std::vector<std::string> const &,
-                    std::vector<std::string> const &, bool, bool>(),
+      .def(py::init<const std::string &, const std::string &,
+                    Eigen::Matrix<S, 3, 1>, const std::vector<std::string> &,
+                    const std::vector<std::string> &, bool, bool>(),
            py::arg("urdf_filename"), py::arg("srdf_filename"),
            py::arg("gravity"), py::arg("joint_names"), py::arg("link_names"),
            py::arg("verbose") = true, py::arg("convex") = false)
@@ -42,11 +42,11 @@ inline void build_pyarticulation(py::module &m_all) {
       .def("get_move_group_joint_names",
            &ArticulatedModel::getMoveGroupJointNames)
       .def("set_move_group",
-           py::overload_cast<std::string const &>(
+           py::overload_cast<const std::string &>(
                &ArticulatedModel::setMoveGroup),
            py::arg("end_effector"))
       .def("set_move_group",
-           py::overload_cast<std::vector<std::string> const &>(
+           py::overload_cast<const std::vector<std::string> &>(
                &ArticulatedModel::setMoveGroup),
            py::arg("end_effectors"))
       .def("get_qpos", &ArticulatedModel::getQpos)

@@ -65,7 +65,7 @@ struct AssimpLoader {
   void load(const std::string &resource_path);
 
   Assimp::Importer *importer;
-  aiScene const *scene;
+  const aiScene *scene;
 };
 
 bool addChildrenToTree(const urdf::LinkConstSharedPtr &root, KDL::Tree &tree,

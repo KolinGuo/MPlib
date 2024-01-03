@@ -26,7 +26,7 @@ inline void build_pypinocchio(py::module &m_all) {
       py::class_<PinocchioModel, std::shared_ptr<PinocchioModel>>(
           m, "PinocchioModel");
   PyPinocchioModel
-      .def(py::init<std::string const &, Vector3<S> const &, bool>(),
+      .def(py::init<const std::string &, const Vector3<S> &, bool>(),
            py::arg("urdf_filename"),
            py::arg("gravity") = Vector3<S>(0, 0, -9.81),
            py::arg("verbose") = true)

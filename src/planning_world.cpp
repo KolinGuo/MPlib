@@ -25,10 +25,10 @@ DEFINE_TEMPLATE_PLANNING_WORLD(double);
 
 template <typename S>
 PlanningWorldTpl<S>::PlanningWorldTpl(
-    std::vector<ArticulatedModelPtr> const &articulations,
-    std::vector<std::string> const &articulation_names,
-    std::vector<CollisionObjectPtr> const &normal_objects,
-    std::vector<std::string> const &normal_object_names)
+    const std::vector<ArticulatedModelPtr> &articulations,
+    const std::vector<std::string> &articulation_names,
+    const std::vector<CollisionObjectPtr> &normal_objects,
+    const std::vector<std::string> &normal_object_names)
     : acm_(std::make_shared<AllowedCollisionMatrix>()) {
   ASSERT(articulations.size() == articulation_names.size(),
          "articulations and articulation_names should have the same size");
@@ -60,8 +60,8 @@ PlanningWorldTpl<S>::getPlannedArticulations() const {
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::addArticulation(std::string const &name,
-                                          ArticulatedModelPtr const &model,
+void PlanningWorldTpl<S>::addArticulation(const std::string &name,
+                                          const ArticulatedModelPtr &model,
                                           bool planned) {
   model->setName(name);
   articulations_[name] = model;
@@ -69,7 +69,7 @@ void PlanningWorldTpl<S>::addArticulation(std::string const &name,
 }
 
 template <typename S>
-bool PlanningWorldTpl<S>::removeArticulation(std::string const &name) {
+bool PlanningWorldTpl<S>::removeArticulation(const std::string &name) {
   auto nh = articulations_.extract(name);
   if (nh.empty()) return false;
   planned_articulations_.erase(name);
@@ -81,7 +81,7 @@ bool PlanningWorldTpl<S>::removeArticulation(std::string const &name) {
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::setArticulationPlanned(std::string const &name,
+void PlanningWorldTpl<S>::setArticulationPlanned(const std::string &name,
                                                  bool planned) {
   auto art = articulations_.at(name);
   auto it = planned_articulations_.find(name);
@@ -99,8 +99,8 @@ std::vector<std::string> PlanningWorldTpl<S>::getNormalObjectNames() const {
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::addPointCloud(std::string const &name,
-                                        MatrixX3<S> const &vertices,
+void PlanningWorldTpl<S>::addPointCloud(const std::string &name,
+                                        const MatrixX3<S> &vertices,
                                         double resolution) {
   auto tree = std::make_shared<octomap::OcTree>(resolution);
   for (const auto &row : vertices.rowwise())
@@ -111,7 +111,7 @@ void PlanningWorldTpl<S>::addPointCloud(std::string const &name,
 }
 
 template <typename S>
-bool PlanningWorldTpl<S>::removeNormalObject(std::string const &name) {
+bool PlanningWorldTpl<S>::removeNormalObject(const std::string &name) {
   auto nh = normal_objects_.extract(name);
   if (nh.empty()) return false;
   attached_bodies_.erase(name);
@@ -123,8 +123,8 @@ bool PlanningWorldTpl<S>::removeNormalObject(std::string const &name) {
 
 template <typename S>
 void PlanningWorldTpl<S>::attachObject(
-    std::string const &name, std::string const &art_name, int link_id,
-    Vector7<S> const &pose, std::vector<std::string> const &touch_links) {
+    const std::string &name, const std::string &art_name, int link_id,
+    const Vector7<S> &pose, const std::vector<std::string> &touch_links) {
   auto obj = normal_objects_.at(name);
   auto nh = attached_bodies_.extract(name);
   auto body = std::make_shared<AttachedBody>(
@@ -142,9 +142,9 @@ void PlanningWorldTpl<S>::attachObject(
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::attachObject(std::string const &name,
-                                       std::string const &art_name, int link_id,
-                                       Vector7<S> const &pose) {
+void PlanningWorldTpl<S>::attachObject(const std::string &name,
+                                       const std::string &art_name, int link_id,
+                                       const Vector7<S> &pose) {
   auto obj = normal_objects_.at(name);
   auto nh = attached_bodies_.extract(name);
   auto body = std::make_shared<AttachedBody>(
@@ -172,27 +172,27 @@ void PlanningWorldTpl<S>::attachObject(std::string const &name,
 
 template <typename S>
 void PlanningWorldTpl<S>::attachObject(
-    std::string const &name, CollisionGeometryPtr const &p_geom,
-    std::string const &art_name, int link_id, Vector7<S> const &pose,
-    std::vector<std::string> const &touch_links) {
+    const std::string &name, const CollisionGeometryPtr &p_geom,
+    const std::string &art_name, int link_id, const Vector7<S> &pose,
+    const std::vector<std::string> &touch_links) {
   removeNormalObject(name);
   addNormalObject(name, std::make_shared<CollisionObject>(p_geom));
   attachObject(name, art_name, link_id, pose, touch_links);
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::attachObject(std::string const &name,
-                                       CollisionGeometryPtr const &p_geom,
-                                       std::string const &art_name, int link_id,
-                                       Vector7<S> const &pose) {
+void PlanningWorldTpl<S>::attachObject(const std::string &name,
+                                       const CollisionGeometryPtr &p_geom,
+                                       const std::string &art_name, int link_id,
+                                       const Vector7<S> &pose) {
   removeNormalObject(name);
   addNormalObject(name, std::make_shared<CollisionObject>(p_geom));
   attachObject(name, art_name, link_id, pose);
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::attachSphere(S radius, std::string const &art_name,
-                                       int link_id, Vector7<S> const &pose) {
+void PlanningWorldTpl<S>::attachSphere(S radius, const std::string &art_name,
+                                       int link_id, const Vector7<S> &pose) {
   // FIXME: Use link_name to avoid changes
   auto name = art_name + "_" + std::to_string(link_id) + "_sphere";
   attachObject(name, std::make_shared<fcl::Sphere<S>>(radius), art_name,
@@ -200,9 +200,9 @@ void PlanningWorldTpl<S>::attachSphere(S radius, std::string const &art_name,
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::attachBox(Vector3<S> const &size,
-                                    std::string const &art_name, int link_id,
-                                    Vector7<S> const &pose) {
+void PlanningWorldTpl<S>::attachBox(const Vector3<S> &size,
+                                    const std::string &art_name, int link_id,
+                                    const Vector7<S> &pose) {
   // FIXME: Use link_name to avoid changes
   auto name = art_name + "_" + std::to_string(link_id) + "_box";
   attachObject(name, std::make_shared<fcl::Box<S>>(size), art_name, link_id,
@@ -210,9 +210,9 @@ void PlanningWorldTpl<S>::attachBox(Vector3<S> const &size,
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::attachMesh(std::string const &mesh_path,
-                                     std::string const &art_name, int link_id,
-                                     Vector7<S> const &pose) {
+void PlanningWorldTpl<S>::attachMesh(const std::string &mesh_path,
+                                     const std::string &art_name, int link_id,
+                                     const Vector7<S> &pose) {
   // FIXME: Use link_name to avoid changes
   auto name = art_name + "_" + std::to_string(link_id) + "_mesh";
   attachObject(name, load_mesh_as_BVH(mesh_path, Vector3<S>(1, 1, 1)), art_name,
@@ -220,7 +220,7 @@ void PlanningWorldTpl<S>::attachMesh(std::string const &mesh_path,
 }
 
 template <typename S>
-bool PlanningWorldTpl<S>::detachObject(std::string const &name,
+bool PlanningWorldTpl<S>::detachObject(const std::string &name,
                                        bool also_remove) {
   if (also_remove) {
     normal_objects_.erase(name);
@@ -244,13 +244,13 @@ void PlanningWorldTpl<S>::printAttachedBodyPose() const {
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::setQpos(std::string const &name,
-                                  VectorX<S> const &qpos) const {
+void PlanningWorldTpl<S>::setQpos(const std::string &name,
+                                  const VectorX<S> &qpos) const {
   articulations_.at(name)->setQpos(qpos);
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::setQposAll(VectorX<S> const &state) const {
+void PlanningWorldTpl<S>::setQposAll(const VectorX<S> &state) const {
   size_t i = 0;
   for (const auto &pair : planned_articulations_) {
     auto art = pair.second;
@@ -280,7 +280,7 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::filterCollisions(
 
 template <typename S>
 std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::selfCollide(
-    CollisionRequest const &request) const {
+    const CollisionRequest &request) const {
   std::vector<WorldCollisionResult> ret;
   CollisionResult result;
 
@@ -351,7 +351,7 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::selfCollide(
 
 template <typename S>
 std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideWithOthers(
-    CollisionRequest const &request) const {
+    const CollisionRequest &request) const {
   std::vector<WorldCollisionResult> ret;
   CollisionResult result;
 
@@ -464,7 +464,7 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideWithOthers(
 
 template <typename S>
 std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideFull(
-    CollisionRequest const &request) const {
+    const CollisionRequest &request) const {
   auto ret1 = selfCollide(request);
   auto ret2 = collideWithOthers(request);
   ret1.insert(ret1.end(), ret2.begin(), ret2.end());
@@ -473,7 +473,7 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideFull(
 
 template <typename S>
 WorldDistanceResultTpl<S> PlanningWorldTpl<S>::distanceSelf(
-    DistanceRequest const &request) const {
+    const DistanceRequest &request) const {
   WorldDistanceResult ret;
   DistanceResult result;
 
@@ -553,7 +553,7 @@ WorldDistanceResultTpl<S> PlanningWorldTpl<S>::distanceSelf(
 
 template <typename S>
 WorldDistanceResultTpl<S> PlanningWorldTpl<S>::distanceOthers(
-    DistanceRequest const &request) const {
+    const DistanceRequest &request) const {
   WorldDistanceResult ret;
   DistanceResult result;
 
@@ -673,7 +673,7 @@ WorldDistanceResultTpl<S> PlanningWorldTpl<S>::distanceOthers(
 
 template <typename S>
 WorldDistanceResultTpl<S> PlanningWorldTpl<S>::distanceFull(
-    DistanceRequest const &request) const {
+    const DistanceRequest &request) const {
   auto ret1 = distanceSelf(request);
   auto ret2 = distanceOthers(request);
   return ret1.min_distance < ret2.min_distance ? ret1 : ret2;

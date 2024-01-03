@@ -25,7 +25,7 @@ std::vector<S> state2vector(const ob::State *const &state_raw,
                             const SpaceInformation *const &si_);
 
 template <typename IN_TYPE, typename OUT_TYPE>
-std::vector<OUT_TYPE> eigen2vector(VectorX<IN_TYPE> const &x) {
+std::vector<OUT_TYPE> eigen2vector(const VectorX<IN_TYPE> &x) {
   std::vector<OUT_TYPE> ret;
   for (size_t i = 0; i < static_cast<size_t>(x.rows()); i++)
     ret.push_back(static_cast<OUT_TYPE>(x[i]));
@@ -33,7 +33,7 @@ std::vector<OUT_TYPE> eigen2vector(VectorX<IN_TYPE> const &x) {
 }
 
 template <typename IN_TYPE, typename OUT_TYPE>
-VectorX<OUT_TYPE> vector2eigen(std::vector<IN_TYPE> const &x) {
+VectorX<OUT_TYPE> vector2eigen(const std::vector<IN_TYPE> &x) {
   VectorX<OUT_TYPE> ret(x.size());
   for (size_t i = 0; i < x.size(); i++) ret[i] = static_cast<OUT_TYPE>(x[i]);
   return ret;
@@ -93,16 +93,16 @@ MPLIB_CLASS_TEMPLATE_FORWARD(OMPLPlannerTpl);
 template <typename S>
 class OMPLPlannerTpl {
  public:
-  OMPLPlannerTpl(PlanningWorldTplPtr<S> const &world);
+  OMPLPlannerTpl(const PlanningWorldTplPtr<S> &world);
 
   const PlanningWorldTplPtr<S> &get_world() const { return world_; }
 
   size_t get_dim() const { return dim_; }
 
-  VectorX<S> random_sample_nearby(VectorX<S> const &start_state) const;
+  VectorX<S> random_sample_nearby(const VectorX<S> &start_state) const;
 
   std::pair<std::string, MatrixX<S>> plan(
-      VectorX<S> const &start_state, std::vector<VectorX<S>> const &goal_states,
+      const VectorX<S> &start_state, const std::vector<VectorX<S>> &goal_states,
       const std::string &planner_name = "RRTConnect", double time = 1.0,
       double range = 0.0, double goal_bias = 0.05,
       double pathlen_obj_weight = 10.0, bool pathlen_obj_only = false,

@@ -19,15 +19,15 @@ DEFINE_TEMPLATE_FCL_MODEL(float);
 DEFINE_TEMPLATE_FCL_MODEL(double);
 
 template <typename S>
-FCLModelTpl<S>::FCLModelTpl(urdf::ModelInterfaceSharedPtr const &urdfTree,
-                            std::string const &package_dir, bool verbose,
+FCLModelTpl<S>::FCLModelTpl(const urdf::ModelInterfaceSharedPtr &urdfTree,
+                            const std::string &package_dir, bool verbose,
                             bool convex)
     : use_convex_(convex), verbose_(verbose) {
   init(urdfTree, package_dir);
 }
 
 template <typename S>
-FCLModelTpl<S>::FCLModelTpl(std::string const &urdf_filename, bool verbose,
+FCLModelTpl<S>::FCLModelTpl(const std::string &urdf_filename, bool verbose,
                             bool convex)
     : use_convex_(convex), verbose_(verbose) {
   auto found = urdf_filename.find_last_of("/\\");
@@ -63,7 +63,7 @@ void FCLModelTpl<S>::printCollisionPairs() const {
 
 template <typename S>
 void FCLModelTpl<S>::removeCollisionPairsFromSrdf(
-    std::string const &srdf_filename) {
+    const std::string &srdf_filename) {
   const std::string extension =
       srdf_filename.substr(srdf_filename.find_last_of('.') + 1);
   if (srdf_filename == "") {
@@ -128,7 +128,7 @@ void FCLModelTpl<S>::removeCollisionPairsFromSrdf(
 
 template <typename S>
 void FCLModelTpl<S>::updateCollisionObjects(
-    std::vector<Transform3<S>> const &link_pose) const {
+    const std::vector<Transform3<S>> &link_pose) const {
   for (size_t i = 0; i < collision_objects_.size(); i++) {
     auto link_i = collision_link_user_indices_[i];
     Transform3<S> t_i = link_pose[link_i] * collision_origin2link_poses_[i];
@@ -140,7 +140,7 @@ void FCLModelTpl<S>::updateCollisionObjects(
 
 template <typename S>
 void FCLModelTpl<S>::updateCollisionObjects(
-    std::vector<Vector7<S>> const &link_pose) const {
+    const std::vector<Vector7<S>> &link_pose) const {
   for (size_t i = 0; i < collision_objects_.size(); i++) {
     auto link_i = collision_link_user_indices_[i];
     Transform3<S> tt_i;
@@ -158,7 +158,7 @@ void FCLModelTpl<S>::updateCollisionObjects(
 }
 
 template <typename S>
-bool FCLModelTpl<S>::collide(CollisionRequest<S> const &request) const {
+bool FCLModelTpl<S>::collide(const CollisionRequest<S> &request) const {
   // result will be returned via the collision result structure
   CollisionResult<S> result;
   for (const auto &col_pair : collision_pairs_) {
@@ -171,7 +171,7 @@ bool FCLModelTpl<S>::collide(CollisionRequest<S> const &request) const {
 
 template <typename S>
 std::vector<CollisionResult<S>> FCLModelTpl<S>::collideFull(
-    CollisionRequest<S> const &request) const {
+    const CollisionRequest<S> &request) const {
   std::vector<CollisionResult<S>> ret;
   for (const auto &col_pair : collision_pairs_) {
     CollisionResult<S> result;
@@ -184,8 +184,8 @@ std::vector<CollisionResult<S>> FCLModelTpl<S>::collideFull(
 }
 
 template <typename S>
-void FCLModelTpl<S>::dfs_parse_tree(urdf::LinkConstSharedPtr const &link,
-                                    std::string const &parent_link_name) {
+void FCLModelTpl<S>::dfs_parse_tree(const urdf::LinkConstSharedPtr &link,
+                                    const std::string &parent_link_name) {
   // const urdf::JointConstSharedPtr joint =
   // urdf::const_pointer_cast<urdf::Joint>(link->parent_joint); const Transform3
   // joint_placement =
@@ -259,8 +259,8 @@ void FCLModelTpl<S>::dfs_parse_tree(urdf::LinkConstSharedPtr const &link,
 }
 
 template <typename S>
-void FCLModelTpl<S>::init(urdf::ModelInterfaceSharedPtr const &urdfTree,
-                          std::string const &package_dir) {
+void FCLModelTpl<S>::init(const urdf::ModelInterfaceSharedPtr &urdfTree,
+                          const std::string &package_dir) {
   package_dir_ = package_dir;
   urdf_model_ = urdfTree;
   if (not urdf_model_)

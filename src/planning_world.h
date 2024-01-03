@@ -75,10 +75,10 @@ class PlanningWorldTpl {
    * @brief Constructs a planning world with the given articulations (always
    *  planned) and normal objects
    */
-  PlanningWorldTpl(std::vector<ArticulatedModelPtr> const &articulations,
-                   std::vector<std::string> const &articulation_names,
-                   std::vector<CollisionObjectPtr> const &normal_objects = {},
-                   std::vector<std::string> const &normal_object_names = {});
+  PlanningWorldTpl(const std::vector<ArticulatedModelPtr> &articulations,
+                   const std::vector<std::string> &articulation_names,
+                   const std::vector<CollisionObjectPtr> &normal_objects = {},
+                   const std::vector<std::string> &normal_object_names = {});
 
   /// @brief Gets names of all articulations in world (unordered)
   std::vector<std::string> getArticulationNames() const;
@@ -87,13 +87,13 @@ class PlanningWorldTpl {
   std::vector<ArticulatedModelPtr> getPlannedArticulations() const;
 
   /// @brief Gets the articulation (ArticulatedModelPtr) with given name
-  ArticulatedModelPtr getArticulation(std::string const &name) const {
+  ArticulatedModelPtr getArticulation(const std::string &name) const {
     auto it = articulations_.find(name);
     return it != articulations_.end() ? it->second : nullptr;
   }
 
   /// @brief Whether articulation with given name exists
-  bool hasArticulation(std::string const &name) const {
+  bool hasArticulation(const std::string &name) const {
     return articulations_.find(name) != articulations_.end();
   }
 
@@ -101,18 +101,18 @@ class PlanningWorldTpl {
    * @brief Adds an articulation (ArticulatedModelPtr) with given name to world
    * @param planned: whether the articulation is being planned
    */
-  void addArticulation(std::string const &name,
-                       ArticulatedModelPtr const &model, bool planned = false);
+  void addArticulation(const std::string &name,
+                       const ArticulatedModelPtr &model, bool planned = false);
 
   /**
    * @brief Removes the articulation with given name if exists. Updates acm_
    * @returns true if success, false if articulation with given name does not
    *  exist
    */
-  bool removeArticulation(std::string const &name);
+  bool removeArticulation(const std::string &name);
 
   /// @brief Whether articulation with given name is being planned
-  bool isArticulationPlanned(std::string const &name) const {
+  bool isArticulationPlanned(const std::string &name) const {
     return planned_articulations_.find(name) != planned_articulations_.end();
   }
 
@@ -120,30 +120,30 @@ class PlanningWorldTpl {
    * @brief Sets articulation with given name as being planned
    * @throws std::out_of_range if articulation with given name does not exist
    */
-  void setArticulationPlanned(std::string const &name, bool planned);
+  void setArticulationPlanned(const std::string &name, bool planned);
 
   /// @brief Gets names of all normal objects in world (unordered)
   std::vector<std::string> getNormalObjectNames() const;
 
   /// @brief Gets the normal object (CollisionObjectPtr) with given name
-  CollisionObjectPtr getNormalObject(std::string const &name) const {
+  CollisionObjectPtr getNormalObject(const std::string &name) const {
     auto it = normal_objects_.find(name);
     return it != normal_objects_.end() ? it->second : nullptr;
   }
 
   /// @brief Whether normal object with given name exists
-  bool hasNormalObject(std::string const &name) const {
+  bool hasNormalObject(const std::string &name) const {
     return normal_objects_.find(name) != normal_objects_.end();
   }
 
   /// @brief Adds a normal object (CollisionObjectPtr) with given name to world
-  void addNormalObject(std::string const &name,
-                       CollisionObjectPtr const &collision_object) {
+  void addNormalObject(const std::string &name,
+                       const CollisionObjectPtr &collision_object) {
     normal_objects_[name] = collision_object;
   }
 
   /// @brief Adds a point cloud as a normal object with given name to world
-  void addPointCloud(std::string const &name, MatrixX3<S> const &vertices,
+  void addPointCloud(const std::string &name, const MatrixX3<S> &vertices,
                      double resolution = 0.01);
 
   /**
@@ -152,10 +152,10 @@ class PlanningWorldTpl {
    * @returns true if success, false if normal object with given name does not
    *  exist
    */
-  bool removeNormalObject(std::string const &name);
+  bool removeNormalObject(const std::string &name);
 
   /// @brief Whether normal object with given name is attached
-  bool isNormalObjectAttached(std::string const &name) const {
+  bool isNormalObjectAttached(const std::string &name) const {
     return attached_bodies_.find(name) != attached_bodies_.end();
   }
 
@@ -172,9 +172,9 @@ class PlanningWorldTpl {
    * @throws std::out_of_range if normal object with given name does not exist
    *  or if planned articulation with given name does not exist
    */
-  void attachObject(std::string const &name, std::string const &art_name,
-                    int link_id, Vector7<S> const &pose,
-                    std::vector<std::string> const &touch_links);
+  void attachObject(const std::string &name, const std::string &art_name,
+                    int link_id, const Vector7<S> &pose,
+                    const std::vector<std::string> &touch_links);
 
   /**
    * @brief Attaches existing normal object to specified link of articulation.
@@ -186,8 +186,8 @@ class PlanningWorldTpl {
    * @throws std::out_of_range if normal object with given name does not exist
    *  or if planned articulation with given name does not exist
    */
-  void attachObject(std::string const &name, std::string const &art_name,
-                    int link_id, Vector7<S> const &pose);
+  void attachObject(const std::string &name, const std::string &art_name,
+                    int link_id, const Vector7<S> &pose);
 
   /**
    * @brief Attaches given object (w/ p_geom) to specified link of articulation.
@@ -195,31 +195,31 @@ class PlanningWorldTpl {
    *  object. As a result, all previous acm_ entries with the object are removed
    * @param touch_links: link names that the attached object touches
    */
-  void attachObject(std::string const &name, CollisionGeometryPtr const &p_geom,
-                    std::string const &art_name, int link_id,
-                    Vector7<S> const &pose,
-                    std::vector<std::string> const &touch_links);
+  void attachObject(const std::string &name, const CollisionGeometryPtr &p_geom,
+                    const std::string &art_name, int link_id,
+                    const Vector7<S> &pose,
+                    const std::vector<std::string> &touch_links);
 
   /**
    * @brief Attaches given object (w/ p_geom) to specified link of articulation.
    *  This is done by removing normal object and then adding and attaching
    *  object. As a result, all previous acm_ entries with the object are removed
    */
-  void attachObject(std::string const &name, CollisionGeometryPtr const &p_geom,
-                    std::string const &art_name, int link_id,
-                    Vector7<S> const &pose);
+  void attachObject(const std::string &name, const CollisionGeometryPtr &p_geom,
+                    const std::string &art_name, int link_id,
+                    const Vector7<S> &pose);
 
   /// @brief Attaches given sphere to specified link of articulation
-  void attachSphere(S radius, std::string const &art_name, int link_id,
-                    Vector7<S> const &pose);
+  void attachSphere(S radius, const std::string &art_name, int link_id,
+                    const Vector7<S> &pose);
 
   /// @brief Attaches given box to specified link of articulation
-  void attachBox(Vector3<S> const &size, std::string const &art_name,
-                 int link_id, Vector7<S> const &pose);
+  void attachBox(const Vector3<S> &size, const std::string &art_name,
+                 int link_id, const Vector7<S> &pose);
 
   /// @brief Attaches given mesh to specified link of articulation
-  void attachMesh(std::string const &mesh_path, std::string const &art_name,
-                  int link_id, Vector7<S> const &pose);
+  void attachMesh(const std::string &mesh_path, const std::string &art_name,
+                  int link_id, const Vector7<S> &pose);
 
   /**
    * @brief Detaches object with given name. Updates acm_ to disallow collision
@@ -228,22 +228,22 @@ class PlanningWorldTpl {
    * @returns true if success, false if the object with given name is not
    *  attached
    */
-  bool detachObject(std::string const &name, bool also_remove = false);
+  bool detachObject(const std::string &name, bool also_remove = false);
 
   /// @brief Prints global pose of all attached bodies
   void printAttachedBodyPose() const;
 
   /// @brief Set qpos of articulation with given name
-  void setQpos(std::string const &name, VectorX<S> const &qpos) const;
+  void setQpos(const std::string &name, const VectorX<S> &qpos) const;
 
   /// @brief Set qpos of all planned articulations
-  void setQposAll(VectorX<S> const &state) const;
+  void setQposAll(const VectorX<S> &state) const;
 
   /// @brief Get pointer to allowed collision matrix to modify
   AllowedCollisionMatrixPtr getAllowedCollisionMatrix() const { return acm_; }
 
   /// @brief Check full collision and return only a boolean indicating collision
-  bool collide(CollisionRequest const &request = CollisionRequest()) const {
+  bool collide(const CollisionRequest &request = CollisionRequest()) const {
     return collideFull(request).size() > 0;
   }
 
@@ -252,38 +252,38 @@ class PlanningWorldTpl {
    *  planned articulation-attach collision, attach-attach collision)
    */
   std::vector<WorldCollisionResult> selfCollide(
-      CollisionRequest const &request = CollisionRequest()) const;
+      const CollisionRequest &request = CollisionRequest()) const;
 
   /**
    * @brief Check collision with other scene bodies (planned articulations with
    * attached objects collide against unplanned articulations and scene objects)
    */
   std::vector<WorldCollisionResult> collideWithOthers(
-      CollisionRequest const &request = CollisionRequest()) const;
+      const CollisionRequest &request = CollisionRequest()) const;
 
   /// @brief Check full collision (calls selfCollide() and collideWithOthers())
   std::vector<WorldCollisionResult> collideFull(
-      CollisionRequest const &request = CollisionRequest()) const;
+      const CollisionRequest &request = CollisionRequest()) const;
 
   /// @brief Returns the minimum distance to collision in current state
-  S distance(DistanceRequest const &request = DistanceRequest()) const {
+  S distance(const DistanceRequest &request = DistanceRequest()) const {
     return distanceFull().min_distance;
   }
 
   /// @brief The min distance to self-collision given the robot in current state
   WorldDistanceResult distanceSelf(
-      DistanceRequest const &request = DistanceRequest()) const;
+      const DistanceRequest &request = DistanceRequest()) const;
 
   /// @brief Compute the min distance between a robot and the world
   WorldDistanceResult distanceOthers(
-      DistanceRequest const &request = DistanceRequest()) const;
+      const DistanceRequest &request = DistanceRequest()) const;
 
   /**
    * @brief Compute the min distance to collision (calls distanceSelf() and
    *  distanceOthers())
    */
   WorldDistanceResult distanceFull(
-      DistanceRequest const &request = DistanceRequest()) const;
+      const DistanceRequest &request = DistanceRequest()) const;
 
  private:
   std::unordered_map<std::string, ArticulatedModelPtr> articulations_;

@@ -16,10 +16,10 @@ MPLIB_CLASS_TEMPLATE_FORWARD(PinocchioModelTpl);
 template <typename S>
 class PinocchioModelTpl {
  public:
-  PinocchioModelTpl(urdf::ModelInterfaceSharedPtr const &urdfTree,
-                    Vector3<S> const &gravity, bool verbose = true);
+  PinocchioModelTpl(const urdf::ModelInterfaceSharedPtr &urdfTree,
+                    const Vector3<S> &gravity, bool verbose = true);
 
-  PinocchioModelTpl(std::string const &urdf_filename, Vector3<S> const &gravity,
+  PinocchioModelTpl(const std::string &urdf_filename, const Vector3<S> &gravity,
                     bool verbose = true);
 
   const Model<S> &getModel(void) const { return model_; }
@@ -68,39 +68,39 @@ class PinocchioModelTpl {
 
   void printFrames() const;
 
-  void setJointOrder(std::vector<std::string> const &names);
+  void setJointOrder(const std::vector<std::string> &names);
 
-  void setLinkOrder(std::vector<std::string> const &names);
+  void setLinkOrder(const std::vector<std::string> &names);
 
   std::vector<std::size_t> getChainJointIndex(
-      std::string const &end_effector) const;
+      const std::string &end_effector) const;
 
   std::vector<std::string> getChainJointName(
-      std::string const &end_effector) const;
+      const std::string &end_effector) const;
 
   VectorX<S> getRandomConfiguration() const;
 
-  void computeForwardKinematics(VectorX<S> const &qpos);
+  void computeForwardKinematics(const VectorX<S> &qpos);
 
   Vector7<S> getLinkPose(size_t index) const;
 
   Vector7<S> getJointPose(size_t index) const;  // TODO not same as sapien
 
-  void computeFullJacobian(VectorX<S> const &qpos);
+  void computeFullJacobian(const VectorX<S> &qpos);
 
   Matrix6X<S> getLinkJacobian(size_t index, bool local = false) const;
 
-  Matrix6X<S> computeSingleLinkLocalJacobian(VectorX<S> const &qpos,
+  Matrix6X<S> computeSingleLinkLocalJacobian(const VectorX<S> &qpos,
                                              size_t index);
 
   std::tuple<VectorX<S>, bool, Vector6<S>> computeIKCLIK(
-      size_t index, Vector7<S> const &pose, VectorX<S> const &q_init,
-      std::vector<bool> const &mask, double eps = 1e-5, int maxIter = 1000,
+      size_t index, const Vector7<S> &pose, const VectorX<S> &q_init,
+      const std::vector<bool> &mask, double eps = 1e-5, int maxIter = 1000,
       double dt = 1e-1, double damp = 1e-12);
 
   std::tuple<VectorX<S>, bool, Vector6<S>> computeIKCLIKJL(
-      size_t index, Vector7<S> const &pose, VectorX<S> const &q_init,
-      VectorX<S> const &qmin, VectorX<S> const &qmax, double eps = 1e-5,
+      size_t index, const Vector7<S> &pose, const VectorX<S> &q_init,
+      const VectorX<S> &qmin, const VectorX<S> &qmax, double eps = 1e-5,
       int maxIter = 1000, double dt = 1e-1, double damp = 1e-12);
 
  private:
@@ -123,15 +123,15 @@ class PinocchioModelTpl {
   const std::string joint_prefix_ = "JointModel";
   bool verbose_;
 
-  VectorX<S> qposUser2Pinocchio(VectorX<S> const &qpos) const;
+  VectorX<S> qposUser2Pinocchio(const VectorX<S> &qpos) const;
 
-  VectorX<S> qposPinocchio2User(VectorX<S> const &qpos) const;
+  VectorX<S> qposPinocchio2User(const VectorX<S> &qpos) const;
 
   void dfs_parse_tree(const urdf::LinkConstSharedPtr &link,
                       UrdfVisitorBase<S> &visitor);
 
-  void init(urdf::ModelInterfaceSharedPtr const &urdfTree,
-            Vector3<S> const &gravity);
+  void init(const urdf::ModelInterfaceSharedPtr &urdfTree,
+            const Vector3<S> &gravity);
 };
 
 // Common Type Alias ==========================================================

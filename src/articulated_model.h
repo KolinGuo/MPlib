@@ -13,16 +13,16 @@ MPLIB_CLASS_TEMPLATE_FORWARD(ArticulatedModelTpl);
 template <typename S>
 class ArticulatedModelTpl {
  public:
-  ArticulatedModelTpl(std::string const &urdf_filename,
-                      std::string const &srdf_filename,
-                      Vector3<S> const &gravity,
-                      std::vector<std::string> const &joint_names = {},
-                      std::vector<std::string> const &link_names = {},
+  ArticulatedModelTpl(const std::string &urdf_filename,
+                      const std::string &srdf_filename,
+                      const Vector3<S> &gravity,
+                      const std::vector<std::string> &joint_names = {},
+                      const std::vector<std::string> &link_names = {},
                       bool verbose = true, bool convex = false);
 
-  std::string const &getName() const { return name_; }
+  const std::string &getName() const { return name_; }
 
-  void setName(std::string const &name) { name_ = name; }
+  void setName(const std::string &name) { name_ = name; }
 
   pinocchio::PinocchioModelTplPtr<S> getPinocchioModel() const {
     return pinocchio_model_;
@@ -48,17 +48,17 @@ class ArticulatedModelTpl {
 
   std::vector<std::string> getMoveGroupJointNames() const;
 
-  void setMoveGroup(std::string const &end_effector);
+  void setMoveGroup(const std::string &end_effector);
 
-  void setMoveGroup(std::vector<std::string> const &end_effectors);
+  void setMoveGroup(const std::vector<std::string> &end_effectors);
 
   const VectorX<S> &getQpos() const { return current_qpos_; }
 
-  void setQpos(VectorX<S> const &qpos, bool full = false);
+  void setQpos(const VectorX<S> &qpos, bool full = false);
 
   size_t getQposDim() const { return qpos_dim_; }
 
-  void updateSRDF(std::string const &srdf) {
+  void updateSRDF(const std::string &srdf) {
     fcl_model_->removeCollisionPairsFromSrdf(srdf);
   }
 

@@ -21,13 +21,13 @@ class AttachedBodyTpl {
   using CollisionObjectPtr = fcl::CollisionObjectPtr<S>;
   using ArticulatedModelPtr = ArticulatedModelTplPtr<S>;
 
-  AttachedBodyTpl(std::string const &name, CollisionObjectPtr const &object,
-                  ArticulatedModelPtr const &attached_articulation,
-                  int attached_link_id, Transform3<S> const &pose,
-                  std::vector<std::string> const &touch_links = {});
+  AttachedBodyTpl(const std::string &name, const CollisionObjectPtr &object,
+                  const ArticulatedModelPtr &attached_articulation,
+                  int attached_link_id, const Transform3<S> &pose,
+                  const std::vector<std::string> &touch_links = {});
 
   /// @brief Gets the attached object name
-  std::string const &getName() const { return name_; }
+  const std::string &getName() const { return name_; }
 
   /// @brief Gets the attached object (CollisionObjectPtr)
   CollisionObjectPtr getObject() const { return object_; }
@@ -41,10 +41,10 @@ class AttachedBodyTpl {
   int getAttachedLinkId() const { return attached_link_id_; }
 
   /// @brief Gets the attached pose (relative pose from attached link to object)
-  Transform3<S> const &getPose() const { return pose_; }
+  const Transform3<S> &getPose() const { return pose_; }
 
   /// @brief Sets the attached pose (relative pose from attached link to object)
-  void setPose(Transform3<S> const &pose) { pose_ = pose; }
+  void setPose(const Transform3<S> &pose) { pose_ = pose; }
 
   /// @brief Gets the global pose of the attached object
   Transform3<S> getGlobalPose() const {
@@ -57,10 +57,10 @@ class AttachedBodyTpl {
   void updatePose() const { object_->setTransform(getGlobalPose()); }
 
   /// @brief Gets the link names that the attached body touches
-  std::vector<std::string> const &getTouchLinks() const { return touch_links_; }
+  const std::vector<std::string> &getTouchLinks() const { return touch_links_; }
 
   /// @brief Sets the link names that the attached body touches
-  void setTouchLinks(std::vector<std::string> const &touch_links) {
+  void setTouchLinks(const std::vector<std::string> &touch_links) {
     touch_links_ = touch_links;
   }
 
