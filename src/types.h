@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+
+#include <Eigen/Dense>
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 #include <fcl/narrowphase/collision.h>
 #include <fcl/narrowphase/distance.h>
@@ -7,9 +10,6 @@
 #include <ompl/base/SpaceInformation.h>
 #include <ompl/base/StateSpace.h>
 #include <ompl/geometric/PathGeometric.h>
-
-#include <Eigen/Dense>
-#include <memory>
 #include <pinocchio/multibody/data.hpp>
 #include <pinocchio/multibody/fwd.hpp>
 #include <pinocchio/parsers/urdf.hpp>

@@ -1,5 +1,6 @@
-#include <Eigen/Core>
 #include <string>
+
+#include <Eigen/Core>
 
 #include "articulated_model.h"
 

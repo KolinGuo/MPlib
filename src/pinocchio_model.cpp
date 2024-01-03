@@ -1,12 +1,11 @@
 #include "pinocchio_model.h"
 
-#include <urdf_parser/urdf_parser.h>
-
 #include <pinocchio/algorithm/jacobian.hpp>
 #include <pinocchio/algorithm/joint-configuration.hpp>
 #include <pinocchio/algorithm/kinematics.hpp>
 #include <pinocchio/multibody/joint/fwd.hpp>
 #include <pinocchio/parsers/urdf.hpp>
+#include <urdf_parser/urdf_parser.h>
 
 #include "urdf_utils.h"
 

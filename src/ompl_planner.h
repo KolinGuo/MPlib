@@ -1,11 +1,11 @@
 #pragma once
 
+#include <vector>
+
 #include <ompl/base/State.h>
 #include <ompl/base/StateValidityChecker.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <ompl/base/spaces/SO2StateSpace.h>
-
-#include <vector>
 
 /* #include <ompl/base/goals/GoalStates.h> */
 /* #include <ompl/base/objectives/StateCostIntegralObjective.h> */

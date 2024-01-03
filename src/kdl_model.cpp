@@ -1,8 +1,5 @@
 #include "kdl_model.h"
 
-#include <urdf_parser/urdf_parser.h>
-#include <urdf_world/types.h>
-
 #include <kdl/chain.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/chainiksolverpos_lma.hpp>
@@ -16,6 +13,8 @@
 #include <kdl/treeiksolverpos_nr_jl.hpp>
 #include <kdl/treeiksolvervel_wdls.hpp>
 #include <kdl/utilities/svd_eigen_HH.hpp>
+#include <urdf_parser/urdf_parser.h>
+#include <urdf_world/types.h>
 
 #include "macros_utils.h"
 #include "urdf_utils.h"

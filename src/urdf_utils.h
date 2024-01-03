@@ -1,16 +1,16 @@
 #pragma once
 
-#include <assimp/scene.h>
-#include <urdf_model/pose.h>
-#include <urdf_model/types.h>
-#include <urdf_world/types.h>
+#include <string>
 
 #include <assimp/Importer.hpp>
+#include <assimp/scene.h>
 #include <kdl/frames.hpp>
 #include <kdl/joint.hpp>
 #include <kdl/rigidbodyinertia.hpp>
 #include <kdl/tree.hpp>
-#include <string>
+#include <urdf_model/pose.h>
+#include <urdf_model/types.h>
+#include <urdf_world/types.h>
 
 #include "types.h"
 

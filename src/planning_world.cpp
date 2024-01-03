@@ -1,11 +1,11 @@
 #include "planning_world.h"
 
-#include <octomap/OcTree.h>
-
 #include <algorithm>
 #include <memory>
 #include <string>
 #include <unordered_map>
+
+#include <octomap/OcTree.h>
 
 #include "collision_matrix.h"
 #include "macros_utils.h"

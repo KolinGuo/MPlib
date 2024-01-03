@@ -1,10 +1,9 @@
 #include "urdf_utils.h"
 
 #include <assimp/postprocess.h>
+#include <kdl/frames_io.hpp>
 #include <urdf_model/link.h>
 #include <urdf_model/model.h>
-
-#include <kdl/frames_io.hpp>
 
 namespace mplib {
 

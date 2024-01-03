@@ -1,5 +1,7 @@
 #include "ompl_planner.h"
 
+#include <memory>
+
 #include <ompl/base/Planner.h>
 #include <ompl/base/goals/GoalStates.h>
 #include <ompl/base/objectives/MaximizeMinClearanceObjective.h>
@@ -12,8 +14,6 @@
 #include <ompl/geometric/planners/rrt/RRTXstatic.h>
 #include <ompl/geometric/planners/rrt/RRTsharp.h>
 #include <ompl/geometric/planners/rrt/RRTstar.h>
-
-#include <memory>
 
 #include "macros_utils.h"
 

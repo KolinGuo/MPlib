@@ -1,9 +1,9 @@
 #pragma once
 
-#include <ompl/util/RandomNumbers.h>
-#include <fcl/math/rng.h>
-
 #include <cstdlib>
+
+#include <fcl/math/rng.h>
+#include <ompl/util/RandomNumbers.h>
 
 namespace mplib {
 

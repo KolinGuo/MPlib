@@ -1,11 +1,11 @@
 #include "fcl_model.h"
 
-#include <urdf_parser/urdf_parser.h>
-
 #include <algorithm>
+
 #include <boost/filesystem/path.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
+#include <urdf_parser/urdf_parser.h>
 
 #include "macros_utils.h"
 #include "urdf_utils.h"

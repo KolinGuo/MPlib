@@ -1,9 +1,9 @@
 #pragma once
 
+#include <vector>
+
 #include <urdf_model/types.h>
 #include <urdf_world/types.h>
-
-#include <vector>
 
 #include "macros_utils.h"
 #include "types.h"

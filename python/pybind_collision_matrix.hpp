@@ -1,12 +1,12 @@
 #pragma once
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
 #include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
+
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include "collision_matrix.h"
 
