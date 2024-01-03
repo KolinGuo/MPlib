@@ -418,6 +418,7 @@ class Planner:
         planner_name: str = "RRTConnect",
         time_step: float = 0.1,
         rrt_range: float = 0.1,
+        rrt_goal_bias: float = 0.05,
         planning_time: float = 1,
         pathlen_obj_weight: float = 10.0,
         pathlen_obj_only: bool = False,
@@ -437,6 +438,7 @@ class Planner:
         :param rrt_range: the incremental distance in the RRTConnect algorithm,
                           The larger the value, the sparser the sampled waypoints
                           (before time parameterization).
+        :param rrt_goal_bias: probability of sampling goal state during tree growing.
         :param planning_time: time limit for RRTConnect algorithm, in seconds.
         :param pathlen_obj_weight: weight of path length objective for RRTstar.
         :param pathlen_obj_only: Only plan with shorted path length objective.
@@ -491,6 +493,7 @@ class Planner:
             planner_name=planner_name,
             time=planning_time,
             range=rrt_range,
+            goal_bias=rrt_goal_bias,
             pathlen_obj_weight=pathlen_obj_weight,
             pathlen_obj_only=pathlen_obj_only,
             verbose=verbose,

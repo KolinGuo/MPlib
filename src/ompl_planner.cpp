@@ -7,6 +7,7 @@
 #include <ompl/geometric/planners/prm/LazyPRMstar.h>
 #include <ompl/geometric/planners/prm/PRMstar.h>
 #include <ompl/geometric/planners/rrt/InformedRRTstar.h>
+#include <ompl/geometric/planners/rrt/RRT.h>
 #include <ompl/geometric/planners/rrt/RRTConnect.h>
 #include <ompl/geometric/planners/rrt/RRTXstatic.h>
 #include <ompl/geometric/planners/rrt/RRTsharp.h>
@@ -101,7 +102,8 @@ template <typename S>
 std::pair<std::string, MatrixX<S>> OMPLPlannerTpl<S>::plan(
     VectorX<S> const &start_state, std::vector<VectorX<S>> const &goal_states,
     const std::string &planner_name, double time, double range,
-    double pathlen_obj_weight, bool pathlen_obj_only, bool verbose) const {
+    double goal_bias, double pathlen_obj_weight, bool pathlen_obj_only,
+    bool verbose) const {
   ASSERT(start_state.rows() == goal_states[0].rows(),
          "Length of start state and goal state should be equal");
   ASSERT(static_cast<size_t>(start_state.rows()) == dim_,
@@ -174,6 +176,11 @@ std::pair<std::string, MatrixX<S>> OMPLPlannerTpl<S>::plan(
     auto rrt_connect = std::make_shared<og::RRTConnect>(si_);
     if (range > 1E-6) rrt_connect->setRange(range);
     planner = rrt_connect;
+  } else if (planner_name == "RRT") {
+    auto rrt = std::make_shared<og::RRT>(si_);
+    if (range > 1E-6) rrt->setRange(range);
+    rrt->setGoalBias(goal_bias);
+    planner = rrt;
   } else {
     // Create optimization objective
     auto length_objective =
@@ -194,18 +201,22 @@ std::pair<std::string, MatrixX<S>> OMPLPlannerTpl<S>::plan(
     } else if (planner_name == "RRTstar") {
       auto rrt_star = std::make_shared<og::RRTstar>(si_);
       if (range > 1E-6) rrt_star->setRange(range);
+      rrt_star->setGoalBias(goal_bias);
       planner = rrt_star;
     } else if (planner_name == "RRTsharp") {
       auto rrt_sharp = std::make_shared<og::RRTsharp>(si_);
       if (range > 1E-6) rrt_sharp->setRange(range);
+      rrt_sharp->setGoalBias(goal_bias);
       planner = rrt_sharp;
     } else if (planner_name == "RRTXstatic") {
       auto rrtx_static = std::make_shared<og::RRTXstatic>(si_);
       if (range > 1E-6) rrtx_static->setRange(range);
+      rrtx_static->setGoalBias(goal_bias);
       planner = rrtx_static;
     } else if (planner_name == "InformedRRTstar") {
       auto informed_rrt_star = std::make_shared<og::InformedRRTstar>(si_);
       if (range > 1E-6) informed_rrt_star->setRange(range);
+      informed_rrt_star->setGoalBias(goal_bias);
       planner = informed_rrt_star;
     } else
       throw std::runtime_error("Planner Not implemented");
