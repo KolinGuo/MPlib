@@ -1,4 +1,5 @@
 BasedOnStyle: Google
+ColumnLimit: 88
 
 # Write pointer / reference as "int &foo" instead of "int& foo"
 DerivePointerAlignment: false
@@ -17,4 +18,6 @@ IncludeCategories:
 - Regex:           '.*'
   Priority:        3
 
+LineEnding: LF
+SeparateDefinitionBlocks: Always
 SpaceBeforeCpp11BracedList: true

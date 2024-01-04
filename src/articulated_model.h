@@ -14,8 +14,7 @@ template <typename S>
 class ArticulatedModelTpl {
  public:
   ArticulatedModelTpl(const std::string &urdf_filename,
-                      const std::string &srdf_filename,
-                      const Vector3<S> &gravity,
+                      const std::string &srdf_filename, const Vector3<S> &gravity,
                       const std::vector<std::string> &joint_names = {},
                       const std::vector<std::string> &link_names = {},
                       bool verbose = true, bool convex = false);
@@ -30,9 +29,7 @@ class ArticulatedModelTpl {
 
   fcl::FCLModelTplPtr<S> getFCLModel() const { return fcl_model_; }
 
-  const std::vector<std::string> &getUserLinkNames() const {
-    return user_link_names_;
-  }
+  const std::vector<std::string> &getUserLinkNames() const { return user_link_names_; }
 
   const std::vector<std::string> &getUserJointNames() const {
     return user_joint_names_;

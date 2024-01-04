@@ -33,9 +33,7 @@ class AttachedBodyTpl {
   CollisionObjectPtr getObject() const { return object_; }
 
   /// @brief Gets the articulation this body attached to
-  ArticulatedModelPtr getAttachedArticulation() const {
-    return attached_articulation_;
-  }
+  ArticulatedModelPtr getAttachedArticulation() const { return attached_articulation_; }
 
   /// @brief Gets the articulation this body attached to
   int getAttachedLinkId() const { return attached_link_id_; }
@@ -48,8 +46,7 @@ class AttachedBodyTpl {
 
   /// @brief Gets the global pose of the attached object
   Transform3<S> getGlobalPose() const {
-    return posevec_to_transform(
-               pinocchio_model_->getLinkPose(attached_link_id_)) *
+    return posevec_to_transform(pinocchio_model_->getLinkPose(attached_link_id_)) *
            pose_;
   }
 
@@ -81,8 +78,7 @@ using AttachedBodyfPtr = AttachedBodyTplPtr<float>;
 using AttachedBodydPtr = AttachedBodyTplPtr<double>;
 
 // Explicit Template Instantiation Declaration ================================
-#define DECLARE_TEMPLATE_ATTACHED_BODY(S) \
-  extern template class AttachedBodyTpl<S>
+#define DECLARE_TEMPLATE_ATTACHED_BODY(S) extern template class AttachedBodyTpl<S>
 
 DECLARE_TEMPLATE_ATTACHED_BODY(float);
 DECLARE_TEMPLATE_ATTACHED_BODY(double);

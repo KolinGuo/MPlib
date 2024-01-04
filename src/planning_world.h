@@ -19,8 +19,7 @@ MPLIB_STRUCT_TEMPLATE_FORWARD(WorldCollisionResultTpl);
 template <typename S>
 struct WorldCollisionResultTpl {
   fcl::CollisionResult<S> res;
-  std::string collision_type, object_name1, object_name2, link_name1,
-      link_name2;
+  std::string collision_type, object_name1, object_name2, link_name1, link_name2;
 };
 
 // Common Type Alias ==========================================================
@@ -61,8 +60,7 @@ class PlanningWorldTpl {
   using CollisionGeometryPtr = fcl::CollisionGeometryPtr<S>;
   using CollisionObject = fcl::CollisionObject<S>;
   using CollisionObjectPtr = fcl::CollisionObjectPtr<S>;
-  using DynamicAABBTreeCollisionManager =
-      fcl::DynamicAABBTreeCollisionManager<S>;
+  using DynamicAABBTreeCollisionManager = fcl::DynamicAABBTreeCollisionManager<S>;
   using BroadPhaseCollisionManagerPtr = fcl::BroadPhaseCollisionManagerPtr<S>;
 
   using WorldCollisionResult = WorldCollisionResultTpl<S>;
@@ -101,8 +99,8 @@ class PlanningWorldTpl {
    * @brief Adds an articulation (ArticulatedModelPtr) with given name to world
    * @param planned: whether the articulation is being planned
    */
-  void addArticulation(const std::string &name,
-                       const ArticulatedModelPtr &model, bool planned = false);
+  void addArticulation(const std::string &name, const ArticulatedModelPtr &model,
+                       bool planned = false);
 
   /**
    * @brief Removes the articulation with given name if exists. Updates acm_
@@ -172,8 +170,8 @@ class PlanningWorldTpl {
    * @throws std::out_of_range if normal object with given name does not exist
    *  or if planned articulation with given name does not exist
    */
-  void attachObject(const std::string &name, const std::string &art_name,
-                    int link_id, const Vector7<S> &pose,
+  void attachObject(const std::string &name, const std::string &art_name, int link_id,
+                    const Vector7<S> &pose,
                     const std::vector<std::string> &touch_links);
 
   /**
@@ -186,8 +184,8 @@ class PlanningWorldTpl {
    * @throws std::out_of_range if normal object with given name does not exist
    *  or if planned articulation with given name does not exist
    */
-  void attachObject(const std::string &name, const std::string &art_name,
-                    int link_id, const Vector7<S> &pose);
+  void attachObject(const std::string &name, const std::string &art_name, int link_id,
+                    const Vector7<S> &pose);
 
   /**
    * @brief Attaches given object (w/ p_geom) to specified link of articulation.
@@ -196,8 +194,7 @@ class PlanningWorldTpl {
    * @param touch_links: link names that the attached object touches
    */
   void attachObject(const std::string &name, const CollisionGeometryPtr &p_geom,
-                    const std::string &art_name, int link_id,
-                    const Vector7<S> &pose,
+                    const std::string &art_name, int link_id, const Vector7<S> &pose,
                     const std::vector<std::string> &touch_links);
 
   /**
@@ -206,16 +203,15 @@ class PlanningWorldTpl {
    *  object. As a result, all previous acm_ entries with the object are removed
    */
   void attachObject(const std::string &name, const CollisionGeometryPtr &p_geom,
-                    const std::string &art_name, int link_id,
-                    const Vector7<S> &pose);
+                    const std::string &art_name, int link_id, const Vector7<S> &pose);
 
   /// @brief Attaches given sphere to specified link of articulation
   void attachSphere(S radius, const std::string &art_name, int link_id,
                     const Vector7<S> &pose);
 
   /// @brief Attaches given box to specified link of articulation
-  void attachBox(const Vector3<S> &size, const std::string &art_name,
-                 int link_id, const Vector7<S> &pose);
+  void attachBox(const Vector3<S> &size, const std::string &art_name, int link_id,
+                 const Vector7<S> &pose);
 
   /// @brief Attaches given mesh to specified link of articulation
   void attachMesh(const std::string &mesh_path, const std::string &art_name,

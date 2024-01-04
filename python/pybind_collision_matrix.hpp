@@ -23,15 +23,14 @@ inline void build_collision_matrix(py::module &m_all) {
       .value("CONDITIONAL", AllowedCollision::CONDITIONAL);
 
   auto PyAllowedCollisionMatrix =
-      py::class_<AllowedCollisionMatrix,
-                 std::shared_ptr<AllowedCollisionMatrix>>(
+      py::class_<AllowedCollisionMatrix, std::shared_ptr<AllowedCollisionMatrix>>(
           m, "AllowedCollisionMatrix");
   PyAllowedCollisionMatrix.def(py::init<>())
       .def("get_entry", &AllowedCollisionMatrix::getEntry, py::arg("name1"),
            py::arg("name2"))
       .def("has_entry",
-           py::overload_cast<const std::string &>(
-               &AllowedCollisionMatrix::hasEntry, py::const_),
+           py::overload_cast<const std::string &>(&AllowedCollisionMatrix::hasEntry,
+                                                  py::const_),
            py::arg("name"))
       .def("has_entry",
            py::overload_cast<const std::string &, const std::string &>(
@@ -42,9 +41,8 @@ inline void build_collision_matrix(py::module &m_all) {
                &AllowedCollisionMatrix::setEntry),
            py::arg("name1"), py::arg("name2"), py::arg("allowed"))
       .def("set_entry",
-           py::overload_cast<const std::string &,
-                             const std::vector<std::string> &, bool>(
-               &AllowedCollisionMatrix::setEntry),
+           py::overload_cast<const std::string &, const std::vector<std::string> &,
+                             bool>(&AllowedCollisionMatrix::setEntry),
            py::arg("name"), py::arg("other_names"), py::arg("allowed"))
       .def("set_entry",
            py::overload_cast<const std::vector<std::string> &,
@@ -59,16 +57,14 @@ inline void build_collision_matrix(py::module &m_all) {
            py::overload_cast<const std::vector<std::string> &, bool>(
                &AllowedCollisionMatrix::setEntry),
            py::arg("names"), py::arg("allowed"))
-      .def("set_entry",
-           py::overload_cast<bool>(&AllowedCollisionMatrix::setEntry),
+      .def("set_entry", py::overload_cast<bool>(&AllowedCollisionMatrix::setEntry),
            py::arg("allowed"))
       .def("remove_entry",
            py::overload_cast<const std::string &, const std::string &>(
                &AllowedCollisionMatrix::removeEntry),
            py::arg("name1"), py::arg("name2"))
       .def("remove_entry",
-           py::overload_cast<const std::string &,
-                             const std::vector<std::string> &>(
+           py::overload_cast<const std::string &, const std::vector<std::string> &>(
                &AllowedCollisionMatrix::removeEntry),
            py::arg("name"), py::arg("other_names"))
       .def("remove_entry",
@@ -77,15 +73,13 @@ inline void build_collision_matrix(py::module &m_all) {
                &AllowedCollisionMatrix::removeEntry),
            py::arg("names1"), py::arg("names2"))
       .def("remove_entry",
-           py::overload_cast<const std::string &>(
-               &AllowedCollisionMatrix::removeEntry),
+           py::overload_cast<const std::string &>(&AllowedCollisionMatrix::removeEntry),
            py::arg("name"))
       .def("remove_entry",
            py::overload_cast<const std::vector<std::string> &>(
                &AllowedCollisionMatrix::removeEntry),
            py::arg("names"))
-      .def("__len__",
-           [](const AllowedCollisionMatrix &acm) { return acm.getSize(); })
+      .def("__len__", [](const AllowedCollisionMatrix &acm) { return acm.getSize(); })
 
       .def("get_default_entry",
            py::overload_cast<const std::string &>(
@@ -110,9 +104,8 @@ inline void build_collision_matrix(py::module &m_all) {
                &AllowedCollisionMatrix::removeDefaultEntry),
            py::arg("names"))
 
-      .def("get_allowed_collision",
-           &AllowedCollisionMatrix::getAllowedCollision, py::arg("name1"),
-           py::arg("name2"))
+      .def("get_allowed_collision", &AllowedCollisionMatrix::getAllowedCollision,
+           py::arg("name1"), py::arg("name2"))
 
       .def("clear", &AllowedCollisionMatrix::clear)
 

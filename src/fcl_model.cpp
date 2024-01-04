@@ -20,15 +20,13 @@ DEFINE_TEMPLATE_FCL_MODEL(double);
 
 template <typename S>
 FCLModelTpl<S>::FCLModelTpl(const urdf::ModelInterfaceSharedPtr &urdfTree,
-                            const std::string &package_dir, bool verbose,
-                            bool convex)
+                            const std::string &package_dir, bool verbose, bool convex)
     : use_convex_(convex), verbose_(verbose) {
   init(urdfTree, package_dir);
 }
 
 template <typename S>
-FCLModelTpl<S>::FCLModelTpl(const std::string &urdf_filename, bool verbose,
-                            bool convex)
+FCLModelTpl<S>::FCLModelTpl(const std::string &urdf_filename, bool verbose, bool convex)
     : use_convex_(convex), verbose_(verbose) {
   auto found = urdf_filename.find_last_of("/\\");
   auto urdf_dir = urdf_filename.substr(0, found);
@@ -41,8 +39,7 @@ void FCLModelTpl<S>::setLinkOrder(const std::vector<std::string> &names) {
   user_link_names_ = names;
   collision_link_user_indices_ = {};
   for (size_t i = 0; i < collision_link_names_.size(); i++) {
-    if (verbose_)
-      std::cout << collision_link_names_[i] << " " << names[i] << std::endl;
+    if (verbose_) std::cout << collision_link_names_[i] << " " << names[i] << std::endl;
     auto iter = std::find(names.begin(), names.end(), collision_link_names_[i]);
     if (iter == names.end())
       throw std::invalid_argument("The names does not contain link " +
@@ -62,8 +59,7 @@ void FCLModelTpl<S>::printCollisionPairs() const {
 }
 
 template <typename S>
-void FCLModelTpl<S>::removeCollisionPairsFromSrdf(
-    const std::string &srdf_filename) {
+void FCLModelTpl<S>::removeCollisionPairsFromSrdf(const std::string &srdf_filename) {
   const std::string extension =
       srdf_filename.substr(srdf_filename.find_last_of('.') + 1);
   if (srdf_filename == "") {
@@ -71,8 +67,7 @@ void FCLModelTpl<S>::removeCollisionPairsFromSrdf(
     return;
   }
 
-  ASSERT(extension == "srdf",
-         srdf_filename + " does not have the right extension.");
+  ASSERT(extension == "srdf", srdf_filename + " does not have the right extension.");
 
   std::ifstream srdf_stream(srdf_filename.c_str());
 
@@ -112,8 +107,7 @@ void FCLModelTpl<S>::removeCollisionPairsFromSrdf(
         std::cout << "Try to Remove collision parts:" << link1 << " " << link2
                   << std::endl;
       }
-      for (auto iter = collision_pairs_.begin();
-           iter != collision_pairs_.end();) {
+      for (auto iter = collision_pairs_.begin(); iter != collision_pairs_.end();) {
         if ((collision_link_names_[iter->first] == link1 &&
              collision_link_names_[iter->second] == link2) ||
             (collision_link_names_[iter->first] == link2 &&
@@ -202,8 +196,7 @@ void FCLModelTpl<S>::dfs_parse_tree(const urdf::LinkConstSharedPtr &link,
         std::string file_name = urdf_mesh->filename;
         if (use_convex_ && file_name.find(".convex.stl") == std::string::npos)
           file_name = file_name += ".convex.stl";
-        auto mesh_path =
-            (boost::filesystem::path(package_dir_) / file_name).string();
+        auto mesh_path = (boost::filesystem::path(package_dir_) / file_name).string();
         if (mesh_path == "") {
           std::stringstream ss;
           ss << "Mesh " << file_name << " could not be found.";
@@ -217,8 +210,7 @@ void FCLModelTpl<S>::dfs_parse_tree(const urdf::LinkConstSharedPtr &link,
           collision_geometry = load_mesh_as_Convex(mesh_path, scale);
         else
           collision_geometry = load_mesh_as_BVH(mesh_path, scale);
-        if (verbose_)
-          std::cout << scale << " " << collision_geometry << std::endl;
+        if (verbose_) std::cout << scale << " " << collision_geometry << std::endl;
       } else if (geom->type == urdf::Geometry::CYLINDER) {
         const urdf::CylinderConstSharedPtr cylinder =
             urdf::dynamic_pointer_cast<const urdf::Cylinder>(geom);
@@ -227,9 +219,9 @@ void FCLModelTpl<S>::dfs_parse_tree(const urdf::LinkConstSharedPtr &link,
       } else if (geom->type == urdf::Geometry::BOX) {
         const urdf::BoxConstSharedPtr box =
             urdf::dynamic_pointer_cast<const urdf::Box>(geom);
-        collision_geometry = std::make_shared<Box<S>>(
-            static_cast<S>(box->dim.x), static_cast<S>(box->dim.y),
-            static_cast<S>(box->dim.z));
+        collision_geometry = std::make_shared<Box<S>>(static_cast<S>(box->dim.x),
+                                                      static_cast<S>(box->dim.y),
+                                                      static_cast<S>(box->dim.z));
       } else if (geom->type == ::urdf::Geometry::SPHERE) {
         const urdf::SphereConstSharedPtr sphere =
             urdf::dynamic_pointer_cast<const urdf::Sphere>(geom);
@@ -248,8 +240,7 @@ void FCLModelTpl<S>::dfs_parse_tree(const urdf::LinkConstSharedPtr &link,
       parent_link_names_.push_back(parent_link_name);
       // collision_joint_index.push_back(model.frames[frame_id].parent);
       /// body_placement * convert_data((*i)->origin);
-      collision_origin2link_poses_.push_back(
-          pose_to_transform<S>(col_obj->origin));
+      collision_origin2link_poses_.push_back(pose_to_transform<S>(col_obj->origin));
       // collision_origin2joint_pose.push_back(
       //         model.frames[frame_id].placement *
       //         convertFromUrdf<S>(geom->origin));
@@ -264,13 +255,11 @@ void FCLModelTpl<S>::init(const urdf::ModelInterfaceSharedPtr &urdfTree,
   package_dir_ = package_dir;
   urdf_model_ = urdfTree;
   if (not urdf_model_)
-    throw std::invalid_argument(
-        "The XML stream does not contain a valid URDF model.");
+    throw std::invalid_argument("The XML stream does not contain a valid URDF model.");
   urdf::LinkConstSharedPtr root_link = urdf_model_->getRoot();
   dfs_parse_tree(root_link, "root's parent");
   auto tmp_user_link_names = collision_link_names_;
-  auto last =
-      std::unique(tmp_user_link_names.begin(), tmp_user_link_names.end());
+  auto last = std::unique(tmp_user_link_names.begin(), tmp_user_link_names.end());
   tmp_user_link_names.erase(last, tmp_user_link_names.end());
   setLinkOrder(tmp_user_link_names);
 

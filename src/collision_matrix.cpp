@@ -51,9 +51,9 @@ void AllowedCollisionMatrix::setEntry(const std::string &name1,
   */
 }
 
-void AllowedCollisionMatrix::setEntry(
-    const std::string &name, const std::vector<std::string> &other_names,
-    bool allowed) {
+void AllowedCollisionMatrix::setEntry(const std::string &name,
+                                      const std::vector<std::string> &other_names,
+                                      bool allowed) {
   for (const auto &other_name : other_names)
     if (other_name != name) setEntry(other_name, name, allowed);
 }
@@ -105,15 +105,14 @@ void AllowedCollisionMatrix::removeEntry(const std::string &name1,
   */
 }
 
-void AllowedCollisionMatrix::removeEntry(
-    const std::string &name, const std::vector<std::string> &other_names) {
+void AllowedCollisionMatrix::removeEntry(const std::string &name,
+                                         const std::vector<std::string> &other_names) {
   for (const auto &other_name : other_names)
     if (other_name != name) removeEntry(other_name, name);
 }
 
-void AllowedCollisionMatrix::removeEntry(
-    const std::vector<std::string> &names1,
-    const std::vector<std::string> &names2) {
+void AllowedCollisionMatrix::removeEntry(const std::vector<std::string> &names1,
+                                         const std::vector<std::string> &names2) {
   for (const auto &name1 : names1) removeEntry(name1, names2);
 }
 
@@ -134,8 +133,7 @@ void AllowedCollisionMatrix::removeEntry(const std::string &name) {
   */
 }
 
-void AllowedCollisionMatrix::removeEntry(
-    const std::vector<std::string> &names) {
+void AllowedCollisionMatrix::removeEntry(const std::vector<std::string> &names) {
   for (const auto &name : names) removeEntry(name);
 }
 
@@ -158,8 +156,7 @@ std::optional<AllowedCollision> AllowedCollisionMatrix::getDefaultEntry(
   else {  // t1 && t2
     if (t1 == AllowedCollision::NEVER || t2 == AllowedCollision::NEVER)
       return AllowedCollision::NEVER;
-    else if (t1 == AllowedCollision::CONDITIONAL ||
-             t2 == AllowedCollision::CONDITIONAL)
+    else if (t1 == AllowedCollision::CONDITIONAL || t2 == AllowedCollision::CONDITIONAL)
       return AllowedCollision::CONDITIONAL;
     else  // ALWAYS is the only remaining case
       return AllowedCollision::ALWAYS;
@@ -170,8 +167,7 @@ bool AllowedCollisionMatrix::hasDefaultEntry(const std::string &name) const {
   return default_entries_.find(name) != default_entries_.end();
 }
 
-void AllowedCollisionMatrix::setDefaultEntry(const std::string &name,
-                                             bool allowed) {
+void AllowedCollisionMatrix::setDefaultEntry(const std::string &name, bool allowed) {
   const auto v = allowed ? AllowedCollision::ALWAYS : AllowedCollision::NEVER;
   default_entries_[name] = v;
   /* unused for now
@@ -179,8 +175,8 @@ void AllowedCollisionMatrix::setDefaultEntry(const std::string &name,
   */
 }
 
-void AllowedCollisionMatrix::setDefaultEntry(
-    const std::vector<std::string> &names, bool allowed) {
+void AllowedCollisionMatrix::setDefaultEntry(const std::vector<std::string> &names,
+                                             bool allowed) {
   for (const auto &name : names) setDefaultEntry(name, allowed);
 }
 
@@ -191,8 +187,7 @@ void AllowedCollisionMatrix::removeDefaultEntry(const std::string &name) {
   */
 }
 
-void AllowedCollisionMatrix::removeDefaultEntry(
-    const std::vector<std::string> &names) {
+void AllowedCollisionMatrix::removeDefaultEntry(const std::vector<std::string> &names) {
   for (const auto &name : names) removeDefaultEntry(name);
 }
 

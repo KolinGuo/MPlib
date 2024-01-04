@@ -80,9 +80,8 @@ pinocchio::Inertia<S> convert_inertial(const urdf::InertialSharedPtr &Y) {
 }
 
 template <typename S>
-int dfs_build_mesh(const aiScene *scene, const aiNode *node,
-                   const Vector3<S> &scale, int vertices_offset,
-                   std::vector<Vector3<S>> &vertices,
+int dfs_build_mesh(const aiScene *scene, const aiNode *node, const Vector3<S> &scale,
+                   int vertices_offset, std::vector<Vector3<S>> &vertices,
                    std::vector<fcl::Triangle> &triangles) {
   if (!node) return 0;
 
@@ -128,8 +127,8 @@ int dfs_build_mesh(const aiScene *scene, const aiNode *node,
   }
 
   for (uint32_t i = 0; i < node->mNumChildren; ++i)
-    nbVertices += dfs_build_mesh(scene, node->mChildren[i], scale, nbVertices,
-                                 vertices, triangles);
+    nbVertices += dfs_build_mesh(scene, node->mChildren[i], scale, nbVertices, vertices,
+                                 triangles);
   return nbVertices;
 }
 
@@ -155,8 +154,8 @@ std::shared_ptr<fcl::BVHModel<fcl::OBBRSS<S>>> load_mesh_as_BVH(
 }
 
 template <typename S>
-std::shared_ptr<fcl::Convex<S>> load_mesh_as_Convex(
-    const std::string &mesh_path, const Vector3<S> &scale) {
+std::shared_ptr<fcl::Convex<S>> load_mesh_as_Convex(const std::string &mesh_path,
+                                                    const Vector3<S> &scale) {
   auto loader = AssimpLoader();
   loader.load(mesh_path);
 
@@ -178,8 +177,8 @@ std::shared_ptr<fcl::Convex<S>> load_mesh_as_Convex(
     faces->push_back(triangles[i][2]);
   }
   auto vertices_ptr = std::make_shared<std::vector<Vector3<S>>>(vertices);
-  auto convex = std::make_shared<fcl::Convex<S>>(vertices_ptr, triangles.size(),
-                                                 faces, true);
+  auto convex =
+      std::make_shared<fcl::Convex<S>>(vertices_ptr, triangles.size(), faces, true);
   return convex;
 }
 
@@ -199,14 +198,13 @@ KDL::Joint toKdl(const urdf::JointSharedPtr &jnt) {
     case urdf::Joint::FIXED:
       return KDL::Joint(jnt->name, KDL::Joint::None);
     case urdf::Joint::REVOLUTE:
-      return KDL::Joint(jnt->name, F_parent_jnt.p,
-                        F_parent_jnt.M * toKdl(jnt->axis), KDL::Joint::RotAxis);
+      return KDL::Joint(jnt->name, F_parent_jnt.p, F_parent_jnt.M * toKdl(jnt->axis),
+                        KDL::Joint::RotAxis);
     case urdf::Joint::CONTINUOUS:
-      return KDL::Joint(jnt->name, F_parent_jnt.p,
-                        F_parent_jnt.M * toKdl(jnt->axis), KDL::Joint::RotAxis);
+      return KDL::Joint(jnt->name, F_parent_jnt.p, F_parent_jnt.M * toKdl(jnt->axis),
+                        KDL::Joint::RotAxis);
     case urdf::Joint::PRISMATIC:
-      return KDL::Joint(jnt->name, F_parent_jnt.p,
-                        F_parent_jnt.M * toKdl(jnt->axis),
+      return KDL::Joint(jnt->name, F_parent_jnt.p, F_parent_jnt.M * toKdl(jnt->axis),
                         KDL::Joint::TransAxis);
     default:
       std::cerr << "Converting unknown joint type of joint " + jnt->name +
@@ -250,11 +248,11 @@ KDL::RigidBodyInertia toKdl(const urdf::InertialSharedPtr &i) {
 AssimpLoader::AssimpLoader() : importer(new Assimp::Importer()) {
   // set list of ignored parameters (parameters used for rendering)
   importer->SetPropertyInteger(
-      AI_CONFIG_PP_RVC_FLAGS,
-      aiComponent_TANGENTS_AND_BITANGENTS | aiComponent_COLORS |
-          aiComponent_BONEWEIGHTS | aiComponent_ANIMATIONS |
-          aiComponent_LIGHTS | aiComponent_CAMERAS | aiComponent_TEXTURES |
-          aiComponent_TEXCOORDS | aiComponent_MATERIALS | aiComponent_NORMALS);
+      AI_CONFIG_PP_RVC_FLAGS, aiComponent_TANGENTS_AND_BITANGENTS | aiComponent_COLORS |
+                                  aiComponent_BONEWEIGHTS | aiComponent_ANIMATIONS |
+                                  aiComponent_LIGHTS | aiComponent_CAMERAS |
+                                  aiComponent_TEXTURES | aiComponent_TEXCOORDS |
+                                  aiComponent_MATERIALS | aiComponent_NORMALS);
 }
 
 AssimpLoader::~AssimpLoader() {
@@ -264,8 +262,8 @@ AssimpLoader::~AssimpLoader() {
 void AssimpLoader::load(const std::string &file_name) {
   scene = importer->ReadFile(
       file_name.c_str(),
-      aiProcess_SortByPType | aiProcess_Triangulate |
-          aiProcess_RemoveComponent | aiProcess_ImproveCacheLocality |
+      aiProcess_SortByPType | aiProcess_Triangulate | aiProcess_RemoveComponent |
+          aiProcess_ImproveCacheLocality |
           // TODO: I (Joseph Mirabel) have no idea whether degenerated triangles
           // are properly handled. Enabling aiProcess_FindDegenerates would
           // throw an exception when that happens. Is it too conservative ?
@@ -273,16 +271,15 @@ void AssimpLoader::load(const std::string &file_name) {
           aiProcess_JoinIdenticalVertices);
 
   if (!scene) {
-    const std::string exception_message(
-        std::string("Could not load resource ") + file_name +
-        std::string("\n") + importer->GetErrorString() + std::string("\n") +
-        "Hint: the mesh directory may be wrong.");
+    const std::string exception_message(std::string("Could not load resource ") +
+                                        file_name + std::string("\n") +
+                                        importer->GetErrorString() + std::string("\n") +
+                                        "Hint: the mesh directory may be wrong.");
     throw std::invalid_argument(exception_message);
   }
 
   if (!scene->HasMeshes())
-    throw std::invalid_argument(std::string("No meshes found in file ") +
-                                file_name);
+    throw std::invalid_argument(std::string("No meshes found in file ") + file_name);
 }
 
 // recursive function to walk through tree
@@ -290,8 +287,8 @@ bool addChildrenToTree(const urdf::LinkConstSharedPtr &root, KDL::Tree &tree,
                        bool verbose) {
   std::vector<urdf::LinkSharedPtr> children = root->child_links;
   if (verbose)
-    std::cout << "Link " + root->name + " had " << children.size()
-              << " children" << std::endl;
+    std::cout << "Link " + root->name + " had " << children.size() << " children"
+              << std::endl;
 
   // constructs the optional inertia
   KDL::RigidBodyInertia inert(0);
@@ -300,8 +297,7 @@ bool addChildrenToTree(const urdf::LinkConstSharedPtr &root, KDL::Tree &tree,
   KDL::Joint jnt = toKdl(root->parent_joint);
   // construct the kdl segment
   KDL::Segment sgm(root->name, jnt,
-                   toKdl(root->parent_joint->parent_to_joint_origin_transform),
-                   inert);
+                   toKdl(root->parent_joint->parent_to_joint_origin_transform), inert);
 
   // add segment to tree
   tree.addSegment(sgm, root->parent_joint->parent_link_name);
@@ -312,14 +308,12 @@ bool addChildrenToTree(const urdf::LinkConstSharedPtr &root, KDL::Tree &tree,
 }
 
 bool treeFromUrdfModel(const urdf::ModelInterfaceSharedPtr &robot_model,
-                       KDL::Tree &tree, std::string &tree_root_name,
-                       bool verbose) {
+                       KDL::Tree &tree, std::string &tree_root_name, bool verbose) {
   if (!robot_model->getRoot()) return false;
   tree_root_name = robot_model->getRoot()->name;
   tree = KDL::Tree(robot_model->getRoot()->name);
   for (size_t i = 0; i < robot_model->getRoot()->child_links.size(); i++)
-    if (!addChildrenToTree(robot_model->getRoot()->child_links[i], tree,
-                           verbose))
+    if (!addChildrenToTree(robot_model->getRoot()->child_links[i], tree, verbose))
       return false;
   return true;
 }

@@ -45,13 +45,11 @@ std::vector<S> state2vector(const ob::State *const &state_raw,
       case ob::STATE_SPACE_REAL_VECTOR:
         n = subspace->as<ob::RealVectorStateSpace>()->getDimension();
         for (size_t j = 0; j < n; j++)
-          ret.push_back((S)(*state)[i]
-                            ->as<ob::RealVectorStateSpace::StateType>()
-                            ->values[j]);
+          ret.push_back(
+              (S)(*state)[i]->as<ob::RealVectorStateSpace::StateType>()->values[j]);
         break;
       case ob::STATE_SPACE_SO2:
-        ret.push_back(
-            (S)(*state)[i]->as<ob::SO2StateSpace::StateType>()->value);
+        ret.push_back((S)(*state)[i]->as<ob::SO2StateSpace::StateType>()->value);
         break;
       default:
         throw std::invalid_argument("Unhandled subspace type.");
@@ -62,8 +60,7 @@ std::vector<S> state2vector(const ob::State *const &state_raw,
 }
 
 template <typename S>
-OMPLPlannerTpl<S>::OMPLPlannerTpl(const PlanningWorldTplPtr<S> &world)
-    : world_(world) {
+OMPLPlannerTpl<S>::OMPLPlannerTpl(const PlanningWorldTplPtr<S> &world) : world_(world) {
   build_state_space();
   si_ = std::make_shared<SpaceInformation>(cs_);
   valid_checker_ = std::make_shared<ValidityCheckerTpl<S>>(world, si_);
@@ -81,8 +78,7 @@ VectorX<S> OMPLPlannerTpl<S>::random_sample_nearby(
     VectorX<S> new_state = start_state;
     for (size_t i = 0; i < dim_; i++) {
       S r = (S)rand() / RAND_MAX * 2 - 1;
-      new_state[i] +=
-          (upper_joint_limits_[i] - lower_joint_limits_[i]) * ratio * r;
+      new_state[i] += (upper_joint_limits_[i] - lower_joint_limits_[i]) * ratio * r;
       if (new_state[i] < lower_joint_limits_[i])
         new_state[i] = lower_joint_limits_[i];
       else if (new_state[i] > upper_joint_limits_[i])
@@ -101,9 +97,8 @@ VectorX<S> OMPLPlannerTpl<S>::random_sample_nearby(
 template <typename S>
 std::pair<std::string, MatrixX<S>> OMPLPlannerTpl<S>::plan(
     const VectorX<S> &start_state, const std::vector<VectorX<S>> &goal_states,
-    const std::string &planner_name, double time, double range,
-    double goal_bias, double pathlen_obj_weight, bool pathlen_obj_only,
-    bool verbose) const {
+    const std::string &planner_name, double time, double range, double goal_bias,
+    double pathlen_obj_weight, bool pathlen_obj_only, bool verbose) const {
   ASSERT(start_state.rows() == goal_states[0].rows(),
          "Length of start state and goal state should be equal");
   ASSERT(static_cast<size_t>(start_state.rows()) == dim_,
@@ -161,8 +156,7 @@ std::pair<std::string, MatrixX<S>> OMPLPlannerTpl<S>::plan(
         tot_goal_state += 1;
       }
     }
-  if (verbose)
-    std::cout << "number of goal state: " << tot_goal_state << std::endl;
+  if (verbose) std::cout << "number of goal state: " << tot_goal_state << std::endl;
 
   pdef_->clearStartStates();
   pdef_->clearGoal();
@@ -183,10 +177,8 @@ std::pair<std::string, MatrixX<S>> OMPLPlannerTpl<S>::plan(
     planner = rrt;
   } else {
     // Create optimization objective
-    auto length_objective =
-        std::make_shared<ob::PathLengthOptimizationObjective>(si_);
-    auto clear_objective =
-        std::make_shared<ob::MaximizeMinClearanceObjective>(si_);
+    auto length_objective = std::make_shared<ob::PathLengthOptimizationObjective>(si_);
+    auto clear_objective = std::make_shared<ob::MaximizeMinClearanceObjective>(si_);
     if (pathlen_obj_only)
       pdef_->setOptimizationObjective(length_objective);
     else
@@ -259,8 +251,7 @@ void OMPLPlannerTpl<S>::build_state_space() {
     size_t dim_i = 0;
     auto model = robot->getPinocchioModel();
     auto joint_types = model->getJointTypes();
-    auto d =
-        robot->getQposDim();  // TODO!!! only construct for move group joints
+    auto d = robot->getQposDim();  // TODO!!! only construct for move group joints
     auto indices = robot->getMoveGroupJointIndices();
     ASSERT(d == indices.size(), "QposDim != size of the movegroup joints");
     for (size_t i = 0; i < d; i++) {
@@ -268,12 +259,10 @@ void OMPLPlannerTpl<S>::build_state_space() {
       auto joint_type = joint_types[id];
       if (joint_type[joint_prefix.size()] == 'P' ||
           (joint_type[joint_prefix.size()] == 'R' &&
-           joint_type[joint_prefix.size() + 1] !=
-               'U'))  // PRISMATIC and REVOLUTE
+           joint_type[joint_prefix.size() + 1] != 'U'))  // PRISMATIC and REVOLUTE
       {
         auto bound = model->getJointLimit(id);
-        auto subspcae =
-            std::make_shared<ob::RealVectorStateSpace>(bound.rows());
+        auto subspcae = std::make_shared<ob::RealVectorStateSpace>(bound.rows());
         auto ob_bounds = ob::RealVectorBounds(bound.rows());
         dim_i += bound.rows();
         for (size_t j = 0; j < static_cast<size_t>(bound.rows()); j++) {
@@ -299,10 +288,9 @@ void OMPLPlannerTpl<S>::build_state_space() {
           is_revolute_.push_back(false);
       }
     }
-    ASSERT(dim_i == robot->getQposDim(),
-           "Dim of bound is different from dim of qpos " +
-               std::to_string(dim_i) + " " +
-               std::to_string(robot->getQposDim()));
+    ASSERT(dim_i == robot->getQposDim(), "Dim of bound is different from dim of qpos " +
+                                             std::to_string(dim_i) + " " +
+                                             std::to_string(robot->getQposDim()));
     dim_ += dim_i;
   }
 }

@@ -21,21 +21,19 @@ using KDLModel = KDLModelTpl<S>;
 inline void build_pykdl(py::module &m_all) {
   auto m = m_all.def_submodule("kdl");
 
-  auto PyKDLModel =
-      py::class_<KDLModel, std::shared_ptr<KDLModel>>(m, "KDLModel");
+  auto PyKDLModel = py::class_<KDLModel, std::shared_ptr<KDLModel>>(m, "KDLModel");
   PyKDLModel
       .def(py::init<const std::string &, const std::vector<std::string> &,
                     const std::vector<std::string> &, bool>(),
-           py::arg("urdf_filename"), py::arg("joint_names"),
-           py::arg("link_names"), py::arg("verbose"))
+           py::arg("urdf_filename"), py::arg("joint_names"), py::arg("link_names"),
+           py::arg("verbose"))
       .def("get_tree_root_name", &KDLModel::getTreeRootName)
-      .def("chain_IK_LMA", &KDLModel::chainIKLMA, py::arg("index"),
-           py::arg("q_init"), py::arg("goal_pose"))
-      .def("chain_IK_NR", &KDLModel::chainIKNR, py::arg("index"),
-           py::arg("q_init"), py::arg("goal_pose"))
+      .def("chain_IK_LMA", &KDLModel::chainIKLMA, py::arg("index"), py::arg("q_init"),
+           py::arg("goal_pose"))
+      .def("chain_IK_NR", &KDLModel::chainIKNR, py::arg("index"), py::arg("q_init"),
+           py::arg("goal_pose"))
       .def("chain_IK_NR_JL", &KDLModel::chainIKNRJL, py::arg("index"),
-           py::arg("q_init"), py::arg("goal_pose"), py::arg("q_min"),
-           py::arg("q_max"))
+           py::arg("q_init"), py::arg("goal_pose"), py::arg("q_min"), py::arg("q_max"))
       .def("tree_IK_NR_JL", &KDLModel::TreeIKNRJL, py::arg("endpoints"),
            py::arg("q_init"), py::arg("goal_poses"), py::arg("q_min"),
            py::arg("q_max"));

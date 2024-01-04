@@ -37,12 +37,11 @@ class AllowedCollisionMatrix {
   bool hasEntry(const std::string &name1, const std::string &name2) const;
 
   /// @brief Set an entry for a pair of elements
-  void setEntry(const std::string &name1, const std::string &name2,
-                bool allowed);
+  void setEntry(const std::string &name1, const std::string &name2, bool allowed);
 
   /// @brief Set the entries between the element and each element in other_names
-  void setEntry(const std::string &name,
-                const std::vector<std::string> &other_names, bool allowed);
+  void setEntry(const std::string &name, const std::vector<std::string> &other_names,
+                bool allowed);
 
   /// @brief Set the entries for all possible pairs among two sets of elements
   void setEntry(const std::vector<std::string> &names1,
@@ -101,8 +100,7 @@ class AllowedCollisionMatrix {
    * @brief Get the default type of the allowed collision for an element
    * @returns AllowedCollision, std::nullopt if the default entry does not exist
    */
-  std::optional<AllowedCollision> getDefaultEntry(
-      const std::string &name) const;
+  std::optional<AllowedCollision> getDefaultEntry(const std::string &name) const;
 
   /// @brief Check if a default entry exists for an element
   bool hasDefaultEntry(const std::string &name) const;
@@ -131,8 +129,8 @@ class AllowedCollisionMatrix {
    *  * std::nullopt if the entry does not exist (collision is not allowed)
    *  * the entry if an entry or a default entry exists.
    */
-  std::optional<AllowedCollision> getAllowedCollision(
-      const std::string &name1, const std::string &name2) const;
+  std::optional<AllowedCollision> getAllowedCollision(const std::string &name1,
+                                                      const std::string &name2) const;
 
   /// @brief Clear all data in the allowed collision matrix
   void clear();
@@ -160,11 +158,10 @@ class AllowedCollisionMatrix {
    *    * CONDITIONAL if at least one of the default types is CONDITIONAL;
    *    * ALWAYS otherwise.
    */
-  std::optional<AllowedCollision> getDefaultEntry(
-      const std::string &name1, const std::string &name2) const;
+  std::optional<AllowedCollision> getDefaultEntry(const std::string &name1,
+                                                  const std::string &name2) const;
 
-  std::unordered_map<std::string,
-                     std::unordered_map<std::string, AllowedCollision>>
+  std::unordered_map<std::string, std::unordered_map<std::string, AllowedCollision>>
       entries_;
   std::unordered_map<std::string, AllowedCollision> default_entries_;
 };

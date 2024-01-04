@@ -30,10 +30,11 @@ class KDLModelTpl {
                                           const VectorX<S> &q_min,
                                           const VectorX<S> &q_max) const;
 
-  std::tuple<VectorX<S>, int> TreeIKNRJL(
-      const std::vector<std::string> &endpoints, const VectorX<S> &q0,
-      const std::vector<Vector7<S>> &poses, const VectorX<S> &q_min,
-      const VectorX<S> &q_max) const;
+  std::tuple<VectorX<S>, int> TreeIKNRJL(const std::vector<std::string> &endpoints,
+                                         const VectorX<S> &q0,
+                                         const std::vector<Vector7<S>> &poses,
+                                         const VectorX<S> &q_min,
+                                         const VectorX<S> &q_max) const;
 
  private:
   KDL::Tree tree_;

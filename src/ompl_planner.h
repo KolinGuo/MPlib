@@ -53,8 +53,7 @@ MPLIB_CLASS_TEMPLATE_FORWARD(ValidityCheckerTpl);
 template <typename S>
 class ValidityCheckerTpl : public ob::StateValidityChecker {
  public:
-  ValidityCheckerTpl(const PlanningWorldTplPtr<S> &world,
-                     const SpaceInformationPtr &si)
+  ValidityCheckerTpl(const PlanningWorldTplPtr<S> &world, const SpaceInformationPtr &si)
       : ob::StateValidityChecker(si), world_(world) {}
 
   bool isValid(const ob::State *state_raw) const {
@@ -104,9 +103,8 @@ class OMPLPlannerTpl {
   std::pair<std::string, MatrixX<S>> plan(
       const VectorX<S> &start_state, const std::vector<VectorX<S>> &goal_states,
       const std::string &planner_name = "RRTConnect", double time = 1.0,
-      double range = 0.0, double goal_bias = 0.05,
-      double pathlen_obj_weight = 10.0, bool pathlen_obj_only = false,
-      bool verbose = false) const;
+      double range = 0.0, double goal_bias = 0.05, double pathlen_obj_weight = 10.0,
+      bool pathlen_obj_only = false, bool verbose = false) const;
 
  private:
   CompoundStateSpacePtr cs_;
@@ -128,10 +126,10 @@ using OMPLPlannerTplfPtr = OMPLPlannerTplPtr<float>;
 using OMPLPlannerTpldPtr = OMPLPlannerTplPtr<double>;
 
 // Explicit Template Instantiation Declaration ================================
-#define DECLARE_TEMPLATE_OMPL_PLANNER(S)                                      \
-  extern template std::vector<S> state2vector<S>(                             \
-      const ob::State *const &state_raw, const SpaceInformation *const &si_); \
-  extern template class ValidityCheckerTpl<S>;                                \
+#define DECLARE_TEMPLATE_OMPL_PLANNER(S)                                              \
+  extern template std::vector<S> state2vector<S>(const ob::State *const &state_raw,   \
+                                                 const SpaceInformation *const &si_); \
+  extern template class ValidityCheckerTpl<S>;                                        \
   extern template class OMPLPlannerTpl<S>
 
 DECLARE_TEMPLATE_OMPL_PLANNER(float);

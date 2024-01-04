@@ -159,8 +159,7 @@ template <typename S>
 using CostSource = ::fcl::CostSource<S>;
 
 template <typename S>
-using DynamicAABBTreeCollisionManager =
-    ::fcl::DynamicAABBTreeCollisionManager<S>;
+using DynamicAABBTreeCollisionManager = ::fcl::DynamicAABBTreeCollisionManager<S>;
 
 template <typename S>
 using BroadPhaseCollisionManagerPtr =

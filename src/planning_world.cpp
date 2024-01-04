@@ -52,8 +52,8 @@ std::vector<std::string> PlanningWorldTpl<S>::getArticulationNames() const {
 }
 
 template <typename S>
-std::vector<ArticulatedModelTplPtr<S>>
-PlanningWorldTpl<S>::getPlannedArticulations() const {
+std::vector<ArticulatedModelTplPtr<S>> PlanningWorldTpl<S>::getPlannedArticulations()
+    const {
   std::vector<ArticulatedModelPtr> arts;
   for (const auto &pair : planned_articulations_) arts.push_back(pair.second);
   return arts;
@@ -105,8 +105,7 @@ void PlanningWorldTpl<S>::addPointCloud(const std::string &name,
   auto tree = std::make_shared<octomap::OcTree>(resolution);
   for (const auto &row : vertices.rowwise())
     tree->updateNode(octomap::point3d(row(0), row(1), row(2)), true);
-  auto obj =
-      std::make_shared<CollisionObject>(std::make_shared<fcl::OcTree<S>>(tree));
+  auto obj = std::make_shared<CollisionObject>(std::make_shared<fcl::OcTree<S>>(tree));
   addNormalObject(name, obj);
 }
 
@@ -122,14 +121,15 @@ bool PlanningWorldTpl<S>::removeNormalObject(const std::string &name) {
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::attachObject(
-    const std::string &name, const std::string &art_name, int link_id,
-    const Vector7<S> &pose, const std::vector<std::string> &touch_links) {
+void PlanningWorldTpl<S>::attachObject(const std::string &name,
+                                       const std::string &art_name, int link_id,
+                                       const Vector7<S> &pose,
+                                       const std::vector<std::string> &touch_links) {
   auto obj = normal_objects_.at(name);
   auto nh = attached_bodies_.extract(name);
-  auto body = std::make_shared<AttachedBody>(
-      name, obj, planned_articulations_.at(art_name), link_id,
-      posevec_to_transform(pose), touch_links);
+  auto body =
+      std::make_shared<AttachedBody>(name, obj, planned_articulations_.at(art_name),
+                                     link_id, posevec_to_transform(pose), touch_links);
   if (!nh.empty()) {
     // Update acm_ to disallow collision between name and previous touch_links
     acm_->removeEntry(name, nh.mapped()->getTouchLinks());
@@ -147,9 +147,9 @@ void PlanningWorldTpl<S>::attachObject(const std::string &name,
                                        const Vector7<S> &pose) {
   auto obj = normal_objects_.at(name);
   auto nh = attached_bodies_.extract(name);
-  auto body = std::make_shared<AttachedBody>(
-      name, obj, planned_articulations_.at(art_name), link_id,
-      posevec_to_transform(pose));
+  auto body =
+      std::make_shared<AttachedBody>(name, obj, planned_articulations_.at(art_name),
+                                     link_id, posevec_to_transform(pose));
   if (!nh.empty()) {
     body->setTouchLinks(nh.mapped()->getTouchLinks());
     nh.mapped() = body;
@@ -171,10 +171,11 @@ void PlanningWorldTpl<S>::attachObject(const std::string &name,
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::attachObject(
-    const std::string &name, const CollisionGeometryPtr &p_geom,
-    const std::string &art_name, int link_id, const Vector7<S> &pose,
-    const std::vector<std::string> &touch_links) {
+void PlanningWorldTpl<S>::attachObject(const std::string &name,
+                                       const CollisionGeometryPtr &p_geom,
+                                       const std::string &art_name, int link_id,
+                                       const Vector7<S> &pose,
+                                       const std::vector<std::string> &touch_links) {
   removeNormalObject(name);
   addNormalObject(name, std::make_shared<CollisionObject>(p_geom));
   attachObject(name, art_name, link_id, pose, touch_links);
@@ -195,18 +196,15 @@ void PlanningWorldTpl<S>::attachSphere(S radius, const std::string &art_name,
                                        int link_id, const Vector7<S> &pose) {
   // FIXME: Use link_name to avoid changes
   auto name = art_name + "_" + std::to_string(link_id) + "_sphere";
-  attachObject(name, std::make_shared<fcl::Sphere<S>>(radius), art_name,
-               link_id, pose);
+  attachObject(name, std::make_shared<fcl::Sphere<S>>(radius), art_name, link_id, pose);
 }
 
 template <typename S>
-void PlanningWorldTpl<S>::attachBox(const Vector3<S> &size,
-                                    const std::string &art_name, int link_id,
-                                    const Vector7<S> &pose) {
+void PlanningWorldTpl<S>::attachBox(const Vector3<S> &size, const std::string &art_name,
+                                    int link_id, const Vector7<S> &pose) {
   // FIXME: Use link_name to avoid changes
   auto name = art_name + "_" + std::to_string(link_id) + "_box";
-  attachObject(name, std::make_shared<fcl::Box<S>>(size), art_name, link_id,
-               pose);
+  attachObject(name, std::make_shared<fcl::Box<S>>(size), art_name, link_id, pose);
 }
 
 template <typename S>
@@ -220,8 +218,7 @@ void PlanningWorldTpl<S>::attachMesh(const std::string &mesh_path,
 }
 
 template <typename S>
-bool PlanningWorldTpl<S>::detachObject(const std::string &name,
-                                       bool also_remove) {
+bool PlanningWorldTpl<S>::detachObject(const std::string &name, bool also_remove) {
   if (also_remove) {
     normal_objects_.erase(name);
     // Update acm_
@@ -257,13 +254,11 @@ void PlanningWorldTpl<S>::setQposAll(const VectorX<S> &state) const {
     auto n = art->getQposDim();
     auto qpos = state.segment(i, n);  // [i, i + n)
     ASSERT(static_cast<size_t>(qpos.size()) == n,
-           "Bug with size " + std::to_string(qpos.size()) + " " +
-               std::to_string(n));
+           "Bug with size " + std::to_string(qpos.size()) + " " + std::to_string(n));
     art->setQpos(qpos);
     i += n;
   }
-  ASSERT(i == static_cast<size_t>(state.size()),
-         "State dimension is not correct");
+  ASSERT(i == static_cast<size_t>(state.size()), "State dimension is not correct");
 }
 
 template <typename S>
@@ -271,8 +266,8 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::filterCollisions(
     const std::vector<WorldCollisionResultTpl<S>> &collisions) const {
   std::vector<WorldCollisionResult> ret;
   for (const auto &collision : collisions)
-    if (auto type = acm_->getAllowedCollision(collision.link_name1,
-                                              collision.link_name2);
+    if (auto type =
+            acm_->getAllowedCollision(collision.link_name1, collision.link_name2);
         !type || type == AllowedCollision::NEVER)
       ret.push_back(collision);
   return ret;
@@ -332,8 +327,8 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::selfCollide(
   for (auto it = attached_bodies_.begin(); it != attached_bodies_.end(); ++it)
     for (auto it2 = attached_bodies_.begin(); it2 != it; ++it2) {
       result.clear();
-      ::fcl::collide(it->second->getObject().get(),
-                     it2->second->getObject().get(), request, result);
+      ::fcl::collide(it->second->getObject().get(), it2->second->getObject().get(),
+                     request, result);
       if (result.isCollision()) {
         auto name1 = it->first, name2 = it2->first;
         WorldCollisionResult tmp;
@@ -383,8 +378,7 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::collideWithOthers(
       for (size_t i = 0; i < col_objs.size(); i++)
         for (size_t j = 0; j < col_objs2.size(); j++) {
           result.clear();
-          ::fcl::collide(col_objs[i].get(), col_objs2[j].get(), request,
-                         result);
+          ::fcl::collide(col_objs[i].get(), col_objs2[j].get(), request, result);
           if (result.isCollision()) {
             WorldCollisionResult tmp;
             tmp.res = result;
@@ -488,8 +482,7 @@ WorldDistanceResultTpl<S> PlanningWorldTpl<S>::distanceSelf(
 
     // Articulation minimum distance to self-collision
     for (const auto &[x, y] : col_pairs)
-      if (auto type =
-              acm_->getAllowedCollision(col_link_names[x], col_link_names[y]);
+      if (auto type = acm_->getAllowedCollision(col_link_names[x], col_link_names[y]);
           !type || type == AllowedCollision::NEVER) {
         result.clear();
         ::fcl::distance(col_objs[x].get(), col_objs[y].get(), request, result);
@@ -508,12 +501,11 @@ WorldDistanceResultTpl<S> PlanningWorldTpl<S>::distanceSelf(
     for (const auto &[attached_body_name, attached_body] : attached_bodies_) {
       auto attached_obj = attached_body->getObject();
       for (size_t i = 0; i < col_objs.size(); i++) {
-        if (auto type = acm_->getAllowedCollision(col_link_names[i],
-                                                  attached_body_name);
+        if (auto type =
+                acm_->getAllowedCollision(col_link_names[i], attached_body_name);
             !type || type == AllowedCollision::NEVER) {
           result.clear();
-          ::fcl::distance(attached_obj.get(), col_objs[i].get(), request,
-                          result);
+          ::fcl::distance(attached_obj.get(), col_objs[i].get(), request, result);
           if (result.min_distance < ret.min_distance) {
             ret.res = result;
             ret.min_distance = result.min_distance;
@@ -535,8 +527,8 @@ WorldDistanceResultTpl<S> PlanningWorldTpl<S>::distanceSelf(
       if (auto type = acm_->getAllowedCollision(name1, name2);
           !type || type == AllowedCollision::NEVER) {
         result.clear();
-        ::fcl::distance(it->second->getObject().get(),
-                        it2->second->getObject().get(), request, result);
+        ::fcl::distance(it->second->getObject().get(), it2->second->getObject().get(),
+                        request, result);
         if (result.min_distance < ret.min_distance) {
           ret.res = result;
           ret.min_distance = result.min_distance;
@@ -584,12 +576,11 @@ WorldDistanceResultTpl<S> PlanningWorldTpl<S>::distanceOthers(
 
       for (size_t i = 0; i < col_objs.size(); i++)
         for (size_t j = 0; j < col_objs2.size(); j++)
-          if (auto type = acm_->getAllowedCollision(col_link_names[i],
-                                                    col_link_names2[j]);
+          if (auto type =
+                  acm_->getAllowedCollision(col_link_names[i], col_link_names2[j]);
               !type || type == AllowedCollision::NEVER) {
             result.clear();
-            ::fcl::distance(col_objs[i].get(), col_objs2[j].get(), request,
-                            result);
+            ::fcl::distance(col_objs[i].get(), col_objs2[j].get(), request, result);
             if (result.min_distance < ret.min_distance) {
               ret.res = result;
               ret.min_distance = result.min_distance;
@@ -633,12 +624,11 @@ WorldDistanceResultTpl<S> PlanningWorldTpl<S>::distanceOthers(
       auto col_link_names2 = fcl_model2->getCollisionLinkNames();
 
       for (size_t i = 0; i < col_objs2.size(); i++)
-        if (auto type = acm_->getAllowedCollision(attached_body_name,
-                                                  col_link_names2[i]);
+        if (auto type =
+                acm_->getAllowedCollision(attached_body_name, col_link_names2[i]);
             !type || type == AllowedCollision::NEVER) {
           result.clear();
-          ::fcl::distance(attached_obj.get(), col_objs2[i].get(), request,
-                          result);
+          ::fcl::distance(attached_obj.get(), col_objs2[i].get(), request, result);
           if (result.min_distance < ret.min_distance) {
             ret.res = result;
             ret.min_distance = result.min_distance;

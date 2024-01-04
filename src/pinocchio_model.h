@@ -72,11 +72,9 @@ class PinocchioModelTpl {
 
   void setLinkOrder(const std::vector<std::string> &names);
 
-  std::vector<std::size_t> getChainJointIndex(
-      const std::string &end_effector) const;
+  std::vector<std::size_t> getChainJointIndex(const std::string &end_effector) const;
 
-  std::vector<std::string> getChainJointName(
-      const std::string &end_effector) const;
+  std::vector<std::string> getChainJointName(const std::string &end_effector) const;
 
   VectorX<S> getRandomConfiguration() const;
 
@@ -90,8 +88,7 @@ class PinocchioModelTpl {
 
   Matrix6X<S> getLinkJacobian(size_t index, bool local = false) const;
 
-  Matrix6X<S> computeSingleLinkLocalJacobian(const VectorX<S> &qpos,
-                                             size_t index);
+  Matrix6X<S> computeSingleLinkLocalJacobian(const VectorX<S> &qpos, size_t index);
 
   std::tuple<VectorX<S>, bool, Vector6<S>> computeIKCLIK(
       size_t index, const Vector7<S> &pose, const VectorX<S> &q_init,
@@ -111,8 +108,7 @@ class PinocchioModelTpl {
   VectorXi joint_index_user2pinocchio_, joint_index_pinocchio2user_;
   VectorXi v_index_user2pinocchio_;  // the joint index in model
   // map between user and pinocchio
-  Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic>
-      v_map_user2pinocchio_;
+  Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> v_map_user2pinocchio_;
   VectorXi link_index_user2pinocchio_;
 
   std::vector<std::string> user_link_names_;
@@ -130,8 +126,7 @@ class PinocchioModelTpl {
   void dfs_parse_tree(const urdf::LinkConstSharedPtr &link,
                       UrdfVisitorBase<S> &visitor);
 
-  void init(const urdf::ModelInterfaceSharedPtr &urdfTree,
-            const Vector3<S> &gravity);
+  void init(const urdf::ModelInterfaceSharedPtr &urdfTree, const Vector3<S> &gravity);
 };
 
 // Common Type Alias ==========================================================
@@ -141,8 +136,7 @@ using PinocchioModelfPtr = PinocchioModelTplPtr<float>;
 using PinocchioModeldPtr = PinocchioModelTplPtr<double>;
 
 // Explicit Template Instantiation Declaration ================================
-#define DECLARE_TEMPLATE_PINOCCHIO_MODEL(S) \
-  extern template class PinocchioModelTpl<S>
+#define DECLARE_TEMPLATE_PINOCCHIO_MODEL(S) extern template class PinocchioModelTpl<S>
 
 DECLARE_TEMPLATE_PINOCCHIO_MODEL(float);
 DECLARE_TEMPLATE_PINOCCHIO_MODEL(double);
