@@ -759,7 +759,7 @@ void PinocchioModelTpl<S>::init(const urdf::ModelInterfaceSharedPtr &urdfTree,
                        root_link->name);
   for (auto child : root_link->child_links) dfs_parse_tree(child, visitor);
 
-  model_.gravity = {gravity, Vector3<S>{0, 0, 0}};
+  model_.gravity = {gravity, Vector3<S> {0, 0, 0}};
   data_ = Data<S>(model_);
   if (verbose_)
     std::cout << "Begin to set joint order and link order" << std::endl;

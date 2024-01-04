@@ -240,7 +240,7 @@ void FCLModelTpl<S>::dfs_parse_tree(const urdf::LinkConstSharedPtr &link,
 
       if (!collision_geometry)
         throw std::invalid_argument("The polyhedron retrived is empty");
-      auto obj{std::make_shared<CollisionObject<S>>(collision_geometry, pose)};
+      auto obj {std::make_shared<CollisionObject<S>>(collision_geometry, pose)};
 
       collision_objects_.push_back(obj);
       // collision_link_index.push_back(frame_id);
