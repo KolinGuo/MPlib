@@ -315,7 +315,8 @@ class Planner:
                         if (
                             np.linalg.norm(
                                 q_goal[move_joint_idx] - ik_qpos[move_joint_idx]
-                            ) < 0.1
+                            )
+                            < 0.1
                         ):
                             break  # not unique ik_qpos
                     else:
@@ -345,7 +346,9 @@ class Planner:
             # Mask where q2 is valid and closer to start_q
             q2_closer_mask = (
                 q2 < self.joint_limits[:, 1][None, self.equiv_joint_mask]
-            ) & (np.abs(q1 - start_q) > np.abs(q2 - start_q))  # [N, n_equiv_joint]
+            ) & (
+                np.abs(q1 - start_q) > np.abs(q2 - start_q)
+            )  # [N, n_equiv_joint]
             # Convert q_goals to equivalent joint values closest to start_qpos
             q_goals[:, self.equiv_joint_mask] = np.where(q2_closer_mask, q2, q1)
 
@@ -563,13 +566,11 @@ class Planner:
             return mat
 
         def skew(vec):
-            return np.array(
-                [
-                    [0, -vec[2], vec[1]],
-                    [vec[2], 0, -vec[0]],
-                    [-vec[1], vec[0], 0],
-                ]
-            )
+            return np.array([
+                [0, -vec[2], vec[1]],
+                [vec[2], 0, -vec[0]],
+                [-vec[1], vec[0], 0],
+            ])
 
         def pose2exp_coordinate(pose: np.ndarray) -> Tuple[np.ndarray, float]:
             def rot2so3(rotation: np.ndarray):
@@ -583,13 +584,11 @@ class Planner:
                     1
                     / 2
                     / np.sin(theta)
-                    * np.array(
-                        [
-                            rotation[2, 1] - rotation[1, 2],
-                            rotation[0, 2] - rotation[2, 0],
-                            rotation[1, 0] - rotation[0, 1],
-                        ]
-                    ).T
+                    * np.array([
+                        rotation[2, 1] - rotation[1, 2],
+                        rotation[0, 2] - rotation[2, 0],
+                        rotation[1, 0] - rotation[0, 1],
+                    ]).T
                 )
                 return omega, theta
 

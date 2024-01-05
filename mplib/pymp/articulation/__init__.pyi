@@ -1,17 +1,26 @@
-import mplib.pymp.articulation
 import typing
+
+import numpy
+
+import mplib.pymp.articulation
 import mplib.pymp.fcl
 import mplib.pymp.pinocchio
-import numpy
+
 _Shape = typing.Tuple[int, ...]
 
-__all__ = [
-    "ArticulatedModel"
-]
+__all__ = ["ArticulatedModel"]
 
-
-class ArticulatedModel():
-    def __init__(self, urdf_filename: str, srdf_filename: str, gravity: numpy.ndarray[numpy.float64, _Shape[3, 1]], joint_names: list[str], link_names: list[str], verbose: bool = True, convex: bool = False) -> None: ...
+class ArticulatedModel:
+    def __init__(
+        self,
+        urdf_filename: str,
+        srdf_filename: str,
+        gravity: numpy.ndarray[numpy.float64, _Shape[3, 1]],
+        joint_names: list[str],
+        link_names: list[str],
+        verbose: bool = True,
+        convex: bool = False,
+    ) -> None: ...
     def get_fcl_model(self) -> mplib.pymp.fcl.FCLModel: ...
     def get_move_group_end_effectors(self) -> list[str]: ...
     def get_move_group_joint_indices(self) -> list[int]: ...
@@ -25,6 +34,8 @@ class ArticulatedModel():
     def set_move_group(self, end_effector: str) -> None: ...
     @typing.overload
     def set_move_group(self, end_effectors: list[str]) -> None: ...
-    def set_qpos(self, qpos: numpy.ndarray[numpy.float64, _Shape[m, 1]], full: bool = False) -> None: ...
+    def set_qpos(
+        self, qpos: numpy.ndarray[numpy.float64, _Shape[m, 1]], full: bool = False
+    ) -> None: ...
     def update_SRDF(self, SRDF: str) -> None: ...
     pass
