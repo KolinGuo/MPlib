@@ -10,7 +10,9 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "articulated_model.h"
 #include "fcl_model.h"
+#include "planning_world.h"
 #include "pybind_macros.hpp"
 #include "types.h"
 #include "urdf_utils.h"
@@ -20,6 +22,9 @@ namespace py = pybind11;
 namespace mplib {
 
 using FCLModel = fcl::FCLModelTpl<S>;
+using ArticulatedModelPtr = ArticulatedModelTplPtr<S>;
+using WorldCollisionResult = WorldCollisionResultTpl<S>;
+using WorldDistanceResult = WorldDistanceResultTpl<S>;
 
 using Triangle = fcl::Triangle;
 using CollisionGeometry = fcl::CollisionGeometry<S>;
@@ -324,19 +329,81 @@ inline void build_pyfcl(py::module &m_all) {
       .def_readonly("total_cost", &CostSource::total_cost);
 
   // Collision function Not full suuport
-  m.def("collide",
-        [](const CollisionObject *o1, const CollisionObject *o2,
-           const CollisionRequest &request) {
-          CollisionResult result;
-          ::fcl::collide(o1, o2, request, result);
-          return result;
-        })
-      .def("distance", [](const CollisionObject *o1, const CollisionObject *o2,
-                          const DistanceRequest &request) {
-        DistanceResult result;
-        ::fcl::distance(o1, o2, request, result);
-        return result;
-      });
+  m.def(
+       "collide",
+       [](const CollisionObject *o1, const CollisionObject *o2,
+          const CollisionRequest &request) {
+         CollisionResult result;
+         ::fcl::collide(o1, o2, request, result);
+         return result;
+       },
+       py::arg("o1"), py::arg("o2"), py::arg("request") = CollisionRequest())
+      .def(
+          "collide",
+          [](const ArticulatedModelPtr &articulation, const CollisionObject *o2,
+             const CollisionRequest &request) {
+            std::vector<WorldCollisionResult> ret;
+            CollisionResult result;
+
+            auto fcl_model = articulation->getFCLModel();
+            auto col_objs = fcl_model->getCollisionObjects();
+            auto col_link_names = fcl_model->getCollisionLinkNames();
+
+            for (size_t i = 0; i < col_objs.size(); i++) {
+              result.clear();
+              ::fcl::collide(col_objs[i].get(), o2, request, result);
+              if (result.isCollision()) {
+                WorldCollisionResult tmp;
+                tmp.res = result;
+                tmp.collision_type = "articulation_sceneobject";
+                tmp.object_name1 = articulation->getName();
+                tmp.object_name2 = "__object__";  // TODO: No way to get its name
+                tmp.link_name1 = col_link_names[i];
+                tmp.link_name2 = "__object__";  // TODO: No way to get its name
+                ret.push_back(tmp);
+              }
+            }
+            return ret;
+          },
+          py::arg("articulation"), py::arg("o2"),
+          py::arg("request") = CollisionRequest())
+      .def(
+          "distance",
+          [](const CollisionObject *o1, const CollisionObject *o2,
+             const DistanceRequest &request) {
+            DistanceResult result;
+            ::fcl::distance(o1, o2, request, result);
+            return result;
+          },
+          py::arg("o1"), py::arg("o2"), py::arg("request") = DistanceRequest())
+      .def(
+          "distance",
+          [](const ArticulatedModelPtr &articulation, const CollisionObject *o2,
+             const DistanceRequest &request) {
+            WorldDistanceResult ret;
+            DistanceResult result;
+
+            auto fcl_model = articulation->getFCLModel();
+            auto col_objs = fcl_model->getCollisionObjects();
+            auto col_link_names = fcl_model->getCollisionLinkNames();
+
+            for (size_t i = 0; i < col_objs.size(); i++) {
+              result.clear();
+              ::fcl::distance(col_objs[i].get(), o2, request, result);
+              if (result.min_distance < ret.min_distance) {
+                ret.res = result;
+                ret.min_distance = result.min_distance;
+                ret.distance_type = "articulation_sceneobject";
+                ret.object_name1 = articulation->getName();
+                ret.object_name2 = "__object__";  // TODO: No way to get its name
+                ret.link_name1 = col_link_names[i];
+                ret.link_name2 = "__object__";  // TODO: No way to get its name
+              }
+            }
+            return ret;
+          },
+          py::arg("articulation"), py::arg("o2"),
+          py::arg("request") = DistanceRequest());
 
   // FCL model
   auto PyFCLModel = py::class_<FCLModel, std::shared_ptr<FCLModel>>(m, "FCLModel");
