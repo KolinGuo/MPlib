@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+#include <string>
 #include <vector>
 
 #include <urdf_model/types.h>
@@ -21,6 +23,10 @@ class PinocchioModelTpl {
 
   PinocchioModelTpl(const std::string &urdf_filename, const Vector3<S> &gravity,
                     bool verbose = true);
+
+  /// @brief Constructs a PinocchioModel from URDF string
+  static std::unique_ptr<PinocchioModelTpl<S>> createFromURDFString(
+      const std::string &urdf_string, const Vector3<S> &gravity, bool verbose = true);
 
   const Model<S> &getModel(void) const { return model_; }
 

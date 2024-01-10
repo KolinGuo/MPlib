@@ -18,6 +18,13 @@ DEFINE_TEMPLATE_PINOCCHIO_MODEL(float);
 DEFINE_TEMPLATE_PINOCCHIO_MODEL(double);
 
 template <typename S>
+PinocchioModelTpl<S>::PinocchioModelTpl(const urdf::ModelInterfaceSharedPtr &urdfTree,
+                                        const Vector3<S> &gravity, bool verbose)
+    : verbose_(verbose) {
+  init(urdfTree, gravity);
+}
+
+template <typename S>
 PinocchioModelTpl<S>::PinocchioModelTpl(const std::string &urdf_filename,
                                         const Vector3<S> &gravity, bool verbose)
     : verbose_(verbose) {
@@ -26,10 +33,10 @@ PinocchioModelTpl<S>::PinocchioModelTpl(const std::string &urdf_filename,
 }
 
 template <typename S>
-PinocchioModelTpl<S>::PinocchioModelTpl(const urdf::ModelInterfaceSharedPtr &urdfTree,
-                                        const Vector3<S> &gravity, bool verbose)
-    : verbose_(verbose) {
-  init(urdfTree, gravity);
+std::unique_ptr<PinocchioModelTpl<S>> PinocchioModelTpl<S>::createFromURDFString(
+    const std::string &urdf_string, const Vector3<S> &gravity, bool verbose) {
+  auto urdf = urdf::parseURDF(urdf_string);
+  return std::make_unique<PinocchioModelTpl<S>>(urdf, gravity, verbose);
 }
 
 template <typename S>

@@ -1,5 +1,10 @@
 #pragma once
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <urdf_model/types.h>
 #include <urdf_world/types.h>
 
@@ -19,6 +24,20 @@ class FCLModelTpl {
 
   FCLModelTpl(const std::string &urdf_filename, bool verbose = true,
               bool convex = false);
+
+  /**
+   * @brief Constructs a FCLModel from URDF string and collision links
+   * @param urdf_string: URDF string (without visual/collision elements for links)
+   * @param collision_links: Collision link names and the vector of CollisionObjectPtr
+   *                         [(link_name, [CollisionObjectPtr, ...]), ...]
+   *                         The collision objects are at the shape's local_pose
+   * @returns a unique_ptr to FCLModel
+   */
+  static std::unique_ptr<FCLModelTpl<S>> createFromURDFString(
+      const std::string &urdf_string,
+      const std::vector<std::pair<std::string, std::vector<CollisionObjectPtr<S>>>>
+          &collision_links,
+      bool verbose = true);
 
   const std::vector<std::pair<size_t, size_t>> &getCollisionPairs() const {
     return collision_pairs_;
@@ -43,6 +62,8 @@ class FCLModelTpl {
   void printCollisionPairs() const;
 
   void removeCollisionPairsFromSRDF(const std::string &srdf_filename);
+
+  void removeCollisionPairsFromSRDFString(const std::string &srdf_string);
 
   void updateCollisionObjects(const std::vector<Transform3<S>> &link_pose) const;
 

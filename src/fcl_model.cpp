@@ -35,6 +35,38 @@ FCLModelTpl<S>::FCLModelTpl(const std::string &urdf_filename, bool verbose, bool
 }
 
 template <typename S>
+std::unique_ptr<FCLModelTpl<S>> FCLModelTpl<S>::createFromURDFString(
+    const std::string &urdf_string,
+    const std::vector<std::pair<std::string, std::vector<CollisionObjectPtr<S>>>>
+        &collision_links,
+    bool verbose) {
+  auto urdf = urdf::parseURDF(urdf_string);
+  // package_dir is not needed since urdf_string contains no visual/collision elements
+  auto fcl_model = std::make_unique<FCLModelTpl<S>>(urdf, "", verbose, false);
+
+  for (const auto &[link_name, collision_objs] : collision_links)
+    for (const auto &collision_obj : collision_objs) {
+      fcl_model->collision_objects_.push_back(collision_obj);
+      fcl_model->collision_link_names_.push_back(link_name);
+      // fcl_model->parent_link_names_.push_back(parent_link_name);  // FIXME: remove
+      fcl_model->collision_origin2link_poses_.push_back(collision_obj->getTransform());
+    }
+  // setLinkOrder with unique collision link names as user_link_names
+  auto user_link_names = fcl_model->collision_link_names_;
+  auto last = std::unique(user_link_names.begin(), user_link_names.end());
+  user_link_names.erase(last, user_link_names.end());
+  fcl_model->setLinkOrder(user_link_names);
+
+  // We assume that the collisions between objects on the same link can be ignored.
+  for (size_t i = 0; i < fcl_model->collision_link_names_.size(); i++)
+    for (size_t j = 0; j < i; j++)
+      if (fcl_model->collision_link_names_[i] != fcl_model->collision_link_names_[j])
+        fcl_model->collision_pairs_.push_back(std::make_pair(j, i));
+
+  return fcl_model;
+}
+
+template <typename S>
 void FCLModelTpl<S>::setLinkOrder(const std::vector<std::string> &names) {
   user_link_names_ = names;
   collision_link_user_indices_ = {};
@@ -73,51 +105,34 @@ void FCLModelTpl<S>::removeCollisionPairsFromSRDF(const std::string &srdf_filena
 
   ASSERT(srdf_stream.is_open(), "Cannot open " + srdf_filename);
 
+  std::stringstream buffer;
+  buffer << srdf_stream.rdbuf();
+  removeCollisionPairsFromSRDFString(buffer.str());
+}
+
+template <typename S>
+void FCLModelTpl<S>::removeCollisionPairsFromSRDFString(const std::string &srdf_string) {
+  std::istringstream srdf_stream(srdf_string);
+
   boost::property_tree::ptree pt;
   boost::property_tree::xml_parser::read_xml(srdf_stream, pt);
 
-  for (auto node : pt.get_child("robot")) {
+  for (const auto &node : pt.get_child("robot"))
     if (node.first == "disable_collisions") {
       const std::string link1 = node.second.get<std::string>("<xmlattr>.link1");
       const std::string link2 = node.second.get<std::string>("<xmlattr>.link2");
-      /*
-      // Check first if the two bodies exist in model
-      if (!model.existBodyName(link1) || !model.existBodyName(link2)) {
-          if (verbose)
-              std::cout << "It seems that " << link1 << " or " << link2 <<
-                  " do not exist in model. Skip." << std::endl;
-          continue;
-      }
-
-      FrameIndex frame_id1 = model.getBodyId(link1);
-      FrameIndex frame_id2 = model.getBodyId(link2);
-
-      if ((frame_id1 == model.nframes || frame_id2 == model.nframes) &&
-      logging_level > 90) { std::cout << "Links do not exist " << link1 << " "
-      << link2 << std::endl; continue;
-      }
-      // Malformed SRDF
-      if (frame_id1 == frame_id2) {
-          if (verbose)
-              std::cout << "Cannot disable collision between " << link1 << " and
-      " << link2 << std::endl; continue; } else if (frame_id1 > frame_id2)
-          std::swap(frame_id1, frame_id2);
-      */
-      if (verbose_) {
+      if (verbose_)
         std::cout << "Try to Remove collision parts:" << link1 << " " << link2
                   << std::endl;
-      }
-      for (auto iter = collision_pairs_.begin(); iter != collision_pairs_.end();) {
+      for (auto iter = collision_pairs_.begin(); iter != collision_pairs_.end();)
         if ((collision_link_names_[iter->first] == link1 &&
              collision_link_names_[iter->second] == link2) ||
             (collision_link_names_[iter->first] == link2 &&
-             collision_link_names_[iter->second] == link1)) {
+             collision_link_names_[iter->second] == link1))
           iter = collision_pairs_.erase(iter);
-        } else
+        else
           iter++;
-      }
     }
-  }
 }
 
 template <typename S>
@@ -258,10 +273,11 @@ void FCLModelTpl<S>::init(const urdf::ModelInterfaceSharedPtr &urdfTree,
     throw std::invalid_argument("The XML stream does not contain a valid URDF model.");
   urdf::LinkConstSharedPtr root_link = urdf_model_->getRoot();
   dfs_parse_tree(root_link, "root's parent");
-  auto tmp_user_link_names = collision_link_names_;
-  auto last = std::unique(tmp_user_link_names.begin(), tmp_user_link_names.end());
-  tmp_user_link_names.erase(last, tmp_user_link_names.end());
-  setLinkOrder(tmp_user_link_names);
+  // setLinkOrder with unique collision link names as user_link_names
+  auto user_link_names = collision_link_names_;
+  auto last = std::unique(user_link_names.begin(), user_link_names.end());
+  user_link_names.erase(last, user_link_names.end());
+  setLinkOrder(user_link_names);
 
   for (size_t i = 0; i < collision_link_names_.size(); i++)
     for (size_t j = 0; j < i; j++)

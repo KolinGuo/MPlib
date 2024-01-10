@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include <pybind11/eigen.h>
@@ -33,6 +34,7 @@ using BVHModel_OBBRSS = fcl::BVHModel<fcl::OBBRSS<S>>;
 using OcTree = fcl::OcTree<S>;
 
 using CollisionObject = fcl::CollisionObject<S>;
+using CollisionObjectPtr = fcl::CollisionObjectPtr<S>;
 using GJKSolverType = fcl::GJKSolverType;
 using CollisionRequest = fcl::CollisionRequest<S>;
 using CollisionResult = fcl::CollisionResult<S>;
@@ -341,6 +343,17 @@ inline void build_pyfcl(py::module &m_all) {
   PyFCLModel
       .def(py::init<const std::string &, bool, bool>(), py::arg("urdf_filename"),
            py::arg("verbose") = true, py::arg("convex") = false)
+      .def_static(
+          "create_from_urdf_string",
+          [](const std::string &urdf_string,
+             const std::vector<std::pair<std::string, std::vector<CollisionObjectPtr>>>
+                 &collision_links,
+             bool verbose) {
+            std::shared_ptr<FCLModel> fcl_model =
+                FCLModel::createFromURDFString(urdf_string, collision_links, verbose);
+            return fcl_model;
+          },
+          py::arg("urdf_string"), py::arg("collision_links"), py::arg("verbose") = true)
       .def("get_collision_pairs", &FCLModel::getCollisionPairs)
       .def("get_collision_objects", &FCLModel::getCollisionObjects)
       .def("get_collision_link_names", &FCLModel::getCollisionLinkNames)

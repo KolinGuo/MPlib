@@ -1,5 +1,10 @@
 #pragma once
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "fcl_model.h"
 #include "macros_utils.h"
 #include "pinocchio_model.h"
@@ -12,12 +17,39 @@ MPLIB_CLASS_TEMPLATE_FORWARD(ArticulatedModelTpl);
 
 template <typename S>
 class ArticulatedModelTpl {
+ private:
+  // Used for protecting public default constructor (passkey idiom)
+  struct Secret;
+
  public:
+  /// @brief Constructs an ArticulatedModel from URDF/SRDF files
   ArticulatedModelTpl(const std::string &urdf_filename,
                       const std::string &srdf_filename, const Vector3<S> &gravity,
                       const std::vector<std::string> &joint_names = {},
                       const std::vector<std::string> &link_names = {},
                       bool verbose = true, bool convex = false);
+
+  /**
+   * @brief Dummy default constructor that is protected by Secret.
+   *  Used by createFromURDFString only
+   */
+  ArticulatedModelTpl(Secret secret) {}
+
+  /**
+   * @brief Constructs a ArticulatedModel from URDF/SRDF strings and collision links
+   * @param urdf_string: URDF string (without visual/collision elements for links)
+   * @param srdf_string: SRDF string (only disable_collisions element)
+   * @param collision_links: Collision link names and the vector of CollisionObjectPtr
+   *                         [(link_name, [CollisionObjectPtr, ...]), ...]
+   *                         The collision objects are at the shape's local_pose
+   * @returns a unique_ptr to ArticulatedModel
+   */
+  static std::unique_ptr<ArticulatedModelTpl<S>> createFromURDFString(
+      const std::string &urdf_string, const std::string &srdf_string,
+      const std::vector<std::pair<std::string, std::vector<fcl::CollisionObjectPtr<S>>>>
+          &collision_links,
+      const Vector3<S> &gravity, const std::vector<std::string> &joint_names = {},
+      const std::vector<std::string> &link_names = {}, bool verbose = true);
 
   const std::string &getName() const { return name_; }
 
@@ -60,6 +92,11 @@ class ArticulatedModelTpl {
   }
 
  private:
+  // Used for protecting public default constructor (passkey idiom)
+  struct Secret {
+    explicit Secret() = default;
+  };
+
   std::string name_;
   pinocchio::PinocchioModelTplPtr<S> pinocchio_model_;
   fcl::FCLModelTplPtr<S> fcl_model_;
@@ -73,8 +110,8 @@ class ArticulatedModelTpl {
   std::vector<std::string> move_group_end_effectors_;
   VectorX<S> current_qpos_;
 
-  size_t qpos_dim_;
-  bool verbose_;
+  size_t qpos_dim_ {};
+  bool verbose_ {};
 };
 
 // Common Type Alias ==========================================================

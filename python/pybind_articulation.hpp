@@ -17,6 +17,7 @@ namespace py = pybind11;
 namespace mplib {
 
 using ArticulatedModel = ArticulatedModelTpl<S>;
+using CollisionObjectPtr = fcl::CollisionObjectPtr<S>;
 
 inline void build_pyarticulation(py::module &m_all) {
   auto m = m_all.def_submodule("articulation");
@@ -28,9 +29,28 @@ inline void build_pyarticulation(py::module &m_all) {
       .def(py::init<const std::string &, const std::string &, Eigen::Matrix<S, 3, 1>,
                     const std::vector<std::string> &, const std::vector<std::string> &,
                     bool, bool>(),
-           py::arg("urdf_filename"), py::arg("srdf_filename"), py::arg("gravity"),
-           py::arg("joint_names"), py::arg("link_names"), py::arg("verbose") = true,
-           py::arg("convex") = false)
+           py::arg("urdf_filename"), py::arg("srdf_filename"),
+           py::arg("gravity") = Vector3<S>(0, 0, -9.81),
+           py::arg("joint_names") = std::vector<std::string>(),
+           py::arg("link_names") = std::vector<std::string>(),
+           py::arg("verbose") = true, py::arg("convex") = false)
+      .def_static(
+          "create_from_urdf_string",
+          [](const std::string &urdf_string, const std::string &srdf_string,
+             const std::vector<std::pair<std::string, std::vector<CollisionObjectPtr>>>
+                 &collision_links,
+             const Vector3<S> &gravity, const std::vector<std::string> &joint_names,
+             const std::vector<std::string> &link_names, bool verbose) {
+            std::shared_ptr<ArticulatedModel> articulation =
+                ArticulatedModel::createFromURDFString(
+                    urdf_string, srdf_string, collision_links, gravity, joint_names,
+                    link_names, verbose);
+            return articulation;
+          },
+          py::arg("urdf_string"), py::arg("srdf_string"), py::arg("collision_links"),
+          py::arg("gravity") = Vector3<S>(0, 0, -9.81),
+          py::arg("joint_names") = std::vector<std::string>(),
+          py::arg("link_names") = std::vector<std::string>(), py::arg("verbose") = true)
       .def("get_pinocchio_model", &ArticulatedModel::getPinocchioModel)
       .def("get_fcl_model", &ArticulatedModel::getFCLModel)
       .def("get_user_link_names", &ArticulatedModel::getUserLinkNames)

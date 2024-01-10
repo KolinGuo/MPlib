@@ -28,6 +28,15 @@ inline void build_pypinocchio(py::module &m_all) {
       .def(py::init<const std::string &, const Vector3<S> &, bool>(),
            py::arg("urdf_filename"), py::arg("gravity") = Vector3<S>(0, 0, -9.81),
            py::arg("verbose") = true)
+      .def_static(
+          "create_from_urdf_string",
+          [](const std::string &urdf_string, const Vector3<S> &gravity, bool verbose) {
+            std::shared_ptr<PinocchioModel> pinocchio_model =
+                PinocchioModel::createFromURDFString(urdf_string, gravity, verbose);
+            return pinocchio_model;
+          },
+          py::arg("urdf_string"), py::arg("gravity") = Vector3<S>(0, 0, -9.81),
+          py::arg("verbose") = true)
       .def("set_joint_order", &PinocchioModel::setJointOrder, py::arg("names"))
       .def("set_link_order", &PinocchioModel::setLinkOrder, py::arg("names"))
       .def("compute_forward_kinematics", &PinocchioModel::computeForwardKinematics,
