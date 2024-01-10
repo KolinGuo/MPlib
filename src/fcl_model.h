@@ -42,7 +42,7 @@ class FCLModelTpl {
 
   void printCollisionPairs() const;
 
-  void removeCollisionPairsFromSrdf(const std::string &srdf_filename);
+  void removeCollisionPairsFromSRDF(const std::string &srdf_filename);
 
   void updateCollisionObjects(const std::vector<Transform3<S>> &link_pose) const;
 

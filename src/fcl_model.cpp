@@ -59,7 +59,7 @@ void FCLModelTpl<S>::printCollisionPairs() const {
 }
 
 template <typename S>
-void FCLModelTpl<S>::removeCollisionPairsFromSrdf(const std::string &srdf_filename) {
+void FCLModelTpl<S>::removeCollisionPairsFromSRDF(const std::string &srdf_filename) {
   const std::string extension =
       srdf_filename.substr(srdf_filename.find_last_of('.') + 1);
   if (srdf_filename == "") {

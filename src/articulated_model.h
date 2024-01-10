@@ -55,8 +55,8 @@ class ArticulatedModelTpl {
 
   size_t getQposDim() const { return qpos_dim_; }
 
-  void updateSRDF(const std::string &srdf) {
-    fcl_model_->removeCollisionPairsFromSrdf(srdf);
+  void updateSRDF(const std::string &srdf_filename) {
+    fcl_model_->removeCollisionPairsFromSRDF(srdf_filename);
   }
 
  private:

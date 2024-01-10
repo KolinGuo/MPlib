@@ -30,7 +30,7 @@ ArticulatedModelTpl<S>::ArticulatedModelTpl(const std::string &urdf_filename,
   pinocchio_model_->setLinkOrder(user_link_names_);
   pinocchio_model_->setJointOrder(user_joint_names_);
   fcl_model_->setLinkOrder(user_link_names_);
-  fcl_model_->removeCollisionPairsFromSrdf(srdf_filename);
+  fcl_model_->removeCollisionPairsFromSRDF(srdf_filename);
   current_qpos_ = VectorX<S>::Constant(pinocchio_model_->getModel().nv, 0);
   setMoveGroup(user_link_names_);
 }

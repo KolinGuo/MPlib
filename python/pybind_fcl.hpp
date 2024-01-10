@@ -343,7 +343,7 @@ inline void build_pyfcl(py::module &m_all) {
       .def("get_collision_objects", &FCLModel::getCollisionObjects)
       .def("get_collision_link_names", &FCLModel::getCollisionLinkNames)
       .def("set_link_order", &FCLModel::setLinkOrder, py::arg("names"))
-      .def("remove_collision_pairs_from_srdf", &FCLModel::removeCollisionPairsFromSrdf,
+      .def("remove_collision_pairs_from_srdf", &FCLModel::removeCollisionPairsFromSRDF,
            py::arg("srdf_filename"))
       .def("update_collision_objects",
            py::overload_cast<const std::vector<Vector7<S>> &>(
