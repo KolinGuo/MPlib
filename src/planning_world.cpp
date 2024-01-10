@@ -302,6 +302,7 @@ std::vector<WorldCollisionResultTpl<S>> PlanningWorldTpl<S>::selfCollide(
         tmp.link_name2 = col_link_names[y];
         ret.push_back(tmp);
       }
+    // FIXME: collision between planned_articulation
 
     // Articulation collide with attached_bodies_
     for (const auto &[attached_body_name, attached_body] : attached_bodies_) {
@@ -496,6 +497,7 @@ WorldDistanceResultTpl<S> PlanningWorldTpl<S>::distanceSelf(
           ret.link_name2 = col_link_names[y];
         }
       }
+    // FIXME: distance between planned_articulation
 
     // Articulation minimum distance to attached_bodies_
     for (const auto &[attached_body_name, attached_body] : attached_bodies_) {
