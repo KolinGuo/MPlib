@@ -157,6 +157,12 @@ class PlanningWorldTpl {
     return attached_bodies_.find(name) != attached_bodies_.end();
   }
 
+  /// @brief Gets the attached normal object (AttachedBodyPtr) with given name
+  AttachedBodyPtr getAttachedObject(const std::string &name) const {
+    auto it = attached_bodies_.find(name);
+    return it != attached_bodies_.end() ? it->second : nullptr;
+  }
+
   /**
    * @brief Attaches existing normal object to specified link of articulation.
    *  If the object is currently attached, disallow collision between the object

@@ -1,6 +1,7 @@
 #include <pybind11/pybind11.h>
 
 #include "pybind_articulation.hpp"
+#include "pybind_attached_body.hpp"
 #include "pybind_collision_matrix.hpp"
 #include "pybind_fcl.hpp"
 #include "pybind_kdl.hpp"
@@ -18,6 +19,7 @@ PYBIND11_MODULE(pymp, m) {
   build_pypinocchio(m);
   build_pykdl(m);
   build_pyarticulation(m);
+  build_attached_body(m);
   build_collision_matrix(m);
   build_planning_world(m);
   build_pyompl(m);

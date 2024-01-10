@@ -67,6 +67,7 @@ inline void build_planning_world(py::module &m_all) {
 
       .def("is_normal_object_attached", &PlanningWorld::isNormalObjectAttached,
            py::arg("name"))
+      .def("get_attached_object", &PlanningWorld::getAttachedObject, py::arg("name"))
       .def("attach_object",
            py::overload_cast<const std::string &, const std::string &, int,
                              const Vector7<S> &, const std::vector<std::string> &>(
