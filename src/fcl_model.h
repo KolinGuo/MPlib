@@ -67,7 +67,7 @@ class FCLModelTpl {
   std::vector<std::string> user_link_names_;
   std::vector<size_t> collision_link_user_indices_;
   std::string package_dir_;
-  bool have_link_order_, use_convex_, verbose_;
+  bool use_convex_, verbose_;
 
   void dfs_parse_tree(const urdf::LinkConstSharedPtr &link,
                       const std::string &parent_link_name);
