@@ -44,6 +44,7 @@ class SapienPlanningWorld(PlanningWorld):
         """
         super().__init__([], [])
         self._sim_scene = sim_scene
+        self._multi_shapes_objs = {}  # FIXME: make mplib compatible
 
         articulations: list[PhysxArticulation] = sim_scene.get_all_articulations()
         actors: list[Entity] = sim_scene.get_all_actors()
@@ -86,13 +87,21 @@ class SapienPlanningWorld(PlanningWorld):
 
             # Convert collision shapes at current global pose
             col_objs = self.convert_sapien_col_shape(component)
-            # TODO: multiple collision shapes
-            assert len(col_objs) == 1, (
-                f"Should only have 1 collision object, got {len(col_objs)} shapes for "
+            assert len(col_objs) >= 1, (
+                f"Should have 1+ collision object, got {len(col_objs)} shapes for "
                 f"entity '{entity.name}'"
             )
-
-            self.add_normal_object(entity.name, col_objs[0])
+            # TODO: multiple collision shapes
+            # assert len(col_objs) == 1, (
+            #     f"Should only have 1 collision object, got {len(col_objs)} shapes for "
+            #     f"entity '{entity.name}'"
+            # )
+            if len(col_objs) > 1:
+                self._multi_shapes_objs[entity.name] = col_objs
+                for i, col_obj in enumerate(col_objs):
+                    self.add_normal_object(f"{entity.name}_{i}", col_obj)
+            else:
+                self.add_normal_object(entity.name, col_objs[0])
 
     def update_from_simulation(self, update_attached_object: bool = True) -> None:
         """Updates planning_world articulations/objects pose with current Scene state
@@ -114,11 +123,28 @@ class SapienPlanningWorld(PlanningWorld):
             ), f"Component should not be PhysxArticulationLinkComponent: {component=}"
 
             shapes = component.collision_shapes
-            # TODO: multiple collision shapes
-            assert len(shapes) == 1, (
-                f"Should only have 1 collision shape, got {len(shapes)} shapes for "
+            assert len(shapes) >= 1, (
+                f"Should have 1+ collision shape, got {len(shapes)} shapes for "
                 f"entity '{entity.name}'"
             )
+            # TODO: multiple collision shapes
+            # assert len(shapes) == 1, (
+            #     f"Should only have 1 collision shape, got {len(shapes)} shapes for "
+            #     f"entity '{entity.name}'"
+            # )
+            if len(shapes) > 1:
+                for i, (shape, col_obj) in enumerate(
+                    zip(shapes, self._multi_shapes_objs[entity.name])
+                ):
+                    pose: Pose = entity.pose * shape.local_pose
+                    # NOTE: Convert poses for Capsule/Cylinder
+                    if isinstance(
+                        shape, (PhysxCollisionShapeCapsule, PhysxCollisionShapeCylinder)
+                    ):
+                        pose = pose * Pose(q=euler2quat(0, np.pi / 2, 0))
+                    col_obj.set_transformation(np.hstack((pose.p, pose.q)))
+                continue
+
             shape = shapes[0]
 
             pose: Pose = entity.pose * shape.local_pose
@@ -149,11 +175,13 @@ class SapienPlanningWorld(PlanningWorld):
     def _get_col_obj(
         self,
         obj: PhysxArticulation | PhysxArticulationLinkComponent | Entity,
-    ) -> CollisionObject | ArticulatedModel | None:
+    ) -> list[CollisionObject] | CollisionObject | ArticulatedModel | None:
         """Helper function to get mplib collision object from sapien object"""
         if isinstance(obj, PhysxArticulation):
             return self.get_articulation(obj.name)
         elif isinstance(obj, Entity):
+            if obj.name in self._multi_shapes_objs:
+                return self._multi_shapes_objs[obj.name]
             return self.get_normal_object(obj.name)
         elif isinstance(obj, PhysxArticulationLinkComponent):
             articulated_model = self.get_articulation(obj.articulation.name)
@@ -200,28 +228,36 @@ class SapienPlanningWorld(PlanningWorld):
                 "No support for checking between two PhysxArticulation yet."
             )
 
-        col_obj_A = self._get_col_obj(obj_A)
-        col_obj_B = self._get_col_obj(obj_B)
+        col_objs_A = self._get_col_obj(obj_A)
+        col_objs_B = self._get_col_obj(obj_B)
 
         # Check if obj_A or obj_B does not exist
-        if col_obj_A is None or col_obj_B is None:
+        if col_objs_A is None or col_objs_B is None:
             return []
 
-        result = collide(col_obj_A, col_obj_B)
+        if not isinstance(col_objs_A, list):
+            col_objs_A = [col_objs_A]
+        if not isinstance(col_objs_B, list):
+            col_objs_B = [col_objs_B]
 
-        if isinstance(result, list):
-            return result
-        elif result.is_collision():
-            world_result = WorldCollisionResult()
-            world_result.res = result
-            world_result.collision_type = "sceneobject_sceneobject"
-            world_result.object_name1 = obj_A.name
-            world_result.object_name2 = obj_B.name
-            world_result.link_name1 = obj_A.name
-            world_result.link_name2 = obj_B.name
-            return [world_result]
-        else:
-            return []
+        ret = []
+        for col_obj_A in col_objs_A:
+            for col_obj_B in col_objs_B:
+
+                result = collide(col_obj_A, col_obj_B)
+
+                if isinstance(result, list):
+                    ret.extend(result)
+                elif result.is_collision():
+                    world_result = WorldCollisionResult()
+                    world_result.res = result
+                    world_result.collision_type = "sceneobject_sceneobject"
+                    world_result.object_name1 = obj_A.name
+                    world_result.object_name2 = obj_B.name
+                    world_result.link_name1 = obj_A.name
+                    world_result.link_name2 = obj_B.name
+                    ret.append(world_result)
+        return ret
 
     def distance_to_collision(
         self,
@@ -253,27 +289,36 @@ class SapienPlanningWorld(PlanningWorld):
                 "No support for checking between two PhysxArticulation yet."
             )
 
-        col_obj_A = self._get_col_obj(obj_A)
-        col_obj_B = self._get_col_obj(obj_B)
+        col_objs_A = self._get_col_obj(obj_A)
+        col_objs_B = self._get_col_obj(obj_B)
 
         # Check if obj_A or obj_B does not exist
-        if col_obj_A is None or col_obj_B is None:
+        if col_objs_A is None or col_objs_B is None:
             return WorldDistanceResult()
 
-        result = distance(col_obj_A, col_obj_B)
+        if not isinstance(col_objs_A, list):
+            col_objs_A = [col_objs_A]
+        if not isinstance(col_objs_B, list):
+            col_objs_B = [col_objs_B]
 
-        if isinstance(result, WorldDistanceResult):
-            return result
-        else:
-            world_result = WorldDistanceResult()
-            world_result.res = result
-            world_result.min_distance = result.min_distance
-            world_result.distance_type = "sceneobject_sceneobject"
-            world_result.object_name1 = obj_A.name
-            world_result.object_name2 = obj_B.name
-            world_result.link_name1 = obj_A.name
-            world_result.link_name2 = obj_B.name
-            return world_result
+        ret = WorldDistanceResult()
+        for col_obj_A in col_objs_A:
+            for col_obj_B in col_objs_B:
+
+                result = distance(col_obj_A, col_obj_B)
+
+                if result.min_distance < ret.min_distance:
+                    if isinstance(result, WorldDistanceResult):
+                        ret = result
+                    else:
+                        ret.res = result
+                        ret.min_distance = min(ret.min_distance, result.min_distance)
+                        ret.distance_type = "sceneobject_sceneobject"
+                        ret.object_name1 = obj_A.name
+                        ret.object_name2 = obj_B.name
+                        ret.link_name1 = obj_A.name
+                        ret.link_name2 = obj_B.name
+        return ret
 
     @staticmethod
     def convert_sapien_col_shape(
@@ -292,49 +337,63 @@ class SapienPlanningWorld(PlanningWorld):
 
         # NOTE: MPlib currently only supports 1 collision shape per object
         # TODO: multiple collision shapes
-        assert len(shapes) == 1, (
-            f"Should only have 1 collision shape, got {len(shapes)} shapes for "
-            f"entity '{component.entity.name}'"
-        )
+        # assert len(shapes) == 1, (
+        #     f"Should only have 1 collision shape, got {len(shapes)} shapes for "
+        #     f"entity '{component.entity.name}'"
+        # )
+        if len(shapes) > 1:
+            print(f"Got {len(shapes)} shapes for entity '{component.entity.name}'")
+            print(
+                "\x1b[33;1m"
+                "[Warning] only 1 collision shape per component is properly supported.\n"
+                "          Currently, a hack is used to temporarily bypass this issue.\n"
+                "          Some PlanningWorld features (e.g., attached body)\n"
+                "          might not function correctly."
+                "\x1b[0m"
+            )
 
-        shape = shapes[0]
-        if isinstance(component, PhysxArticulationLinkComponent):  # articulation link
-            pose = shape.local_pose
-        else:
-            pose = component.entity.pose * shape.local_pose
+        col_shapes = []
+        for shape in shapes:
+            if isinstance(
+                component, PhysxArticulationLinkComponent
+            ):  # articulation link
+                pose = shape.local_pose
+            else:
+                pose = component.entity.pose * shape.local_pose
 
-        if isinstance(shape, PhysxCollisionShapeBox):
-            collision_geom = Box(side=shape.half_size * 2)
-        elif isinstance(shape, PhysxCollisionShapeCapsule):
-            collision_geom = Capsule(radius=shape.radius, lz=shape.half_length * 2)
-            # NOTE: physx Capsule has x-axis along capsule height
-            # FCL Capsule has z-axis along capsule height
-            pose = pose * Pose(q=euler2quat(0, np.pi / 2, 0))
-        elif isinstance(shape, PhysxCollisionShapeConvexMesh):
-            assert np.allclose(
-                shape.scale, 1.0
-            ), f"Not unit scale {shape.scale}, need to rescale vertices?"
-            collision_geom = Convex(vertices=shape.vertices, faces=shape.triangles)
-        elif isinstance(shape, PhysxCollisionShapeCylinder):
-            collision_geom = Cylinder(radius=shape.radius, lz=shape.half_length * 2)
-            # NOTE: physx Cylinder has x-axis along cylinder height
-            # FCL Cylinder has z-axis along cylinder height
-            pose = pose * Pose(q=euler2quat(0, np.pi / 2, 0))
-        elif isinstance(shape, PhysxCollisionShapePlane):
-            raise NotImplementedError(
-                "Support for Plane collision is not implemented yet in mplib, "
-                "need fcl::Plane"
-            )
-        elif isinstance(shape, PhysxCollisionShapeSphere):
-            raise NotImplementedError(
-                "Support for Sphere collision is not implemented yet in mplib, "
-                "need fcl::Sphere"
-            )
-        elif isinstance(shape, PhysxCollisionShapeTriangleMesh):
-            # NOTE: see mplib.pymp.fcl.Triangle
-            raise NotImplementedError(
-                "Support for TriangleMesh collision is not implemented yet."
-            )
-        else:
-            raise TypeError(f"Unknown shape type: {type(shape)}")
-        return [CollisionObject(collision_geom, pose.p, pose.q)]
+            if isinstance(shape, PhysxCollisionShapeBox):
+                collision_geom = Box(side=shape.half_size * 2)
+            elif isinstance(shape, PhysxCollisionShapeCapsule):
+                collision_geom = Capsule(radius=shape.radius, lz=shape.half_length * 2)
+                # NOTE: physx Capsule has x-axis along capsule height
+                # FCL Capsule has z-axis along capsule height
+                pose = pose * Pose(q=euler2quat(0, np.pi / 2, 0))
+            elif isinstance(shape, PhysxCollisionShapeConvexMesh):
+                assert np.allclose(
+                    shape.scale, 1.0
+                ), f"Not unit scale {shape.scale}, need to rescale vertices?"
+                collision_geom = Convex(vertices=shape.vertices, faces=shape.triangles)
+            elif isinstance(shape, PhysxCollisionShapeCylinder):
+                collision_geom = Cylinder(radius=shape.radius, lz=shape.half_length * 2)
+                # NOTE: physx Cylinder has x-axis along cylinder height
+                # FCL Cylinder has z-axis along cylinder height
+                pose = pose * Pose(q=euler2quat(0, np.pi / 2, 0))
+            elif isinstance(shape, PhysxCollisionShapePlane):
+                raise NotImplementedError(
+                    "Support for Plane collision is not implemented yet in mplib, "
+                    "need fcl::Plane"
+                )
+            elif isinstance(shape, PhysxCollisionShapeSphere):
+                raise NotImplementedError(
+                    "Support for Sphere collision is not implemented yet in mplib, "
+                    "need fcl::Sphere"
+                )
+            elif isinstance(shape, PhysxCollisionShapeTriangleMesh):
+                # NOTE: see mplib.pymp.fcl.Triangle
+                raise NotImplementedError(
+                    "Support for TriangleMesh collision is not implemented yet."
+                )
+            else:
+                raise TypeError(f"Unknown shape type: {type(shape)}")
+            col_shapes.append(CollisionObject(collision_geom, pose.p, pose.q))
+        return col_shapes
