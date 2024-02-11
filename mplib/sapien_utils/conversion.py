@@ -17,8 +17,20 @@ from sapien.physx import (
 from transforms3d.euler import euler2quat
 
 from ..pymp.articulation import ArticulatedModel
-from ..pymp.fcl import Box, Capsule, CollisionObject, Convex, Cylinder
-from ..pymp.planning_world import PlanningWorld
+from ..pymp.fcl import (
+    Box,
+    Capsule,
+    CollisionObject,
+    Convex,
+    Cylinder,
+    collide,
+    distance,
+)
+from ..pymp.planning_world import (
+    PlanningWorld,
+    WorldCollisionResult,
+    WorldDistanceResult,
+)
 from .srdf_exporter import export_srdf
 from .urdf_exporter import export_kinematic_chain_urdf
 
@@ -150,7 +162,7 @@ class SapienPlanningWorld(PlanningWorld):
         """Updates planning_world articulations/objects pose with current Scene state
 
         :param update_attached_object: whether to update the attached pose of
-                                    all attached objects
+                                       all attached objects
         """
         for articulation in self._sim_scene.get_all_articulations():
             # set_qpos to update poses
@@ -197,3 +209,132 @@ class SapienPlanningWorld(PlanningWorld):
                 self.get_normal_object(entity.name).set_transformation(
                     np.hstack((pose.p, pose.q))
                 )
+
+    def _get_col_obj(
+        self,
+        obj: PhysxArticulation | PhysxArticulationLinkComponent | Entity,
+    ) -> CollisionObject | ArticulatedModel | None:
+        """Helper function to get mplib collision object from sapien object"""
+        if isinstance(obj, PhysxArticulation):
+            return self.get_articulation(obj.name)
+        elif isinstance(obj, Entity):
+            return self.get_normal_object(obj.name)
+        elif isinstance(obj, PhysxArticulationLinkComponent):
+            articulated_model = self.get_articulation(obj.articulation.name)
+            if articulated_model is None:
+                return None
+
+            # TODO: this is too complex
+            fcl_model = articulated_model.get_fcl_model()
+            col_links = fcl_model.get_collision_objects()
+            col_link_names = fcl_model.get_collision_link_names()
+            for col_link, col_link_name in zip(col_links, col_link_names):
+                if col_link_name == obj.name:
+                    return col_link
+            return None
+        else:
+            raise TypeError(f"Unknown type: {type(obj)}")
+
+    def check_collision(
+        self,
+        obj_A: PhysxArticulation | PhysxArticulationLinkComponent | Entity,
+        obj_B: PhysxArticulation | PhysxArticulationLinkComponent | Entity,
+    ) -> list[WorldCollisionResult]:
+        """
+        Check collision between two objects,
+        which can either be a PhysxArticulation or an Entity.
+
+        Note:
+            Currently there's no support for checking between two PhysxArticulation.
+            This is planned but not yet implemented.
+
+        :param obj_A: object A to check for collision.
+        :param obj_B: object B to check for collision.
+        :return: a list of WorldCollisionResult. Empty if there's no collision.
+        """
+        # Ensure that if there's only one PhysxArticulation, it's always obj_A
+        if isinstance(obj_B, PhysxArticulation):
+            obj_A, obj_B = obj_B, obj_A
+
+        # TODO: support both obj_A and obj_B being PhysxArticulation
+        if isinstance(obj_A, PhysxArticulation) and isinstance(
+            obj_B, PhysxArticulation
+        ):
+            raise NotImplementedError(
+                "No support for checking between two PhysxArticulation yet."
+            )
+
+        col_obj_A = self._get_col_obj(obj_A)
+        col_obj_B = self._get_col_obj(obj_B)
+
+        # Check if obj_A or obj_B does not exist
+        if col_obj_A is None or col_obj_B is None:
+            return []
+
+        result = collide(col_obj_A, col_obj_B)
+
+        if isinstance(result, list):
+            return result
+        elif result.is_collision():
+            world_result = WorldCollisionResult()
+            world_result.res = result
+            world_result.collision_type = "sceneobject_sceneobject"
+            world_result.object_name1 = obj_A.name
+            world_result.object_name2 = obj_B.name
+            world_result.link_name1 = obj_A.name
+            world_result.link_name2 = obj_B.name
+            return [world_result]
+        else:
+            return []
+
+    def distance_to_collision(
+        self,
+        obj_A: PhysxArticulation | PhysxArticulationLinkComponent | Entity,
+        obj_B: PhysxArticulation | PhysxArticulationLinkComponent | Entity,
+    ) -> WorldDistanceResult:
+        """
+        Compute the distance to the nearest collision between two objects
+        (ignoring self-collisions for PhysxArticulation).
+        The objects can either be a PhysxArticulation or an Entity.
+
+        Note:
+            Currently there's no support for checking between two PhysxArticulation.
+            This is planned but not yet implemented.
+
+        :param obj_A: object A to compute distance to nearest collision.
+        :param obj_B: object B to compute distance to nearest collision.
+        :return: an instance of WorldDistanceResult
+        """
+        # Ensure that if there's only one PhysxArticulation, it's always obj_A
+        if isinstance(obj_B, PhysxArticulation):
+            obj_A, obj_B = obj_B, obj_A
+
+        # TODO: support both obj_A and obj_B being PhysxArticulation
+        if isinstance(obj_A, PhysxArticulation) and isinstance(
+            obj_B, PhysxArticulation
+        ):
+            raise NotImplementedError(
+                "No support for checking between two PhysxArticulation yet."
+            )
+
+        col_obj_A = self._get_col_obj(obj_A)
+        col_obj_B = self._get_col_obj(obj_B)
+
+        # Check if obj_A or obj_B does not exist
+        if col_obj_A is None or col_obj_B is None:
+            return WorldDistanceResult()
+
+        result = distance(col_obj_A, col_obj_B)
+
+        if isinstance(result, WorldDistanceResult):
+            return result
+        else:
+            world_result = WorldDistanceResult()
+            world_result.res = result
+            world_result.min_distance = result.min_distance
+            world_result.distance_type = "sceneobject_sceneobject"
+            world_result.object_name1 = obj_A.name
+            world_result.object_name2 = obj_B.name
+            world_result.link_name1 = obj_A.name
+            world_result.link_name2 = obj_B.name
+            return world_result
