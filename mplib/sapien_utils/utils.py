@@ -87,115 +87,113 @@ def convert_sapien_col_shape(
     return [CollisionObject(collision_geom, pose.p, pose.q)]
 
 
-def get_planning_world(
-    scene: Scene, planned_articulation_names: list[str] = []
-) -> PlanningWorld:
-    """
-    Creates an mplib.pymp.planning_world.PlanningWorld from a sapien.Scene.
+class SapienPlanningWorld(PlanningWorld):
+    def __init__(self, sim_scene: Scene, planned_articulation_names: list[str] = []):
+        """
+        Creates an mplib.pymp.planning_world.PlanningWorld from a sapien.Scene.
 
-    :param planned_articulation_names: name of planned articulations.
-    :return planning_world: created PlanningWorld.
-    """
-    planning_world = PlanningWorld([], [])
-    articulations: list[PhysxArticulation] = scene.get_all_articulations()
-    actors: list[Entity] = scene.get_all_actors()
+        :param planned_articulation_names: name of planned articulations.
+        """
+        super().__init__([], [])
+        self._sim_scene = sim_scene
 
-    for articulation in articulations:
-        urdf_str = export_kinematic_chain_urdf(articulation)
-        srdf_str = export_srdf(articulation)
+        articulations: list[PhysxArticulation] = sim_scene.get_all_articulations()
+        actors: list[Entity] = sim_scene.get_all_actors()
 
-        # Get all links with collision shapes at local_pose
-        collision_links = []  # [(link_name, [CollisionObject, ...]), ...]
-        for link in articulation.links:
-            col_objs = convert_sapien_col_shape(link)
-            if len(col_objs) > 0:
-                collision_links.append((link.name, col_objs))
+        for articulation in articulations:
+            urdf_str = export_kinematic_chain_urdf(articulation)
+            srdf_str = export_srdf(articulation)
 
-        articulated_model = ArticulatedModel.create_from_urdf_string(
-            urdf_str,
-            srdf_str,
-            collision_links=collision_links,
-            gravity=[0, 0, -9.81],
-            joint_names=[j.name for j in articulation.active_joints],
-            link_names=[l.name for l in articulation.links],
-            verbose=False,
-        )
-        articulated_model.set_qpos(articulation.qpos)  # set_qpos to update poses
+            # Get all links with collision shapes at local_pose
+            collision_links = []  # [(link_name, [CollisionObject, ...]), ...]
+            for link in articulation.links:
+                col_objs = convert_sapien_col_shape(link)
+                if len(col_objs) > 0:
+                    collision_links.append((link.name, col_objs))
 
-        planning_world.add_articulation(articulation.name, articulated_model)
-
-    for articulation_name in planned_articulation_names:
-        planning_world.set_articulation_planned(articulation_name, True)
-
-    for entity in actors:
-        component = entity.find_component_by_type(PhysxRigidBaseComponent)
-        assert (
-            component is not None
-        ), f"No PhysxRigidBaseComponent found in {entity.name}: {entity.components=}"
-        assert not isinstance(
-            component, PhysxArticulationLinkComponent
-        ), f"Component should not be PhysxArticulationLinkComponent: {component=}"
-
-        # Convert collision shapes at current global pose
-        col_objs = convert_sapien_col_shape(component)
-        # TODO: multiple collision shapes
-        assert len(col_objs) == 1, (
-            f"Should only have 1 collision object, got {len(col_objs)} shapes for "
-            f"entity '{entity.name}'"
-        )
-
-        planning_world.add_normal_object(entity.name, col_objs[0])
-
-    return planning_world
-
-
-def update_planning_world(
-    planning_world: PlanningWorld, scene: Scene, update_attached_object: bool = True
-) -> None:
-    """Updates planning_world articulations/objects pose with current Scene state
-    :param update_attached_object: whether to update the attached pose of
-                                   all attached objects
-    """
-    for articulation in scene.get_all_articulations():
-        # set_qpos to update poses
-        planning_world.get_articulation(articulation.name).set_qpos(articulation.qpos)
-
-    for entity in scene.get_all_actors():
-        component = entity.find_component_by_type(PhysxRigidBaseComponent)
-        assert (
-            component is not None
-        ), f"No PhysxRigidBaseComponent found in {entity.name}: {entity.components=}"
-        assert not isinstance(
-            component, PhysxArticulationLinkComponent
-        ), f"Component should not be PhysxArticulationLinkComponent: {component=}"
-
-        shapes = component.collision_shapes
-        # TODO: multiple collision shapes
-        assert len(shapes) == 1, (
-            f"Should only have 1 collision shape, got {len(shapes)} shapes for "
-            f"entity '{entity.name}'"
-        )
-        shape = shapes[0]
-
-        pose: Pose = entity.pose * shape.local_pose
-        # NOTE: Convert poses for Capsule/Cylinder
-        if isinstance(shape, (PhysxCollisionShapeCapsule, PhysxCollisionShapeCylinder)):
-            pose = pose * Pose(q=euler2quat(0, np.pi / 2, 0))
-
-        # handle attached object
-        if planning_world.is_normal_object_attached(entity.name):
-            attached_body = planning_world.get_attached_object(entity.name)
-            if update_attached_object:
-                parent_posevec = (
-                    attached_body.get_attached_articulation()
-                    .get_pinocchio_model()
-                    .get_link_pose(attached_body.get_attached_link_id())
-                )
-                parent_pose = Pose(parent_posevec[:3], parent_posevec[3:])
-                pose = parent_pose.inv() * pose  # new attached pose
-                attached_body.set_pose(np.hstack((pose.p, pose.q)))
-            attached_body.update_pose()
-        else:
-            planning_world.get_normal_object(entity.name).set_transformation(
-                np.hstack((pose.p, pose.q))
+            articulated_model = ArticulatedModel.create_from_urdf_string(
+                urdf_str,
+                srdf_str,
+                collision_links=collision_links,
+                gravity=[0, 0, -9.81],
+                joint_names=[j.name for j in articulation.active_joints],
+                link_names=[l.name for l in articulation.links],
+                verbose=False,
             )
+            articulated_model.set_qpos(articulation.qpos)  # set_qpos to update poses
+
+            self.add_articulation(articulation.name, articulated_model)
+
+        for articulation_name in planned_articulation_names:
+            self.set_articulation_planned(articulation_name, True)
+
+        for entity in actors:
+            component = entity.find_component_by_type(PhysxRigidBaseComponent)
+            assert (
+                component is not None
+            ), f"No PhysxRigidBaseComponent found in {entity.name}: {entity.components=}"
+            assert not isinstance(
+                component, PhysxArticulationLinkComponent
+            ), f"Component should not be PhysxArticulationLinkComponent: {component=}"
+
+            # Convert collision shapes at current global pose
+            col_objs = convert_sapien_col_shape(component)
+            # TODO: multiple collision shapes
+            assert len(col_objs) == 1, (
+                f"Should only have 1 collision object, got {len(col_objs)} shapes for "
+                f"entity '{entity.name}'"
+            )
+
+            self.add_normal_object(entity.name, col_objs[0])
+
+    def update_from_simulation(self, update_attached_object: bool = True) -> None:
+        """Updates planning_world articulations/objects pose with current Scene state
+
+        :param update_attached_object: whether to update the attached pose of
+                                    all attached objects
+        """
+        for articulation in self._sim_scene.get_all_articulations():
+            # set_qpos to update poses
+            self.get_articulation(articulation.name).set_qpos(articulation.qpos)
+
+        for entity in self._sim_scene.get_all_actors():
+            component = entity.find_component_by_type(PhysxRigidBaseComponent)
+            assert (
+                component is not None
+            ), f"No PhysxRigidBaseComponent found in {entity.name}: {entity.components=}"
+            assert not isinstance(
+                component, PhysxArticulationLinkComponent
+            ), f"Component should not be PhysxArticulationLinkComponent: {component=}"
+
+            shapes = component.collision_shapes
+            # TODO: multiple collision shapes
+            assert len(shapes) == 1, (
+                f"Should only have 1 collision shape, got {len(shapes)} shapes for "
+                f"entity '{entity.name}'"
+            )
+            shape = shapes[0]
+
+            pose: Pose = entity.pose * shape.local_pose
+            # NOTE: Convert poses for Capsule/Cylinder
+            if isinstance(
+                shape, (PhysxCollisionShapeCapsule, PhysxCollisionShapeCylinder)
+            ):
+                pose = pose * Pose(q=euler2quat(0, np.pi / 2, 0))
+
+            # handle attached object
+            if self.is_normal_object_attached(entity.name):
+                attached_body = self.get_attached_object(entity.name)
+                if update_attached_object:
+                    parent_posevec = (
+                        attached_body.get_attached_articulation()
+                        .get_pinocchio_model()
+                        .get_link_pose(attached_body.get_attached_link_id())
+                    )
+                    parent_pose = Pose(parent_posevec[:3], parent_posevec[3:])
+                    pose = parent_pose.inv() * pose  # new attached pose
+                    attached_body.set_pose(np.hstack((pose.p, pose.q)))
+                attached_body.update_pose()
+            else:
+                self.get_normal_object(entity.name).set_transformation(
+                    np.hstack((pose.p, pose.q))
+                )
