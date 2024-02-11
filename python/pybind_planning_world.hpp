@@ -125,23 +125,25 @@ inline void build_planning_world(py::module &m_all) {
   auto PyWorldCollisionResult =
       py::class_<WorldCollisionResult, std::shared_ptr<WorldCollisionResult>>(
           m, "WorldCollisionResult");
-  PyWorldCollisionResult.def_readonly("res", &WorldCollisionResult::res)
-      .def_readonly("collision_type", &WorldCollisionResult::collision_type)
-      .def_readonly("object_name1", &WorldCollisionResult::object_name1)
-      .def_readonly("object_name2", &WorldCollisionResult::object_name2)
-      .def_readonly("link_name1", &WorldCollisionResult::link_name1)
-      .def_readonly("link_name2", &WorldCollisionResult::link_name2);
+  PyWorldCollisionResult.def(py::init<>())
+      .def_readwrite("res", &WorldCollisionResult::res)
+      .def_readwrite("collision_type", &WorldCollisionResult::collision_type)
+      .def_readwrite("object_name1", &WorldCollisionResult::object_name1)
+      .def_readwrite("object_name2", &WorldCollisionResult::object_name2)
+      .def_readwrite("link_name1", &WorldCollisionResult::link_name1)
+      .def_readwrite("link_name2", &WorldCollisionResult::link_name2);
 
   auto PyWorldDistanceResult =
       py::class_<WorldDistanceResult, std::shared_ptr<WorldDistanceResult>>(
           m, "WorldDistanceResult");
-  PyWorldDistanceResult.def_readonly("res", &WorldDistanceResult::res)
-      .def_readonly("min_distance", &WorldDistanceResult::min_distance)
-      .def_readonly("distance_type", &WorldDistanceResult::distance_type)
-      .def_readonly("object_name1", &WorldDistanceResult::object_name1)
-      .def_readonly("object_name2", &WorldDistanceResult::object_name2)
-      .def_readonly("link_name1", &WorldDistanceResult::link_name1)
-      .def_readonly("link_name2", &WorldDistanceResult::link_name2);
+  PyWorldDistanceResult.def(py::init<>())
+      .def_readwrite("res", &WorldDistanceResult::res)
+      .def_readwrite("min_distance", &WorldDistanceResult::min_distance)
+      .def_readwrite("distance_type", &WorldDistanceResult::distance_type)
+      .def_readwrite("object_name1", &WorldDistanceResult::object_name1)
+      .def_readwrite("object_name2", &WorldDistanceResult::object_name2)
+      .def_readwrite("link_name1", &WorldDistanceResult::link_name1)
+      .def_readwrite("link_name2", &WorldDistanceResult::link_name2);
 }
 
 }  // namespace mplib
