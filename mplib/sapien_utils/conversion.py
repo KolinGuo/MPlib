@@ -35,70 +35,6 @@ from .srdf_exporter import export_srdf
 from .urdf_exporter import export_kinematic_chain_urdf
 
 
-def convert_sapien_col_shape(
-    component: PhysxRigidBaseComponent,
-) -> list[CollisionObject]:
-    """Converts a SAPIEN physx.PhysxRigidBaseComponent to an FCL CollisionObject
-    Returns a list of collision_obj at their current poses.
-
-    If the component is an articulation link, the returned collision_obj is at
-    the shape's local_pose.
-    Otherwise, the returned collision_obj is at the entity's global pose
-    """
-    shapes = component.collision_shapes
-    if len(shapes) == 0:
-        return []
-
-    # NOTE: MPlib currently only supports 1 collision shape per object
-    # TODO: multiple collision shapes
-    assert len(shapes) == 1, (
-        f"Should only have 1 collision shape, got {len(shapes)} shapes for "
-        f"entity '{component.entity.name}'"
-    )
-
-    shape = shapes[0]
-    if isinstance(component, PhysxArticulationLinkComponent):  # articulation link
-        pose = shape.local_pose
-    else:
-        pose = component.entity.pose * shape.local_pose
-
-    if isinstance(shape, PhysxCollisionShapeBox):
-        collision_geom = Box(side=shape.half_size * 2)
-    elif isinstance(shape, PhysxCollisionShapeCapsule):
-        collision_geom = Capsule(radius=shape.radius, lz=shape.half_length * 2)
-        # NOTE: physx Capsule has x-axis along capsule height
-        # FCL Capsule has z-axis along capsule height
-        pose = pose * Pose(q=euler2quat(0, np.pi / 2, 0))
-    elif isinstance(shape, PhysxCollisionShapeConvexMesh):
-        assert np.allclose(
-            shape.scale, 1.0
-        ), f"Not unit scale {shape.scale}, need to rescale vertices?"
-        collision_geom = Convex(vertices=shape.vertices, faces=shape.triangles)
-    elif isinstance(shape, PhysxCollisionShapeCylinder):
-        collision_geom = Cylinder(radius=shape.radius, lz=shape.half_length * 2)
-        # NOTE: physx Cylinder has x-axis along cylinder height
-        # FCL Cylinder has z-axis along cylinder height
-        pose = pose * Pose(q=euler2quat(0, np.pi / 2, 0))
-    elif isinstance(shape, PhysxCollisionShapePlane):
-        raise NotImplementedError(
-            "Support for Plane collision is not implemented yet in mplib, "
-            "need fcl::Plane"
-        )
-    elif isinstance(shape, PhysxCollisionShapeSphere):
-        raise NotImplementedError(
-            "Support for Sphere collision is not implemented yet in mplib, "
-            "need fcl::Sphere"
-        )
-    elif isinstance(shape, PhysxCollisionShapeTriangleMesh):
-        # NOTE: see mplib.pymp.fcl.Triangle
-        raise NotImplementedError(
-            "Support for TriangleMesh collision is not implemented yet."
-        )
-    else:
-        raise TypeError(f"Unknown shape type: {type(shape)}")
-    return [CollisionObject(collision_geom, pose.p, pose.q)]
-
-
 class SapienPlanningWorld(PlanningWorld):
     def __init__(self, sim_scene: Scene, planned_articulation_names: list[str] = []):
         """
@@ -119,7 +55,7 @@ class SapienPlanningWorld(PlanningWorld):
             # Get all links with collision shapes at local_pose
             collision_links = []  # [(link_name, [CollisionObject, ...]), ...]
             for link in articulation.links:
-                col_objs = convert_sapien_col_shape(link)
+                col_objs = self.convert_sapien_col_shape(link)
                 if len(col_objs) > 0:
                     collision_links.append((link.name, col_objs))
 
@@ -149,7 +85,7 @@ class SapienPlanningWorld(PlanningWorld):
             ), f"Component should not be PhysxArticulationLinkComponent: {component=}"
 
             # Convert collision shapes at current global pose
-            col_objs = convert_sapien_col_shape(component)
+            col_objs = self.convert_sapien_col_shape(component)
             # TODO: multiple collision shapes
             assert len(col_objs) == 1, (
                 f"Should only have 1 collision object, got {len(col_objs)} shapes for "
@@ -338,3 +274,67 @@ class SapienPlanningWorld(PlanningWorld):
             world_result.link_name1 = obj_A.name
             world_result.link_name2 = obj_B.name
             return world_result
+
+    @staticmethod
+    def convert_sapien_col_shape(
+        component: PhysxRigidBaseComponent,
+    ) -> list[CollisionObject]:
+        """Converts a SAPIEN physx.PhysxRigidBaseComponent to an FCL CollisionObject
+        Returns a list of collision_obj at their current poses.
+
+        If the component is an articulation link, the returned collision_obj is at
+        the shape's local_pose.
+        Otherwise, the returned collision_obj is at the entity's global pose
+        """
+        shapes = component.collision_shapes
+        if len(shapes) == 0:
+            return []
+
+        # NOTE: MPlib currently only supports 1 collision shape per object
+        # TODO: multiple collision shapes
+        assert len(shapes) == 1, (
+            f"Should only have 1 collision shape, got {len(shapes)} shapes for "
+            f"entity '{component.entity.name}'"
+        )
+
+        shape = shapes[0]
+        if isinstance(component, PhysxArticulationLinkComponent):  # articulation link
+            pose = shape.local_pose
+        else:
+            pose = component.entity.pose * shape.local_pose
+
+        if isinstance(shape, PhysxCollisionShapeBox):
+            collision_geom = Box(side=shape.half_size * 2)
+        elif isinstance(shape, PhysxCollisionShapeCapsule):
+            collision_geom = Capsule(radius=shape.radius, lz=shape.half_length * 2)
+            # NOTE: physx Capsule has x-axis along capsule height
+            # FCL Capsule has z-axis along capsule height
+            pose = pose * Pose(q=euler2quat(0, np.pi / 2, 0))
+        elif isinstance(shape, PhysxCollisionShapeConvexMesh):
+            assert np.allclose(
+                shape.scale, 1.0
+            ), f"Not unit scale {shape.scale}, need to rescale vertices?"
+            collision_geom = Convex(vertices=shape.vertices, faces=shape.triangles)
+        elif isinstance(shape, PhysxCollisionShapeCylinder):
+            collision_geom = Cylinder(radius=shape.radius, lz=shape.half_length * 2)
+            # NOTE: physx Cylinder has x-axis along cylinder height
+            # FCL Cylinder has z-axis along cylinder height
+            pose = pose * Pose(q=euler2quat(0, np.pi / 2, 0))
+        elif isinstance(shape, PhysxCollisionShapePlane):
+            raise NotImplementedError(
+                "Support for Plane collision is not implemented yet in mplib, "
+                "need fcl::Plane"
+            )
+        elif isinstance(shape, PhysxCollisionShapeSphere):
+            raise NotImplementedError(
+                "Support for Sphere collision is not implemented yet in mplib, "
+                "need fcl::Sphere"
+            )
+        elif isinstance(shape, PhysxCollisionShapeTriangleMesh):
+            # NOTE: see mplib.pymp.fcl.Triangle
+            raise NotImplementedError(
+                "Support for TriangleMesh collision is not implemented yet."
+            )
+        else:
+            raise TypeError(f"Unknown shape type: {type(shape)}")
+        return [CollisionObject(collision_geom, pose.p, pose.q)]
