@@ -23,6 +23,8 @@ from ..pymp.fcl import (
     CollisionObject,
     Convex,
     Cylinder,
+    Halfspace,
+    Sphere,
     collide,
     distance,
 )
@@ -87,6 +89,9 @@ class SapienPlanningWorld(PlanningWorld):
 
             # Convert collision shapes at current global pose
             col_objs = self.convert_sapien_col_shape(component)
+            if entity.name == "ground" and len(col_objs) == 0:
+                print("\x1b[33;1m[Warning] Ignoring ground\x1b[0m")
+                continue
             assert len(col_objs) >= 1, (
                 f"Should have 1+ collision object, got {len(col_objs)} shapes for "
                 f"entity '{entity.name}'"
@@ -243,7 +248,6 @@ class SapienPlanningWorld(PlanningWorld):
         ret = []
         for col_obj_A in col_objs_A:
             for col_obj_B in col_objs_B:
-
                 result = collide(col_obj_A, col_obj_B)
 
                 if isinstance(result, list):
@@ -304,7 +308,6 @@ class SapienPlanningWorld(PlanningWorld):
         ret = WorldDistanceResult()
         for col_obj_A in col_objs_A:
             for col_obj_B in col_objs_B:
-
                 result = distance(col_obj_A, col_obj_B)
 
                 if result.min_distance < ret.min_distance:
@@ -379,15 +382,22 @@ class SapienPlanningWorld(PlanningWorld):
                 # FCL Cylinder has z-axis along cylinder height
                 pose = pose * Pose(q=euler2quat(0, np.pi / 2, 0))
             elif isinstance(shape, PhysxCollisionShapePlane):
-                raise NotImplementedError(
-                    "Support for Plane collision is not implemented yet in mplib, "
-                    "need fcl::Plane"
+                # # PhysxCollisionShapePlane are actually a halfspace
+                # # https://nvidia-omniverse.github.io/PhysX/physx/5.3.1/docs/Geometry.html#planes
+                # n = pose.to_transformation_matrix()[:3, 0]  # PxPlane normal is +x
+                # d = n.dot(pose.p)  # type: ignore
+                # collision_geom = Halfspace(n=n, d=d)
+
+                # TODO: investigate wrong fcl::Halfspace collision checks
+                # and distance query seg fault
+                print(
+                    "\x1b[33;1m"
+                    "[Warning] No support for PhysxCollisionShapePlane yet."
+                    "\x1b[0m"
                 )
+                continue
             elif isinstance(shape, PhysxCollisionShapeSphere):
-                raise NotImplementedError(
-                    "Support for Sphere collision is not implemented yet in mplib, "
-                    "need fcl::Sphere"
-                )
+                collision_geom = Sphere(radius=shape.radius)
             elif isinstance(shape, PhysxCollisionShapeTriangleMesh):
                 # NOTE: see mplib.pymp.fcl.Triangle
                 raise NotImplementedError(
