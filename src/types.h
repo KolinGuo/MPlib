@@ -112,10 +112,19 @@ template <typename S>
 using Cylinder = ::fcl::Cylinder<S>;
 
 template <typename S>
+using Ellipsoid = ::fcl::Ellipsoid<S>;
+
+template <typename S>
+using Halfspace = ::fcl::Halfspace<S>;
+
+template <typename S>
 using Plane = ::fcl::Plane<S>;
 
 template <typename S>
 using Sphere = ::fcl::Sphere<S>;
+
+template <typename S>
+using TriangleP = ::fcl::TriangleP<S>;
 
 template <typename S>
 using OBBRSS = ::fcl::OBBRSS<S>;
