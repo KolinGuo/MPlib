@@ -19,6 +19,7 @@ from transforms3d.euler import euler2quat
 from ..pymp.articulation import ArticulatedModel
 from ..pymp.fcl import (
     Box,
+    BVHModel,
     Capsule,
     CollisionObject,
     Convex,
@@ -27,7 +28,6 @@ from ..pymp.fcl import (
     Sphere,
     collide,
     distance,
-    BVHModel,
 )
 from ..pymp.planning_world import (
     PlanningWorld,
@@ -52,6 +52,9 @@ class SapienPlanningWorld(PlanningWorld):
         articulations: list[PhysxArticulation] = sim_scene.get_all_articulations()
         actors: list[Entity] = sim_scene.get_all_actors()
 
+        assert (
+            len(articulations) <= 1
+        ), f"Currently only support 1 articulation, got {len(articulations)}"
         for articulation in articulations:
             urdf_str = export_kinematic_chain_urdf(articulation)
             srdf_str = export_srdf(articulation)
@@ -74,7 +77,9 @@ class SapienPlanningWorld(PlanningWorld):
             )
             articulated_model.set_qpos(articulation.qpos)  # set_qpos to update poses
 
-            self.add_articulation(articulation.name, articulated_model)
+            # currently only support one single planned articulation.
+            # Moreover, the default name is "robot"
+            self.add_articulation("robot", articulated_model)
 
         for articulation_name in planned_articulation_names:
             self.set_articulation_planned(articulation_name, True)
@@ -402,9 +407,7 @@ class SapienPlanningWorld(PlanningWorld):
             elif isinstance(shape, PhysxCollisionShapeTriangleMesh):
                 collision_geom = BVHModel()
                 collision_geom.beginModel()
-                collision_geom.addSubModel(
-                    shape.get_vertices(), shape.get_triangles()
-                )
+                collision_geom.addSubModel(shape.get_vertices(), shape.get_triangles())
                 collision_geom.endModel()
             else:
                 raise TypeError(f"Unknown shape type: {type(shape)}")

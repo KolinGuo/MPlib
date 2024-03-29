@@ -4,6 +4,8 @@ from demo_setup import DemoSetup
 
 import mplib
 
+import mplib.pymp.ompl as ompl
+from mplib.sapien_utils.conversion import SapienPlanningWorld
 
 class PlanningDemo(DemoSetup):
     def __init__(self):
@@ -57,6 +59,11 @@ class PlanningDemo(DemoSetup):
         builder.add_box_visual(half_size=[0.05, 0.2, 0.1], material=render_material)
         self.blue_cube = builder.build(name="blue_cube")
         self.blue_cube.set_pose(sapien.Pose([0.55, 0, 0.1]))
+
+        self.planner.planning_world = SapienPlanningWorld(self.scene, ["robot"])
+        self.planner.robot = self.planner.planning_world.get_articulation("robot")
+        self.planner.robot.set_move_group(self.planner.move_group)
+        self.planner.planner = ompl.OMPLPlanner(world=self.planner.planning_world)
 
     def add_point_cloud(self):
         import trimesh
