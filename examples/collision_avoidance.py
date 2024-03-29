@@ -3,16 +3,15 @@ import sapien.core as sapien
 from demo_setup import DemoSetup
 
 import mplib
-
 import mplib.pymp.ompl as ompl
-from mplib.sapien_utils.conversion import SapienPlanningWorld
+from mplib.sapien_utils.conversion import SapienPlanner, SapienPlanningWorld
+
 
 class PlanningDemo(DemoSetup):
     def __init__(self):
         super().__init__()
         self.setup_scene()
         self.load_robot()
-        self.setup_planner()
 
         # Set initial joint positions
         init_qpos = [
@@ -60,10 +59,8 @@ class PlanningDemo(DemoSetup):
         self.blue_cube = builder.build(name="blue_cube")
         self.blue_cube.set_pose(sapien.Pose([0.55, 0, 0.1]))
 
-        self.planner.planning_world = SapienPlanningWorld(self.scene, ["robot"])
-        self.planner.robot = self.planner.planning_world.get_articulation("robot")
-        self.planner.robot.set_move_group(self.planner.move_group)
-        self.planner.planner = ompl.OMPLPlanner(world=self.planner.planning_world)
+        planning_world = SapienPlanningWorld(self.scene, ["robot"])
+        self.planner = SapienPlanner(planning_world, "panda_hand")
 
     def add_point_cloud(self):
         import trimesh

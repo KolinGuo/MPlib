@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import os
+from typing import Sequence, Union
+
 import numpy as np
 from sapien import Entity, Pose, Scene
 from sapien.physx import (
@@ -16,6 +19,7 @@ from sapien.physx import (
 )
 from transforms3d.euler import euler2quat
 
+from ..planner import Planner
 from ..pymp.articulation import ArticulatedModel
 from ..pymp.fcl import (
     Box,
@@ -29,6 +33,7 @@ from ..pymp.fcl import (
     collide,
     distance,
 )
+from ..pymp.ompl import OMPLPlanner
 from ..pymp.planning_world import (
     PlanningWorld,
     WorldCollisionResult,
@@ -39,7 +44,9 @@ from .urdf_exporter import export_kinematic_chain_urdf
 
 
 class SapienPlanningWorld(PlanningWorld):
-    def __init__(self, sim_scene: Scene, planned_articulation_names: list[str] = []):
+    def __init__(
+        self, sim_scene: Scene, planned_articulation_names: list[str] = ["robot"]
+    ):
         """
         Creates an mplib.pymp.planning_world.PlanningWorld from a sapien.Scene.
 
@@ -413,3 +420,79 @@ class SapienPlanningWorld(PlanningWorld):
                 raise TypeError(f"Unknown shape type: {type(shape)}")
             col_shapes.append(CollisionObject(collision_geom, pose.p, pose.q))
         return col_shapes
+
+
+class SapienPlanner(Planner):
+    def __init__(
+        self,
+        sapien_planning_world: SapienPlanningWorld,
+        move_group: str,
+        joint_vel_limits: Union[Sequence[float], np.ndarray] = None,
+        joint_acc_limits: Union[Sequence[float], np.ndarray] = None,
+    ):
+        r"""wrapper around sapien planner.
+
+        Args:
+            planning_world: SapienPlanningWorld which inherits from mplib.planning_world.PlanningWorld
+            move_group: name of the move group (end effector link)
+            joint_vel_limits: joint velocity limits (supplement)
+            joint_acc_limits: joint acceleration limits (supplement)
+
+        """
+        # first get user link names and joint names, assuming one robot
+        sapien_articulation: PhysxArticulation = (
+            sapien_planning_world._sim_scene.get_all_articulations()[0]
+        )
+        self.user_link_names = [link.name for link in sapien_articulation.links]
+        self.user_joint_names = [
+            joint.name for joint in sapien_articulation.active_joints
+        ]
+
+        self.urdf = export_kinematic_chain_urdf(sapien_articulation)
+        self.srdf = export_srdf(sapien_articulation)
+        if self.srdf == "" and os.path.exists(self.urdf.replace(".urdf", ".srdf")):
+            self.srdf = self.urdf.replace(".urdf", ".srdf")
+            print("No SRDF file provided. Try to load %s." % self.srdf)
+
+        self.joint_name_2_idx = {}
+        for i, joint in enumerate(self.user_joint_names):
+            self.joint_name_2_idx[joint] = i
+        self.link_name_2_idx = {}
+        for i, link in enumerate(self.user_link_names):
+            self.link_name_2_idx[link] = i
+
+        # only support one robot with hard coded name "robot"
+        self.robot = sapien_planning_world.get_articulation("robot")
+        self.pinocchio_model = self.robot.get_pinocchio_model()
+
+        self.planning_world = sapien_planning_world
+        self.acm = self.planning_world.get_allowed_collision_matrix()
+
+        if self.srdf == "":
+            self.generate_collision_pair()
+            self.robot.update_SRDF(self.srdf)
+
+        assert move_group in self.user_link_names
+        self.move_group = move_group
+        self.robot.set_move_group(self.move_group)
+        self.move_group_joint_indices = self.robot.get_move_group_joint_indices()
+
+        self.joint_types = self.pinocchio_model.get_joint_types()
+        self.joint_limits = np.concatenate(self.pinocchio_model.get_joint_limits())
+        self.planner = OMPLPlanner(world=self.planning_world)
+        if joint_vel_limits is None:
+            joint_vel_limits = np.ones(len(self.move_group_joint_indices))
+        if joint_acc_limits is None:
+            joint_acc_limits = np.ones(len(self.move_group_joint_indices))
+        self.joint_vel_limits = joint_vel_limits
+        self.joint_acc_limits = joint_acc_limits
+        self.move_group_link_id = self.link_name_2_idx[self.move_group]
+        assert len(self.joint_vel_limits) == len(self.move_group_joint_indices), len(
+            self.move_group_joint_indices
+        )
+        assert len(self.joint_acc_limits) == len(self.move_group_joint_indices)
+
+        # Mask for joints that have equivalent values (revolute joints with range > 2pi)
+        self.equiv_joint_mask = [
+            t.startswith("JointModelR") for t in self.joint_types
+        ] & (self.joint_limits[:, 1] - self.joint_limits[:, 0] > 2 * np.pi)
