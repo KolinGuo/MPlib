@@ -27,6 +27,7 @@ from ..pymp.fcl import (
     Sphere,
     collide,
     distance,
+    BVHModel,
 )
 from ..pymp.planning_world import (
     PlanningWorld,
@@ -399,10 +400,12 @@ class SapienPlanningWorld(PlanningWorld):
             elif isinstance(shape, PhysxCollisionShapeSphere):
                 collision_geom = Sphere(radius=shape.radius)
             elif isinstance(shape, PhysxCollisionShapeTriangleMesh):
-                # NOTE: see mplib.pymp.fcl.Triangle
-                raise NotImplementedError(
-                    "Support for TriangleMesh collision is not implemented yet."
+                collision_geom = BVHModel()
+                collision_geom.beginModel()
+                collision_geom.addSubModel(
+                    shape.get_vertices(), shape.get_triangles()
                 )
+                collision_geom.endModel()
             else:
                 raise TypeError(f"Unknown shape type: {type(shape)}")
             col_shapes.append(CollisionObject(collision_geom, pose.p, pose.q))
